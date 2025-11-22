@@ -43,23 +43,23 @@ export default function VaultPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-20">
+    <main className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-24 md:py-20">
       <div className="max-w-md w-full">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gold/10 mb-6">
-            <Shield className="w-10 h-10 text-gold" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gold/10 mb-4 sm:mb-6">
+            <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-gold" />
           </div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold text-gold mb-3">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-gold mb-2 sm:mb-3">
             The Vault
           </h1>
-          <p className="text-slate-300 leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-300 leading-relaxed px-2">
             Enter your access code to retrieve your digital artifacts
           </p>
         </div>
 
         {/* Vault Access Form */}
-        <form onSubmit={handleSubmit} className="excavation-border bg-slate/30 p-8">
+        <form onSubmit={handleSubmit} className="excavation-border bg-slate/30 p-4 sm:p-6 md:p-8">
           <div className="mb-6">
             <label htmlFor="code" className="flex items-center gap-2 text-sm font-mono text-gold mb-2">
               <KeyRound className="w-4 h-4" />
@@ -72,10 +72,10 @@ export default function VaultPage() {
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="XXXX-XXXXX-XXXX"
               disabled={isValidating || isValid}
-              className="w-full px-4 py-3 bg-obsidian border-2 border-slate rounded-lg 
-                       font-mono text-sand text-center text-lg tracking-wider
+              className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-obsidian border-2 border-slate rounded-lg 
+                       font-mono text-sand text-center text-base sm:text-lg tracking-wider
                        focus:border-gold focus:outline-none transition-colors
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+                       disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
               maxLength={16}
             />
             <p className="text-xs text-slate-500 mt-2 font-mono">

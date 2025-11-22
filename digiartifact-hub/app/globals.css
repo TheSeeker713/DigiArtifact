@@ -5,6 +5,8 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Support for iOS safe areas (notch, home indicator) */
+    -webkit-tap-highlight-color: transparent;
   }
   
   body {
@@ -12,6 +14,10 @@
     font-family: 'Merriweather', Georgia, serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior-y: contain;
+    /* Support for iOS safe areas */
+    padding-bottom: env(safe-area-inset-bottom);
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -91,15 +97,26 @@
   
   /* Rune button style */
   .btn-rune {
-    @apply px-6 py-3 bg-relic-gold text-obsidian font-mono uppercase tracking-wider rounded-md;
+    @apply px-4 sm:px-6 py-2 sm:py-3 bg-relic-gold text-obsidian font-mono uppercase tracking-wider rounded-md;
     @apply transition-all duration-300;
-    @apply hover:shadow-gold-glow hover:-translate-y-0.5;
+    @apply hover:shadow-gold-glow hover:-translate-y-0.5 active:scale-95;
+    /* Better touch target */
+    min-height: 44px;
+    touch-action: manipulation;
   }
   
   .btn-hologram {
-    @apply px-6 py-3 border-2 border-hologram-cyan text-hologram-cyan font-mono uppercase tracking-wider rounded-md;
+    @apply px-4 sm:px-6 py-2 sm:py-3 border-2 border-hologram-cyan text-hologram-cyan font-mono uppercase tracking-wider rounded-md;
     @apply transition-all duration-300;
-    @apply hover:bg-hologram-cyan hover:text-obsidian hover:shadow-cyan-glow;
+    @apply hover:bg-hologram-cyan hover:text-obsidian hover:shadow-cyan-glow active:scale-95;
+    /* Better touch target */
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Safe area support */
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
   
   /* Terminal text effect */

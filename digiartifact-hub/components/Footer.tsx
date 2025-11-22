@@ -2,9 +2,9 @@ import Link from 'next/link'
 
 export default function Footer() {
   return (
-    <footer className="mt-20 border-t-2 border-baked-clay bg-obsidian/95 py-12 px-6 md:ml-64">
+    <footer className="mt-12 sm:mt-20 border-t-2 border-baked-clay bg-obsidian/95 py-8 sm:py-12 px-4 sm:px-6 md:ml-64 mb-20 md:mb-0">
       <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Brand */}
           <div>
             <h3 className="font-heading text-xl text-relic-gold mb-2">DIGIARTIFACT</h3>
