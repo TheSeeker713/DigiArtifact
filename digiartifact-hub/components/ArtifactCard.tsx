@@ -48,7 +48,7 @@ export default function ArtifactCard({
   if (type === 'visual') {
     return (
       <Link
-        href={`/gallery/${slug}`}
+        href={`/artifact/${slug}`}
         className="group relative aspect-[4/5] rounded-lg overflow-hidden excavation-border artifact-card block"
       >
         <div className="relative w-full h-full bg-slate">
@@ -78,7 +78,7 @@ export default function ArtifactCard({
   if (type === 'audio') {
     return (
       <div className="group aspect-square rounded-lg overflow-hidden excavation-border artifact-card bg-slate">
-        <Link href={`/studio/${slug}`} className="block h-3/4 relative">
+        <Link href={`/artifact/${slug}`} className="block h-3/4 relative">
           <Image
             src={thumbnail}
             alt={title}
@@ -108,7 +108,7 @@ export default function ArtifactCard({
   // interactive type
   return (
     <Link
-      href={`/terminal/${slug}`}
+      href={`/artifact/${slug}`}
       className="group aspect-video rounded-lg overflow-hidden excavation-border artifact-card block"
     >
       <div className="relative w-full h-full bg-slate">
