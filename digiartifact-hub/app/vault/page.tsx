@@ -39,11 +39,6 @@ export default function VaultPage() {
       // For demo: Accept any properly formatted code
       setIsValid(true)
       setIsValidating(false)
-      
-      // Redirect to vault dashboard after short delay
-      setTimeout(() => {
-        router.push(`/vault/${trimmedCode}`)
-      }, 1500)
     }, 1200)
   }
 
@@ -98,9 +93,22 @@ export default function VaultPage() {
 
           {/* Success Message */}
           {isValid && (
-            <div className="mb-6 flex items-start gap-2 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-green-300">Access granted! Redirecting to your vault...</p>
+            <div className="mb-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+              <div className="flex items-start gap-2 mb-3">
+                <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-green-300 font-bold">Access Granted!</p>
+              </div>
+              <div className="pl-7 text-sm text-slate-300">
+                <p className="mb-2">Your vault contains:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>Dark Fantasy Coloring Collection (3 files)</li>
+                  <li>Download links valid for 30 days</li>
+                  <li>Unlimited downloads during access period</li>
+                </ul>
+                <p className="mt-3 text-xs text-slate-400">
+                  <span className="text-hologram-cyan">[DEMO]</span> In production, download links would appear here.
+                </p>
+              </div>
             </div>
           )}
 

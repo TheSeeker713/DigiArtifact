@@ -76,7 +76,7 @@ export default function TerminalPage() {
         {filteredArtifacts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredArtifacts.map(artifact => (
-              <ArtifactCard key={artifact.id} artifact={artifact} />
+              <ArtifactCard key={artifact.id} {...artifact} />
             ))}
           </div>
         ) : (

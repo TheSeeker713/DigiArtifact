@@ -23,7 +23,7 @@ export default function Hero() {
           The intersection of Art, Audio, and Interactive, Immersive Experiences.
         </p>
         <p className="text-lg md:text-xl font-mono text-hologram-cyan mb-8 text-glow-cyan animate-fade-in-delay-2">
-          "Premium Digital Assets for Creators & Dreamers."
+          &quot;Premium Digital Assets for Creators & Dreamers.&quot;
         </p>
         
         {/* CTA buttons */}
