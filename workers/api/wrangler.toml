@@ -1,0 +1,19 @@
+name = "digiartifact-workers-api"
+main = "src/index.ts"
+compatibility_date = "2024-02-22"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "digiartifact-workers"
+database_id = "YOUR_DATABASE_ID_HERE"
+
+# Environment variables
+[vars]
+JWT_SECRET = "change-this-to-a-secure-secret-in-production"
+CORS_ORIGIN = "https://workers.digiartifact.com"
+
+# Development overrides
+[env.dev]
+[env.dev.vars]
+CORS_ORIGIN = "http://localhost:3000"

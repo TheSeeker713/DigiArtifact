@@ -1,29 +1,30 @@
 # DigiArtifact Workers Portal
 
-A time tracking and project management system for DigiArtifact team members.
+A full-featured time tracking and project management system for DigiArtifact team members.
 
-## 🎯 Features (Planned)
+## 🎯 Features
 
 - **Clock In/Out** - Track work sessions with one click
 - **Break Timer** - Log breaks and maintain work-life balance
 - **Project Tracking** - Associate time entries with specific projects
-- **Analytics Dashboard** - Charts showing hours worked, productivity trends
-- **Cross-Platform** - Access from any device with a browser
-- **Admin Panel** - Onboard new workers, manage permissions
+- **Weekly Charts** - Visual representation of hours worked
+- **Reports** - Monthly analytics with export to CSV
+- **Admin Panel** - User management and oversight (for admins)
+- **Mobile Responsive** - Works on all device sizes
 
-## 🏗️ Architecture
+## 🛠️ Tech Stack
 
 ### Frontend
-- Static HTML/CSS/JS hosted on Cloudflare Pages
-- Tailwind CSS for styling (matching DigiArtifact theme)
-- Chart.js for data visualization
-- Progressive Web App (PWA) for mobile install
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **Chart.js** - Data visualization
+- **date-fns** - Date manipulation
 
-### Backend (Cloudflare Stack)
-- **Cloudflare Workers** - Serverless API endpoints
-- **Cloudflare D1** - SQLite database for time entries
-- **Cloudflare KV** - Session storage and caching
-- **Cloudflare Access** - Zero Trust authentication
+### Backend
+- **Cloudflare Workers** - Serverless API
+- **Cloudflare D1** - SQLite database
+- **JWT Authentication** - Secure token-based auth
 
 ## 📊 Database Schema (D1)
 

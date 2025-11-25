@@ -1,0 +1,37 @@
+{
+  "name": "digiartifact-workers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DigiArtifact Workers Portal - Time Tracking System",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:migrate": "wrangler d1 execute digiartifact-workers --file=./api/schema.sql",
+    "db:migrate:local": "wrangler d1 execute digiartifact-workers --local --file=./api/schema.sql",
+    "api:dev": "wrangler dev --local",
+    "api:deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "next": "^14.2.18",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "chart.js": "^4.4.1",
+    "react-chartjs-2": "^5.2.0",
+    "date-fns": "^3.3.1",
+    "js-cookie": "^3.0.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240222.0",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.30.1"
+  }
+}
