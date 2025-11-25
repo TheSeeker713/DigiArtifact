@@ -516,6 +516,74 @@ export default {
         return jsonResponse({ success: true }, 200, origin);
       }
 
+      // Change own PIN (any authenticated user)
+      if (path === '/api/user/change-pin' && method === 'POST') {
+        const { currentPin, newPin } = await request.json() as {
+          currentPin: string;
+          newPin: string;
+        };
+
+        if (!currentPin || !newPin) {
+          return jsonResponse({ error: 'Current PIN and new PIN required' }, 400, origin);
+        }
+
+        if (newPin.length < 4 || newPin.length > 6) {
+          return jsonResponse({ error: 'PIN must be 4-6 digits' }, 400, origin);
+        }
+
+        // Verify current PIN
+        const currentPinHash = await hashPin(currentPin);
+        const verified = await env.DB.prepare(
+          'SELECT id FROM users WHERE id = ? AND pin_hash = ?'
+        ).bind(user!.id, currentPinHash).first();
+
+        if (!verified) {
+          return jsonResponse({ error: 'Current PIN is incorrect' }, 401, origin);
+        }
+
+        // Update to new PIN
+        const newPinHash = await hashPin(newPin);
+        await env.DB.prepare(
+          'UPDATE users SET pin_hash = ?, updated_at = datetime("now") WHERE id = ?'
+        ).bind(newPinHash, user!.id).run();
+
+        return jsonResponse({ success: true, message: 'PIN updated successfully' }, 200, origin);
+      }
+
+      // Admin: Reset user PIN
+      if (path.match(/^\/api\/admin\/users\/\d+\/reset-pin$/) && method === 'POST') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const userId = path.split('/')[4];
+        const { newPin } = await request.json() as { newPin: string };
+
+        if (!newPin) {
+          return jsonResponse({ error: 'New PIN required' }, 400, origin);
+        }
+
+        if (newPin.length < 4 || newPin.length > 6) {
+          return jsonResponse({ error: 'PIN must be 4-6 digits' }, 400, origin);
+        }
+
+        const pinHash = await hashPin(newPin);
+        const result = await env.DB.prepare(
+          'UPDATE users SET pin_hash = ?, updated_at = datetime("now") WHERE id = ? RETURNING id, name, email'
+        ).bind(pinHash, userId).first();
+
+        if (!result) {
+          return jsonResponse({ error: 'User not found' }, 404, origin);
+        }
+
+        return jsonResponse({ success: true, user: result }, 200, origin);
+      }
+
+      // Get current user profile
+      if (path === '/api/user/profile' && method === 'GET') {
+        return jsonResponse({ user }, 200, origin);
+      }
+
       // 404 for unknown routes
       return jsonResponse({ error: 'Not found' }, 404, origin);
 
