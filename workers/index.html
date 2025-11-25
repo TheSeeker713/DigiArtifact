@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- SEO Meta -->
+  <title>Workers Portal — DigiArtifact</title>
+  <meta name="description" content="DigiArtifact Workers Portal. Time tracking, project management, and team coordination for digital artifact creators.">
+  <meta name="robots" content="noindex, nofollow">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Merriweather:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Cinzel', 'Trajan', 'serif'],
+            mono: ['Space Mono', 'Courier New', 'monospace'],
+            body: ['Merriweather', 'Georgia', 'serif'],
+          },
+          colors: {
+            obsidian: '#0a0a0a',
+            slate: '#1e1e24',
+            'dark-sand': '#2a2419',
+            sand: '#e3d5ca',
+            'text-slate': '#94a3b8',
+            'relic-gold': '#cca43b',
+            'hologram-cyan': '#00f0ff',
+            'baked-clay': '#9f5f3f',
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'spin-slow': 'spin 8s linear infinite',
+          },
+        },
+      },
+    }
+  </script>
+  
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Merriweather', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      mix-blend-mode: overlay;
+    }
+    
+    .text-glow-gold { text-shadow: 0 0 10px rgba(204, 164, 59, 0.6); }
+    .text-glow-cyan { text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
+    
+    .bg-grid-overlay {
+      background-image: 
+        linear-gradient(90deg, rgba(159,95,63,0.1) 1px, transparent 1px),
+        linear-gradient(rgba(159,95,63,0.1) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1e1e24; }
+    ::-webkit-scrollbar-thumb { background: #cca43b; border-radius: 4px; }
+    
+    /* Focus styles */
+    input:focus { outline: 2px solid #00f0ff; outline-offset: 2px; }
+    
+    /* Loading spinner */
+    .loader {
+      border: 3px solid rgba(204,164,59,0.2);
+      border-top-color: #cca43b;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-obsidian text-sand antialiased min-h-screen flex items-center justify-center">
+  
+  <!-- Background effects -->
+  <div class="fixed inset-0 pointer-events-none">
+    <div class="absolute inset-0 bg-gradient-to-br from-obsidian via-slate to-dark-sand"></div>
+    <div class="absolute inset-0 bg-grid-overlay opacity-20"></div>
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-hologram-cyan/5 rounded-full blur-[150px]"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-relic-gold/5 rounded-full blur-[150px]"></div>
+  </div>
+  
+  <!-- Main Content -->
+  <div class="relative z-10 w-full max-w-md px-4">
+    
+    <!-- Logo & Title -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gradient-to-br from-relic-gold to-baked-clay mb-4 shadow-lg">
+        <span class="font-heading text-obsidian font-bold text-3xl">D</span>
+      </div>
+      <h1 class="font-heading text-3xl text-relic-gold text-glow-gold mb-2">WORKERS PORTAL</h1>
+      <p class="font-mono text-xs text-hologram-cyan text-glow-cyan tracking-wider">&gt;&gt; TIME TRACKING SYSTEM v0.1</p>
+    </div>
+    
+    <!-- Login Card -->
+    <div class="bg-slate/50 backdrop-blur-sm border border-baked-clay/30 rounded-xl p-8 shadow-2xl">
+      
+      <!-- Status Badge -->
+      <div class="flex items-center justify-center gap-2 mb-6">
+        <span class="w-2 h-2 bg-relic-gold rounded-full animate-pulse"></span>
+        <span class="font-mono text-xs text-text-slate uppercase tracking-wider">System Under Construction</span>
+      </div>
+      
+      <!-- Placeholder Login Form -->
+      <form id="loginForm" class="space-y-5">
+        <div>
+          <label for="email" class="block font-mono text-sm text-relic-gold mb-2">&gt;&gt; Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email"
+            placeholder="worker@digiartifact.com"
+            disabled
+            class="w-full bg-obsidian/80 border border-slate text-sand py-3 px-4 rounded-lg font-mono text-sm placeholder-text-slate/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+        </div>
+        
+        <div>
+          <label for="password" class="block font-mono text-sm text-relic-gold mb-2">&gt;&gt; Access Code</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password"
+            placeholder="••••••••"
+            disabled
+            class="w-full bg-obsidian/80 border border-slate text-sand py-3 px-4 rounded-lg font-mono text-sm placeholder-text-slate/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+        </div>
+        
+        <button 
+          type="submit" 
+          disabled
+          class="w-full py-4 bg-relic-gold/30 text-relic-gold/50 font-mono uppercase tracking-wider rounded-lg cursor-not-allowed flex items-center justify-center gap-3"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          &gt;&gt; Coming Soon
+        </button>
+      </form>
+      
+      <!-- Feature Preview -->
+      <div class="mt-8 pt-6 border-t border-baked-clay/20">
+        <p class="font-mono text-xs text-text-slate text-center mb-4">PLANNED FEATURES:</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex items-center gap-2 text-xs text-text-slate">
+            <svg class="w-4 h-4 text-hologram-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Clock In/Out
+          </div>
+          <div class="flex items-center gap-2 text-xs text-text-slate">
+            <svg class="w-4 h-4 text-hologram-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Time Charts
+          </div>
+          <div class="flex items-center gap-2 text-xs text-text-slate">
+            <svg class="w-4 h-4 text-hologram-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Project Logs
+          </div>
+          <div class="flex items-center gap-2 text-xs text-text-slate">
+            <svg class="w-4 h-4 text-hologram-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Break Timer
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Back to Main Site -->
+    <div class="text-center mt-6">
+      <a href="https://digiartifact.com" class="font-mono text-sm text-text-slate hover:text-relic-gold transition-colors">
+        &lt;&lt; Return to DigiArtifact
+      </a>
+    </div>
+    
+    <!-- Footer -->
+    <div class="text-center mt-8">
+      <p class="font-mono text-xs text-text-slate/50">© 2025 DigiArtifact LLC</p>
+    </div>
+  </div>
+
+</body>
+</html>
