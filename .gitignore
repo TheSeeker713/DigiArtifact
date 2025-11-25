@@ -1,0 +1,4 @@
+
+# Large video source files
+*.mov
+ffmpeg2pass-0.log

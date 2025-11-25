@@ -1,18 +1,41 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 
 export default function Hero() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    // Force video to play on mount
+    if (videoRef.current) {
+      videoRef.current.play().catch(err => {
+        console.log('Video autoplay failed:', err)
+      })
+    }
+  }, [])
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 md:pt-0">
-      {/* Video background placeholder - will add actual video later */}
-      <div className="absolute inset-0 bg-gradient-to-br from-obsidian via-slate to-dark-sand" />
+      {/* Video background */}
+      <video 
+        ref={videoRef}
+        autoPlay 
+        loop 
+        muted 
+        playsInline
+        preload="auto"
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      >
+        <source src="/assets/video/background_loop.webm" type="video/webm" />
+        <source src="/assets/video/background_loop.mp4" type="video/mp4" />
+      </video>
       
       {/* Animated background effect */}
-      <div className="absolute inset-0 bg-grid-overlay opacity-20" />
+      <div className="absolute inset-0 bg-grid-overlay opacity-20 z-[1]" />
       
-      {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-obsidian/80 via-obsidian/50 to-obsidian" />
+      {/* Overlay gradient - darkens video for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-obsidian/70 via-obsidian/40 to-obsidian/80 z-[2]" />
       
       {/* Content */}
       <div className="relative z-10 text-center max-w-4xl px-4 sm:px-6">
