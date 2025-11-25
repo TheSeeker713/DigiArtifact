@@ -6,7 +6,7 @@ compatibility_date = "2024-02-22"
 [[d1_databases]]
 binding = "DB"
 database_name = "digiartifact-workers"
-database_id = "YOUR_DATABASE_ID_HERE"
+database_id = "8e0f8600-ecdd-4065-bce4-b73cbe546920"
 
 # Environment variables
 [vars]

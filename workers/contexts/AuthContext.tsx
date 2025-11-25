@@ -51,8 +51,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// API base URL - in production this would be your Worker URL
-const API_BASE = '/api'
+// API base URL - Cloudflare Worker
+const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
