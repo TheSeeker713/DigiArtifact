@@ -4,10 +4,15 @@ import { useState } from 'react'
 import { useAuth, Project } from '@/contexts/AuthContext'
 import Cookies from 'js-cookie'
 
+const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
+
 export default function ProjectsPage() {
   const { projects, user, refreshData } = useAuth()
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [newProject, setNewProject] = useState({ name: '', description: '', color: '#cca43b' })
+  const [editProject, setEditProject] = useState({ name: '', description: '', color: '#cca43b', active: true })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -20,7 +25,7 @@ export default function ProjectsPage() {
 
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch('/api/projects', {
+      const response = await fetch('https://digiartifact-workers-api.digitalartifact11.workers.dev/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,6 +47,50 @@ export default function ProjectsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleEditProject = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingProject) return
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/projects/${editingProject.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(editProject),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update project')
+      }
+
+      setShowEditModal(false)
+      setEditingProject(null)
+      await refreshData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update project')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const openEditModal = (project: Project) => {
+    setEditingProject(project)
+    setEditProject({
+      name: project.name,
+      description: project.description || '',
+      color: project.color,
+      active: project.active,
+    })
+    setError('')
+    setShowEditModal(true)
   }
 
   const colorOptions = [
@@ -121,7 +170,10 @@ export default function ProjectsPage() {
                 <div className="flex items-center justify-between text-xs font-mono text-text-slate">
                   <span>Project #{project.id}</span>
                   {isAdmin && (
-                    <button className="text-relic-gold hover:text-hologram-cyan transition-colors">
+                    <button 
+                      onClick={() => openEditModal(project)}
+                      className="text-relic-gold hover:text-hologram-cyan transition-colors"
+                    >
                       Edit
                     </button>
                   )}
@@ -207,6 +259,104 @@ export default function ProjectsPage() {
                   className="btn-rune flex-1"
                 >
                   {isLoading ? 'Creating...' : 'Create Project'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {showEditModal && editingProject && (
+        <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
+            <h3 className="font-heading text-xl text-relic-gold mb-6">Edit Project</h3>
+            
+            <form onSubmit={handleEditProject} className="space-y-4">
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Project Name *
+                </label>
+                <input
+                  type="text"
+                  value={editProject.name}
+                  onChange={(e) => setEditProject({ ...editProject, name: e.target.value })}
+                  className="input-field"
+                  placeholder="e.g., Client Website"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={editProject.description}
+                  onChange={(e) => setEditProject({ ...editProject, description: e.target.value })}
+                  className="input-field min-h-[80px]"
+                  placeholder="Brief project description..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Color
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {colorOptions.map((color) => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setEditProject({ ...editProject, color: color.value })}
+                      className={`w-8 h-8 rounded-full transition-all ${
+                        editProject.color === color.value 
+                          ? 'ring-2 ring-offset-2 ring-offset-slate ring-white scale-110' 
+                          : 'hover:scale-110'
+                      }`}
+                      style={{ backgroundColor: color.value }}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editProject.active}
+                    onChange={(e) => setEditProject({ ...editProject, active: e.target.checked })}
+                    className="w-5 h-5 rounded border-baked-clay bg-obsidian text-relic-gold focus:ring-relic-gold"
+                  />
+                  <span className="text-sm font-mono text-sand">Active Project</span>
+                </label>
+              </div>
+              
+              {error && (
+                <div className="p-3 bg-status-offline/20 border border-status-offline/50 rounded-md">
+                  <p className="text-status-offline text-sm font-mono">{error}</p>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingProject(null)
+                    setError('')
+                  }}
+                  className="btn-hologram flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || !editProject.name}
+                  className="btn-rune flex-1"
+                >
+                  {isLoading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

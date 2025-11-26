@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth, TimeEntry } from '@/contexts/AuthContext'
+import { useAuth, TimeEntry, Project } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { format, parseISO, differenceInMinutes } from 'date-fns'
 import Cookies from 'js-cookie'
+
+const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
 interface AdminTimeEntry extends TimeEntry {
   user_name: string
@@ -12,12 +14,21 @@ interface AdminTimeEntry extends TimeEntry {
 }
 
 export default function AdminEntriesPage() {
-  const { user } = useAuth()
+  const { user, projects } = useAuth()
   const router = useRouter()
   const [entries, setEntries] = useState<AdminTimeEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [filter, setFilter] = useState({ user: '', project: '', date: '' })
   const [editingEntry, setEditingEntry] = useState<AdminTimeEntry | null>(null)
+  const [editForm, setEditForm] = useState({
+    clock_in: '',
+    clock_out: '',
+    project_id: null as number | null,
+    notes: '',
+    break_minutes: 0,
+  })
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (user && user.role !== 'admin') {
@@ -36,7 +47,7 @@ export default function AdminEntriesPage() {
       if (filter.project) params.append('project', filter.project)
       if (filter.date) params.append('date', filter.date)
       
-      const response = await fetch(`/api/admin/entries?${params}`, {
+      const response = await fetch(`https://digiartifact-workers-api.digitalartifact11.workers.dev/api/admin/entries?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       })
       
@@ -66,7 +77,7 @@ export default function AdminEntriesPage() {
     
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch(`/api/entries/${entryId}`, {
+      const response = await fetch(`https://digiartifact-workers-api.digitalartifact11.workers.dev/api/entries/${entryId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       })
@@ -76,6 +87,55 @@ export default function AdminEntriesPage() {
       }
     } catch (error) {
       console.error('Failed to delete entry:', error)
+    }
+  }
+
+  const openEditModal = (entry: AdminTimeEntry) => {
+    setEditingEntry(entry)
+    setEditForm({
+      clock_in: entry.clock_in ? format(parseISO(entry.clock_in), "yyyy-MM-dd'T'HH:mm") : '',
+      clock_out: entry.clock_out ? format(parseISO(entry.clock_out), "yyyy-MM-dd'T'HH:mm") : '',
+      project_id: entry.project_id,
+      notes: entry.notes || '',
+      break_minutes: entry.break_minutes || 0,
+    })
+    setError('')
+  }
+
+  const handleEditEntry = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingEntry) return
+    setIsSaving(true)
+    setError('')
+
+    try {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/entries/${editingEntry.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          clock_in: editForm.clock_in ? new Date(editForm.clock_in).toISOString() : undefined,
+          clock_out: editForm.clock_out ? new Date(editForm.clock_out).toISOString() : undefined,
+          project_id: editForm.project_id,
+          notes: editForm.notes,
+          break_minutes: editForm.break_minutes,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update entry')
+      }
+
+      setEditingEntry(null)
+      await fetchEntries()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update entry')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -211,7 +271,7 @@ export default function AdminEntriesPage() {
                   <td className="py-4 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => setEditingEntry(entry)}
+                        onClick={() => openEditModal(entry)}
                         className="text-relic-gold hover:text-hologram-cyan transition-colors text-sm font-mono"
                       >
                         Edit
@@ -231,26 +291,109 @@ export default function AdminEntriesPage() {
         </div>
       )}
 
-      {/* Edit Entry Modal (placeholder) */}
+      {/* Edit Entry Modal */}
       {editingEntry && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md">
-            <h3 className="font-heading text-xl text-relic-gold mb-6">Edit Time Entry</h3>
-            <p className="text-text-slate text-sm mb-4">
+          <div className="card w-full max-w-lg">
+            <h3 className="font-heading text-xl text-relic-gold mb-2">Edit Time Entry</h3>
+            <p className="text-text-slate text-sm mb-6">
               Entry #{editingEntry.id} by {editingEntry.user_name}
             </p>
-            {/* Add edit form fields here */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setEditingEntry(null)}
-                className="btn-hologram flex-1"
-              >
-                Cancel
-              </button>
-              <button className="btn-rune flex-1">
-                Save Changes
-              </button>
-            </div>
+            
+            <form onSubmit={handleEditEntry} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-mono text-sand mb-2">
+                    Clock In
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={editForm.clock_in}
+                    onChange={(e) => setEditForm({ ...editForm, clock_in: e.target.value })}
+                    className="input-field text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-mono text-sand mb-2">
+                    Clock Out
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={editForm.clock_out}
+                    onChange={(e) => setEditForm({ ...editForm, clock_out: e.target.value })}
+                    className="input-field text-sm"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Project
+                </label>
+                <select
+                  value={editForm.project_id || ''}
+                  onChange={(e) => setEditForm({ ...editForm, project_id: e.target.value ? Number(e.target.value) : null })}
+                  className="input-field"
+                >
+                  <option value="">No Project</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Break Minutes
+                </label>
+                <input
+                  type="number"
+                  value={editForm.break_minutes}
+                  onChange={(e) => setEditForm({ ...editForm, break_minutes: parseInt(e.target.value) || 0 })}
+                  className="input-field"
+                  min="0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  className="input-field min-h-[80px]"
+                  placeholder="Entry notes..."
+                />
+              </div>
+              
+              {error && (
+                <div className="p-3 bg-status-offline/20 border border-status-offline/50 rounded-md">
+                  <p className="text-status-offline text-sm font-mono">{error}</p>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingEntry(null)
+                    setError('')
+                  }}
+                  className="btn-hologram flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="btn-rune flex-1"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

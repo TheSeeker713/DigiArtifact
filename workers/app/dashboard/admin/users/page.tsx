@@ -5,6 +5,8 @@ import { useAuth, User } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 
+const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
+
 interface AdminUser extends User {
   created_at: string
   last_clock_in?: string
@@ -16,7 +18,12 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
   const [newUser, setNewUser] = useState({ name: '', email: '', pin: '', role: 'worker' as 'admin' | 'worker' })
+  const [editUser, setEditUser] = useState({ name: '', email: '', role: 'worker' as 'admin' | 'worker' })
+  const [resetPin, setResetPin] = useState('')
+  const [showResetPin, setShowResetPin] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -32,7 +39,7 @@ export default function AdminUsersPage() {
     setIsLoading(true)
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('https://digiartifact-workers-api.digitalartifact11.workers.dev/api/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` },
       })
       
@@ -54,7 +61,7 @@ export default function AdminUsersPage() {
     
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('https://digiartifact-workers-api.digitalartifact11.workers.dev/api/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,6 +87,69 @@ export default function AdminUsersPage() {
   const generatePin = () => {
     const pin = Math.floor(1000 + Math.random() * 9000).toString()
     setNewUser({ ...newUser, pin })
+  }
+
+  const generateResetPin = () => {
+    const pin = Math.floor(1000 + Math.random() * 9000).toString()
+    setResetPin(pin)
+  }
+
+  const openEditModal = (u: AdminUser) => {
+    setEditingUser(u)
+    setEditUser({ name: u.name, email: u.email, role: u.role })
+    setResetPin('')
+    setShowResetPin(false)
+    setError('')
+    setShowEditModal(true)
+  }
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUser) return
+    setError('')
+
+    try {
+      const token = Cookies.get('workers_token')
+      
+      // Update user info
+      const response = await fetch(`${API_BASE}/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(editUser),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update user')
+      }
+
+      // Reset PIN if provided
+      if (resetPin && resetPin.length >= 4) {
+        const pinResponse = await fetch(`${API_BASE}/admin/users/${editingUser.id}/reset-pin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ newPin: resetPin }),
+        })
+
+        if (!pinResponse.ok) {
+          const data = await pinResponse.json()
+          throw new Error(data.error || 'Failed to reset PIN')
+        }
+      }
+
+      setSuccess('User updated successfully!')
+      setShowEditModal(false)
+      setEditingUser(null)
+      await fetchUsers()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update user')
+    }
   }
 
   if (user?.role !== 'admin') {
@@ -168,7 +238,10 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="py-4 px-4 text-right">
-                    <button className="text-relic-gold hover:text-hologram-cyan transition-colors text-sm font-mono">
+                    <button 
+                      onClick={() => openEditModal(u)}
+                      className="text-relic-gold hover:text-hologram-cyan transition-colors text-sm font-mono"
+                    >
                       Edit
                     </button>
                   </td>
@@ -275,6 +348,127 @@ export default function AdminUsersPage() {
                   className="btn-rune flex-1"
                 >
                   Create User
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
+            <h3 className="font-heading text-xl text-relic-gold mb-6">Edit User</h3>
+            
+            <form onSubmit={handleEditUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  value={editUser.name}
+                  onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+                  className="input-field"
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  value={editUser.email}
+                  onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                  className="input-field"
+                  placeholder="john@digiartifact.com"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-mono text-sand mb-2">
+                  Role
+                </label>
+                <select
+                  value={editUser.role}
+                  onChange={(e) => setEditUser({ ...editUser, role: e.target.value as 'admin' | 'worker' })}
+                  className="input-field"
+                >
+                  <option value="worker">Worker</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              
+              {/* PIN Reset Section */}
+              <div className="pt-4 border-t border-baked-clay/30">
+                <button
+                  type="button"
+                  onClick={() => setShowResetPin(!showResetPin)}
+                  className="text-hologram-cyan text-sm font-mono hover:text-hologram-cyan/80"
+                >
+                  {showResetPin ? '− Hide PIN Reset' : '+ Reset User PIN'}
+                </button>
+                
+                {showResetPin && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-mono text-sand mb-2">
+                      New PIN (4-6 digits)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={resetPin}
+                        onChange={(e) => setResetPin(e.target.value)}
+                        className="input-field flex-1 font-mono tracking-wider"
+                        placeholder="Leave empty to keep current"
+                        maxLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={generateResetPin}
+                        className="btn-hologram px-4"
+                      >
+                        Generate
+                      </button>
+                    </div>
+                    {resetPin && (
+                      <p className="text-xs text-status-active mt-2 font-mono">
+                        New PIN will be: {resetPin}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {error && (
+                <div className="p-3 bg-status-offline/20 border border-status-offline/50 rounded-md">
+                  <p className="text-status-offline text-sm font-mono">{error}</p>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingUser(null)
+                    setError('')
+                  }}
+                  className="btn-hologram flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!editUser.name || !editUser.email}
+                  className="btn-rune flex-1"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>

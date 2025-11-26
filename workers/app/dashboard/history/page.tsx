@@ -27,7 +27,7 @@ export default function HistoryPage() {
       const startDate = format(currentWeekStart, 'yyyy-MM-dd')
       const endDate = format(currentWeekEnd, 'yyyy-MM-dd')
       
-      const response = await fetch(`/api/entries?start=${startDate}&end=${endDate}`, {
+      const response = await fetch(`https://digiartifact-workers-api.digitalartifact11.workers.dev/api/entries?start=${startDate}&end=${endDate}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

@@ -51,7 +51,7 @@ export default function ReportsPage() {
     try {
       const token = Cookies.get('workers_token')
       const response = await fetch(
-        `/api/stats/monthly?month=${format(currentMonth, 'yyyy-MM')}`,
+        `https://digiartifact-workers-api.digitalartifact11.workers.dev/api/stats/monthly?month=${format(currentMonth, 'yyyy-MM')}`,
         {
           headers: { 'Authorization': `Bearer ${token}` },
         }

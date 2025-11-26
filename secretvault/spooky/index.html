@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spooky But Cute Pets Expansion - SecretVault</title>
+    <meta name="description" content="Coming Soon! The Spooky But Cute Pets Expansion for SecretVault. Ghost kittens, vampire puppies, and more adorable supernatural companions await!">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Spooky But Cute Pets Expansion - SecretVault">
+    <meta property="og:description" content="Ghost kittens, vampire puppies, and more adorable supernatural companions are coming soon!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://secretvault.digiartifact.com/spooky">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --purple-dark: #1a0a2e;
+            --purple-mid: #2d1b4e;
+            --purple-light: #9b59b6;
+            --purple-glow: #8e44ad;
+            --orange-spooky: #e67e22;
+            --orange-bright: #f39c12;
+            --ghost-white: #ecf0f1;
+            --ghost-blue: #a8d8ea;
+            --bat-black: #0d0d0d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--purple-dark) 0%, var(--bat-black) 50%, var(--purple-mid) 100%);
+            min-height: 100vh;
+            color: var(--ghost-white);
+            overflow-x: hidden;
+        }
+
+        /* Floating ghost animation */
+        .ghost {
+            position: fixed;
+            font-size: 2rem;
+            opacity: 0.3;
+            animation: float 6s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .ghost:nth-child(1) { top: 10%; left: 5%; animation-delay: 0s; }
+        .ghost:nth-child(2) { top: 30%; right: 10%; animation-delay: 1s; }
+        .ghost:nth-child(3) { top: 60%; left: 8%; animation-delay: 2s; }
+        .ghost:nth-child(4) { top: 80%; right: 5%; animation-delay: 3s; }
+        .ghost:nth-child(5) { top: 45%; left: 3%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(5deg); }
+            50% { transform: translateY(-10px) rotate(-3deg); }
+            75% { transform: translateY(-25px) rotate(3deg); }
+        }
+
+        /* Stars background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Logo / Header */
+        .logo-container {
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, var(--purple-light), var(--orange-spooky));
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            box-shadow: 0 0 40px rgba(155, 89, 182, 0.5);
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 40px rgba(155, 89, 182, 0.5); }
+            50% { box-shadow: 0 0 60px rgba(230, 126, 34, 0.6); }
+        }
+
+        .logo-icon span {
+            font-size: 4rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--orange-spooky), var(--orange-bright));
+            color: var(--bat-black);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        h1 {
+            font-family: 'Creepster', cursive;
+            font-size: 3.5rem;
+            background: linear-gradient(135deg, var(--ghost-white), var(--purple-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--orange-bright);
+            font-weight: 300;
+            margin-bottom: 2rem;
+        }
+
+        .description {
+            font-size: 1.125rem;
+            color: var(--ghost-blue);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            max-width: 600px;
+        }
+
+        /* Pet preview cards */
+        .pets-preview {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .pet-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(155, 89, 182, 0.3);
+            border-radius: 20px;
+            padding: 1.5rem;
+            width: 140px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .pet-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(155, 89, 182, 0.3);
+        }
+
+        .pet-card span {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .pet-card p {
+            font-size: 0.875rem;
+            color: var(--ghost-white);
+            font-weight: 500;
+        }
+
+        /* Email signup */
+        .signup-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(155, 89, 182, 0.2);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .signup-section h3 {
+            font-family: 'Creepster', cursive;
+            font-size: 1.75rem;
+            color: var(--orange-bright);
+            margin-bottom: 0.5rem;
+        }
+
+        .signup-section p {
+            color: var(--ghost-blue);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Mailchimp form styles */
+        #mc_embed_signup {
+            width: 100%;
+        }
+
+        #mc_embed_signup form {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        #mc_embed_signup .mc-field-group {
+            width: 100% !important;
+            padding-bottom: 0 !important;
+            min-height: auto !important;
+        }
+
+        #mc_embed_signup input[type="email"] {
+            width: 100% !important;
+            padding: 1rem 1.25rem !important;
+            border: 2px solid rgba(155, 89, 182, 0.3) !important;
+            border-radius: 12px !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            color: var(--ghost-white) !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 1rem !important;
+            margin-bottom: 1rem !important;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+        }
+
+        #mc_embed_signup input[type="email"]:focus {
+            outline: none !important;
+            border-color: var(--purple-light) !important;
+            box-shadow: 0 0 20px rgba(155, 89, 182, 0.3) !important;
+        }
+
+        #mc_embed_signup input[type="email"]::placeholder {
+            color: rgba(236, 240, 241, 0.5) !important;
+        }
+
+        #mc_embed_signup .button {
+            width: 100% !important;
+            padding: 1rem 2rem !important;
+            background: linear-gradient(135deg, var(--orange-spooky), var(--orange-bright)) !important;
+            border: none !important;
+            border-radius: 12px !important;
+            color: var(--bat-black) !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+            height: auto !important;
+            line-height: 1.5 !important;
+            margin: 0 !important;
+        }
+
+        #mc_embed_signup .button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 10px 30px rgba(230, 126, 34, 0.4) !important;
+        }
+
+        #mc_embed_signup div.mce_inline_error,
+        #mc_embed_signup div#mce-responses {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        #mc_embed_signup div#mce-responses {
+            margin-top: 1rem !important;
+        }
+
+        #mc_embed_signup #mce-success-response {
+            color: #2ecc71 !important;
+        }
+
+        #mc_embed_signup #mce-error-response {
+            color: #e74c3c !important;
+        }
+
+        /* Hide ugly Mailchimp elements */
+        #mc_embed_signup .indicates-required,
+        #mc_embed_signup label,
+        #mc_embed_signup .asterisk {
+            display: none !important;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(155, 89, 182, 0.2);
+        }
+
+        .footer a {
+            color: var(--purple-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: var(--orange-bright);
+        }
+
+        .footer p {
+            color: rgba(236, 240, 241, 0.5);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            h2 {
+                font-size: 1.25rem;
+            }
+
+            .logo-icon {
+                width: 100px;
+                height: 100px;
+            }
+
+            .logo-icon span {
+                font-size: 3rem;
+            }
+
+            .pets-preview {
+                gap: 0.75rem;
+            }
+
+            .pet-card {
+                width: 100px;
+                padding: 1rem;
+            }
+
+            .pet-card span {
+                font-size: 2rem;
+            }
+
+            .signup-section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating ghosts -->
+    <div class="ghost">👻</div>
+    <div class="ghost">🦇</div>
+    <div class="ghost">👻</div>
+    <div class="ghost">🎃</div>
+    <div class="ghost">👻</div>
+
+    <!-- Stars background -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Main content -->
+    <div class="container">
+        <div class="logo-container">
+            <div class="logo-icon">
+                <span>🐾</span>
+            </div>
+        </div>
+
+        <span class="badge">Coming Soon</span>
+
+        <h1>Spooky But Cute Pets Expansion</h1>
+        <h2>For SecretVault</h2>
+
+        <p class="description">
+            Get ready to adopt the most adorably spooky companions! Ghost kittens that phase through walls, 
+            vampire puppies with tiny fangs, witch's familiar ravens, and skeleton fish for your haunted aquarium. 
+            The supernatural never looked this cute! 🖤
+        </p>
+
+        <!-- Pet preview cards -->
+        <div class="pets-preview">
+            <div class="pet-card">
+                <span>👻🐱</span>
+                <p>Ghost Kitten</p>
+            </div>
+            <div class="pet-card">
+                <span>🧛🐕</span>
+                <p>Vampire Pup</p>
+            </div>
+            <div class="pet-card">
+                <span>🦇🐦</span>
+                <p>Bat Bird</p>
+            </div>
+            <div class="pet-card">
+                <span>💀🐠</span>
+                <p>Skeleton Fish</p>
+            </div>
+        </div>
+
+        <!-- Email signup -->
+        <div class="signup-section">
+            <h3>🔮 Be The First To Know!</h3>
+            <p>Sign up for exclusive early access and spooky surprises!</p>
+
+            <!-- Mailchimp Embed -->
+            <div id="mc_embed_signup">
+                <form action="https://digiartifact.us3.list-manage.com/subscribe/post?u=a96182d3fe54ad552c5e9e413&amp;id=cfe8597f8f&amp;f_id=00f88ae5f0" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank">
+                    <div id="mc_embed_signup_scroll">
+                        <div class="mc-field-group">
+                            <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required placeholder="Enter your email address...">
+                        </div>
+                        <div id="mce-responses" class="clear foot">
+                            <div class="response" id="mce-error-response" style="display:none"></div>
+                            <div class="response" id="mce-success-response" style="display:none"></div>
+                        </div>
+                        <div aria-hidden="true" style="position: absolute; left: -5000px;">
+                            <input type="text" name="b_a96182d3fe54ad552c5e9e413_cfe8597f8f" tabindex="-1" value="">
+                        </div>
+                        <div class="clear foot">
+                            <input type="submit" name="subscribe" id="mc-embedded-subscribe" class="button" value="Notify Me! 🎃">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                <a href="https://secretvault.digiartifact.com">← Back to SecretVault</a>
+            </p>
+            <p style="margin-top: 1rem;">
+                © 2025 <a href="https://digiartifact.com">DigiArtifact LLC</a>. All rights reserved.
+            </p>
+        </div>
+    </div>
+
+    <!-- Mailchimp validation script -->
+    <script type="text/javascript" src="//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
+    <script type="text/javascript">
+        (function($) {
+            window.fnames = new Array(); 
+            window.ftypes = new Array();
+            fnames[0]='EMAIL';ftypes[0]='email';
+            fnames[1]='FNAME';ftypes[1]='text';
+            fnames[2]='LNAME';ftypes[2]='text';
+            fnames[3]='ADDRESS';ftypes[3]='address';
+            fnames[4]='PHONE';ftypes[4]='phone';
+            fnames[5]='BIRTHDAY';ftypes[5]='birthday';
+            fnames[6]='COMPANY';ftypes[6]='text';
+        }(jQuery));
+        var $mcj = jQuery.noConflict(true);
+    </script>
+
+    <!-- Generate random stars -->
+    <script>
+        const starsContainer = document.getElementById('stars');
+        const numStars = 100;
+
+        for (let i = 0; i < numStars; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 2 + 's';
+            star.style.width = Math.random() * 2 + 1 + 'px';
+            star.style.height = star.style.width;
+            starsContainer.appendChild(star);
+        }
+    </script>
+</body>
+</html>

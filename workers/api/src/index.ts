@@ -371,6 +371,38 @@ export default {
         return jsonResponse({ project: result }, 201, origin);
       }
 
+      // Update project (admin only)
+      if (path.match(/^\/api\/projects\/\d+$/) && method === 'PUT') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const projectId = path.split('/').pop();
+        const { name, description, color, active } = await request.json() as {
+          name?: string;
+          description?: string;
+          color?: string;
+          active?: boolean;
+        };
+
+        const result = await env.DB.prepare(`
+          UPDATE projects 
+          SET name = COALESCE(?, name),
+              description = COALESCE(?, description),
+              color = COALESCE(?, color),
+              active = COALESCE(?, active),
+              updated_at = datetime('now')
+          WHERE id = ?
+          RETURNING *
+        `).bind(name || null, description || null, color || null, active !== undefined ? (active ? 1 : 0) : null, projectId).first();
+
+        if (!result) {
+          return jsonResponse({ error: 'Project not found' }, 404, origin);
+        }
+
+        return jsonResponse({ project: result }, 200, origin);
+      }
+
       // Weekly stats
       if (path === '/api/stats/weekly' && method === 'GET') {
         const result = await env.DB.prepare(`
@@ -484,6 +516,36 @@ export default {
         }
       }
 
+      // Admin: Update user
+      if (path.match(/^\/api\/admin\/users\/\d+$/) && method === 'PUT') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const userId = path.split('/').pop();
+        const { name, email, role } = await request.json() as {
+          name?: string;
+          email?: string;
+          role?: 'admin' | 'worker';
+        };
+
+        const result = await env.DB.prepare(`
+          UPDATE users 
+          SET name = COALESCE(?, name),
+              email = COALESCE(?, email),
+              role = COALESCE(?, role),
+              updated_at = datetime('now')
+          WHERE id = ?
+          RETURNING id, email, name, role, created_at
+        `).bind(name || null, email || null, role || null, userId).first();
+
+        if (!result) {
+          return jsonResponse({ error: 'User not found' }, 404, origin);
+        }
+
+        return jsonResponse({ user: result }, 200, origin);
+      }
+
       // Admin: Get all entries
       if (path === '/api/admin/entries' && method === 'GET') {
         if (user!.role !== 'admin') {
@@ -514,6 +576,40 @@ export default {
         await env.DB.prepare('DELETE FROM time_entries WHERE id = ?').bind(entryId).run();
 
         return jsonResponse({ success: true }, 200, origin);
+      }
+
+      // Update entry (admin only)
+      if (path.match(/^\/api\/entries\/\d+$/) && method === 'PUT') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const entryId = path.split('/').pop();
+        const { clock_in, clock_out, project_id, notes, break_minutes } = await request.json() as {
+          clock_in?: string;
+          clock_out?: string;
+          project_id?: number | null;
+          notes?: string;
+          break_minutes?: number;
+        };
+
+        const result = await env.DB.prepare(`
+          UPDATE time_entries 
+          SET clock_in = COALESCE(?, clock_in),
+              clock_out = COALESCE(?, clock_out),
+              project_id = COALESCE(?, project_id),
+              notes = COALESCE(?, notes),
+              break_minutes = COALESCE(?, break_minutes),
+              updated_at = datetime('now')
+          WHERE id = ?
+          RETURNING *
+        `).bind(clock_in || null, clock_out || null, project_id, notes || null, break_minutes, entryId).first();
+
+        if (!result) {
+          return jsonResponse({ error: 'Entry not found' }, 404, origin);
+        }
+
+        return jsonResponse({ entry: result }, 200, origin);
       }
 
       // Change own PIN (any authenticated user)

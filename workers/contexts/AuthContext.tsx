@@ -160,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setClockStatus('clocked-out')
     setCurrentEntry(null)
+    window.location.href = '/'
   }
 
   const clockIn = async (projectId?: number) => {
