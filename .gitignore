@@ -2,3 +2,6 @@
 # Large video source files
 *.mov
 ffmpeg2pass-0.log
+
+# Large MP4 files in assets
+assets/video/*.mp4

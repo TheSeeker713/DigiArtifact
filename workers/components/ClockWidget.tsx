@@ -16,9 +16,21 @@ export default function ClockWidget() {
   useEffect(() => {
     if (clockStatus === 'clocked-in' && currentEntry?.clock_in) {
       const updateTimer = () => {
-        const start = new Date(currentEntry.clock_in).getTime()
+        // Parse the clock_in timestamp - ensure it's treated as UTC if no timezone specified
+        let clockInTime = currentEntry.clock_in
+        // If the timestamp doesn't have a timezone indicator, treat it as UTC
+        if (!clockInTime.endsWith('Z') && !clockInTime.includes('+') && !clockInTime.includes('-', 10)) {
+          clockInTime = clockInTime + 'Z'
+        }
+        const start = new Date(clockInTime).getTime()
         const now = Date.now()
-        const diff = now - start - (currentEntry.break_minutes || 0) * 60 * 1000
+        const breakMs = (currentEntry.break_minutes || 0) * 60 * 1000
+        
+        // Calculate elapsed time (should always be positive when counting up)
+        let diff = now - start - breakMs
+        
+        // Ensure diff is positive (counting up from 0)
+        if (diff < 0) diff = 0
 
         const hours = Math.floor(diff / 3600000)
         const minutes = Math.floor((diff % 3600000) / 60000)
