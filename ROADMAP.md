@@ -42,9 +42,7 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
   - Quick project switching
   - Session notes inline
 
-### 🟠 High Priority (Q1 2026)
-
-- [ ] **Schedule System**
+- [ ] **Schedule System** ⚡ HIGH PRIORITY
   - Admin-created employee schedules
   - Weekly calendar view (Monday start)
   - Drag-and-drop shift editing
@@ -53,12 +51,28 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
   - Arrival/departure buffer times
   - Recurring schedule templates
 
-- [ ] **Dashboard Widgets Expansion**
+- [ ] **Dashboard Widgets Expansion** ⚡ HIGH PRIORITY
   - Focus Timer (Pomodoro-style, customizable intervals)
   - Today's Agenda (visual timeline)
   - Quick Notes widget (floating, always accessible)
   - Streak Counter (consecutive days motivation)
   - Weather widget (optional)
+
+- [ ] **Gamification System** ⚡ HIGH PRIORITY
+  - Achievement badges (streaks, milestones)
+  - XP and leveling system
+  - Progress tracking
+  - Weekly challenges
+  - Leaderboards (optional, for teams)
+  - Customizable rewards
+
+- [ ] **Body Doubling Timer** ⚡ HIGH PRIORITY
+  - Virtual "work with me" sessions
+  - Visible countdown timers
+  - Optional friend/accountability partner sync
+  - Session history
+
+### 🟠 High Priority (Q1 2026)
 
 - [ ] **Mobile PWA Improvements**
   - Add to Home Screen prompt
@@ -66,8 +80,6 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
   - Push notifications for breaks/reminders
   - Swipe gestures for common actions
   - Optimized touch targets
-
-### 🟡 Medium Priority (Q2 2026)
 
 - [ ] **Smart Analytics Dashboard**
   - Best productivity hours identification
@@ -82,6 +94,8 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
   - Over/under target warnings
   - Goal streaks and achievements
   - Custom goal periods
+
+### 🟡 Medium Priority (Q2 2026)
 
 - [ ] **Templates System**
   - Save common notes as templates
@@ -111,16 +125,6 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
   - Preset work blocks (2h, 4h, 8h)
   - Smart defaults based on history
 
-### 🟢 Lower Priority (Q3 2026)
-
-- [ ] **Gamification System**
-  - Achievement badges (streaks, milestones)
-  - XP and leveling system
-  - Progress tracking
-  - Weekly challenges
-  - Leaderboards (optional, for teams)
-  - Customizable rewards
-
 - [ ] **Focus Mode**
   - Distraction-free timer view
   - Hide all non-essential UI
@@ -128,18 +132,14 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
   - "Do Not Disturb" status
   - Fullscreen option
 
+### 🟢 Lower Priority (Q3 2026)
+
 - [ ] **Daily Standup Generator** (Settings: OFF by default)
   - Auto-generate from yesterday's entries
   - "Yesterday / Today / Blockers" format
   - Copy to clipboard
   - Send to Discord/Slack webhook
   - Customizable templates
-
-- [ ] **Body Doubling Timer**
-  - Virtual "work with me" sessions
-  - Visible countdown timers
-  - Optional friend/accountability partner sync
-  - Session history
 
 - [ ] **Export Options**
   - CSV export for spreadsheets
