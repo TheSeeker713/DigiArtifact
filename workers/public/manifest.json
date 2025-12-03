@@ -1,21 +1,106 @@
 {
   "name": "DigiArtifact Workers",
   "short_name": "Workers",
-  "description": "DigiArtifact team time tracking portal",
-  "start_url": "/",
+  "description": "DigiArtifact team time tracking portal - Clock in, track time, manage projects",
+  "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0a0a0a",
   "theme_color": "#cca43b",
+  "categories": ["productivity", "business", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
+    {
+      "src": "/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard Overview"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile Time Tracking"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Clock In",
+      "short_name": "Clock In",
+      "description": "Quick clock in to start your shift",
+      "url": "/dashboard?action=clockin",
+      "icons": [{ "src": "/icon-clock-in.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Clock Out",
+      "short_name": "Clock Out",
+      "description": "Quick clock out to end your shift",
+      "url": "/dashboard?action=clockout",
+      "icons": [{ "src": "/icon-clock-out.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Start Break",
+      "short_name": "Break",
+      "description": "Start a break",
+      "url": "/dashboard?action=break",
+      "icons": [{ "src": "/icon-break.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "handle_links": "preferred"
 }

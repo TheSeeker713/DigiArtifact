@@ -217,4 +217,75 @@
       transform: scale(1);
     }
   }
+  
+  /* PWA animations */
+  .animate-bounce-in {
+    animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  }
+  
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.5);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+  
+  /* Safe area padding for notched devices */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  
+  /* Pull to refresh indicator */
+  .animate-spin-slow {
+    animation: spin 1.5s linear infinite;
+  }
+  
+  /* Swipe action reveal */
+  .swipe-reveal-left {
+    animation: revealLeft 0.2s ease-out forwards;
+  }
+  
+  @keyframes revealLeft {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-80px);
+    }
+  }
+  
+  .swipe-reveal-right {
+    animation: revealRight 0.2s ease-out forwards;
+  }
+  
+  @keyframes revealRight {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(80px);
+    }
+  }
+  
+  /* Offline indicator pulse */
+  .animate-offline-pulse {
+    animation: offlinePulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes offlinePulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
 }
