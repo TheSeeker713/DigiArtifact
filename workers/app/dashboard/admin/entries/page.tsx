@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth, TimeEntry, Project } from '@/contexts/AuthContext'
+import { useSettings } from '@/contexts/SettingsContext'
 import { useRouter } from 'next/navigation'
-import { format, parseISO, differenceInMinutes } from 'date-fns'
+import { format } from 'date-fns'
 import Cookies from 'js-cookie'
 
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
@@ -15,6 +16,7 @@ interface AdminTimeEntry extends TimeEntry {
 
 export default function AdminEntriesPage() {
   const { user, projects } = useAuth()
+  const { formatTime, formatDate, parseUTCTimestamp } = useSettings()
   const router = useRouter()
   const [entries, setEntries] = useState<AdminTimeEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -65,7 +67,9 @@ export default function AdminEntriesPage() {
   const formatDuration = (clockIn: string, clockOut: string | null, breakMinutes: number) => {
     if (!clockOut) return 'In Progress'
     
-    const minutes = differenceInMinutes(parseISO(clockOut), parseISO(clockIn)) - breakMinutes
+    const start = parseUTCTimestamp(clockIn).getTime()
+    const end = parseUTCTimestamp(clockOut).getTime()
+    const minutes = Math.floor((end - start) / 60000) - breakMinutes
     const hours = Math.floor(minutes / 60)
     const mins = minutes % 60
     
@@ -92,9 +96,12 @@ export default function AdminEntriesPage() {
 
   const openEditModal = (entry: AdminTimeEntry) => {
     setEditingEntry(entry)
+    // Convert UTC timestamps to local datetime-local format
+    const clockInDate = entry.clock_in ? parseUTCTimestamp(entry.clock_in) : null
+    const clockOutDate = entry.clock_out ? parseUTCTimestamp(entry.clock_out) : null
     setEditForm({
-      clock_in: entry.clock_in ? format(parseISO(entry.clock_in), "yyyy-MM-dd'T'HH:mm") : '',
-      clock_out: entry.clock_out ? format(parseISO(entry.clock_out), "yyyy-MM-dd'T'HH:mm") : '',
+      clock_in: clockInDate ? format(clockInDate, "yyyy-MM-dd'T'HH:mm") : '',
+      clock_out: clockOutDate ? format(clockOutDate, "yyyy-MM-dd'T'HH:mm") : '',
       project_id: entry.project_id,
       notes: entry.notes || '',
       break_minutes: entry.break_minutes || 0,
@@ -244,13 +251,13 @@ export default function AdminEntriesPage() {
                   </td>
                   <td className="py-4 px-4">
                     <span className="text-text-slate text-sm font-mono">
-                      {format(parseISO(entry.clock_in), 'MMM d, yyyy')}
+                      {formatDate(entry.clock_in, { weekday: false })}
                     </span>
                   </td>
                   <td className="py-4 px-4">
                     <span className="text-text-slate text-sm font-mono">
-                      {format(parseISO(entry.clock_in), 'h:mm a')}
-                      {entry.clock_out && ` - ${format(parseISO(entry.clock_out), 'h:mm a')}`}
+                      {formatTime(entry.clock_in)}
+                      {entry.clock_out && ` - ${formatTime(entry.clock_out)}`}
                     </span>
                   </td>
                   <td className="py-4 px-4">
