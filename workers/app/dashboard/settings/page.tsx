@@ -271,10 +271,10 @@ export default function SettingsPage() {
                 <div className="border-t border-baked-clay/30 pt-6">
                   <h3 className="font-heading text-lg text-sand mb-3">Credits</h3>
                   <p className="text-text-slate text-sm">
-                    Built with ❤️ by <span className="text-relic-gold">DigiArtifact LLC</span>
+                    Built with ❤️ by <span className="text-relic-gold">DigiArtifact</span> and <span className="text-relic-gold">J.W.</span>
                   </p>
                   <p className="text-text-slate text-xs mt-2">
-                    © 2025 DigiArtifact LLC. All rights reserved.
+                    © 2025 DigiArtifact. All rights reserved.
                   </p>
                 </div>
               </div>
