@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { SettingsProvider } from '@/contexts/SettingsContext'
 import Sidebar from '@/components/Sidebar'
 import MobileNav from '@/components/MobileNav'
 
@@ -23,6 +24,7 @@ export default function DashboardLayout({
 
   return (
     <AuthProvider>
+      <SettingsProvider>
       <div className="min-h-screen">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">
@@ -37,6 +39,7 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+      </SettingsProvider>
     </AuthProvider>
   )
 }

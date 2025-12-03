@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSettings, TIMEZONE_OPTIONS, TimeFormat } from '@/contexts/SettingsContext'
 import Cookies from 'js-cookie'
 
-type TabType = 'about' | 'help' | 'account' | 'notifications' | 'appearance'
+type TabType = 'about' | 'help' | 'account' | 'notifications' | 'time-display'
 
 export default function SettingsPage() {
   const { user } = useAuth()
+  const { timezone, timeFormat, setTimezone, setTimeFormat, formatTime, formatDate } = useSettings()
   const [activeTab, setActiveTab] = useState<TabType>('account')
   const [currentPin, setCurrentPin] = useState('')
   const [newPin, setNewPin] = useState('')
@@ -15,6 +17,15 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Update current time every second for live preview
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleChangePin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,10 +79,10 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'account' as TabType, label: 'Account', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-    { id: 'about' as TabType, label: 'About', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { id: 'help' as TabType, label: 'Help', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { id: 'time-display' as TabType, label: 'Time & Display', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'notifications' as TabType, label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
-    { id: 'appearance' as TabType, label: 'Appearance', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01' },
+    { id: 'help' as TabType, label: 'Help', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { id: 'about' as TabType, label: 'About', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
   ]
 
   return (
@@ -399,16 +410,110 @@ export default function SettingsPage() {
           )}
 
           {/* Appearance Tab (Coming Soon) */}
-          {activeTab === 'appearance' && (
-            <div className="card">
-              <div className="text-center py-12">
-                <svg className="w-16 h-16 mx-auto text-text-slate/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                </svg>
-                <h2 className="font-heading text-xl text-sand mb-2">Appearance</h2>
+          {activeTab === 'time-display' && (
+            <div className="space-y-6">
+              {/* Time Zone Settings */}
+              <div className="card">
+                <h2 className="font-heading text-xl text-relic-gold mb-4">Time Zone</h2>
+                <p className="text-text-slate text-sm mb-6">
+                  Set your local time zone for accurate time tracking and display.
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-mono text-sand mb-2">
+                      Select Time Zone
+                    </label>
+                    <select
+                      value={timezone}
+                      onChange={(e) => setTimezone(e.target.value)}
+                      className="input-field w-full max-w-md"
+                    >
+                      {TIMEZONE_OPTIONS.map((tz) => (
+                        <option key={tz.value} value={tz.value}>
+                          {tz.label} ({tz.offset})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Preview */}
+                  <div className="p-4 bg-obsidian/50 rounded-lg max-w-md">
+                    <p className="text-text-slate text-xs font-mono mb-2">Current time in selected zone:</p>
+                    <p className="text-relic-gold text-2xl font-mono">
+                      {formatTime(currentTime, { includeSeconds: true })}
+                    </p>
+                    <p className="text-sand text-sm mt-1">
+                      {formatDate(currentTime)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Format Settings */}
+              <div className="card">
+                <h2 className="font-heading text-xl text-relic-gold mb-4">Time Format</h2>
+                <p className="text-text-slate text-sm mb-6">
+                  Choose how times are displayed throughout the application.
+                </p>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <button
+                      onClick={() => setTimeFormat('12')}
+                      className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                        timeFormat === '12'
+                          ? 'border-relic-gold bg-relic-gold/10'
+                          : 'border-baked-clay/30 hover:border-baked-clay/50'
+                      }`}
+                    >
+                      <div className="text-center">
+                        <p className={`text-2xl font-mono mb-2 ${
+                          timeFormat === '12' ? 'text-relic-gold' : 'text-sand'
+                        }`}>
+                          4:48 PM
+                        </p>
+                        <p className="text-text-slate text-sm">12-hour format</p>
+                        <p className="text-text-slate/70 text-xs mt-1">AM/PM notation</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setTimeFormat('24')}
+                      className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                        timeFormat === '24'
+                          ? 'border-relic-gold bg-relic-gold/10'
+                          : 'border-baked-clay/30 hover:border-baked-clay/50'
+                      }`}
+                    >
+                      <div className="text-center">
+                        <p className={`text-2xl font-mono mb-2 ${
+                          timeFormat === '24' ? 'text-relic-gold' : 'text-sand'
+                        }`}>
+                          16:48
+                        </p>
+                        <p className="text-text-slate text-sm">24-hour format</p>
+                        <p className="text-text-slate/70 text-xs mt-1">Military time</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Placeholder Sections */}
+              <div className="card">
+                <h2 className="font-heading text-xl text-relic-gold mb-4">Date Format</h2>
                 <p className="text-text-slate text-sm mb-4">Coming Soon</p>
-                <p className="text-text-slate/70 text-xs max-w-md mx-auto">
-                  Customize the look and feel of your portal with themes, colors, and display preferences.
+                <p className="text-text-slate/70 text-xs">
+                  Choose between MM/DD/YYYY, DD/MM/YYYY, and other date formats.
+                </p>
+              </div>
+
+              <div className="card">
+                <h2 className="font-heading text-xl text-relic-gold mb-4">Week Start</h2>
+                <p className="text-text-slate text-sm mb-4">Coming Soon</p>
+                <p className="text-text-slate/70 text-xs">
+                  Set whether your week starts on Sunday or Monday for weekly reports.
                 </p>
               </div>
             </div>

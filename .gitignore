@@ -5,3 +5,6 @@ ffmpeg2pass-0.log
 
 # Large MP4 files in assets
 assets/video/*.mp4
+
+# Large MP3 files in assets
+assets/video/*.mp3

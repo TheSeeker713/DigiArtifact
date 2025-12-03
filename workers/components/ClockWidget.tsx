@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth, ClockStatus } from '@/contexts/AuthContext'
+import { useSettings } from '@/contexts/SettingsContext'
 
 export default function ClockWidget() {
   const { clockStatus, currentEntry, projects, clockIn, clockOut, startBreak, endBreak } = useAuth()
+  const { formatTime, parseUTCTimestamp, timezone } = useSettings()
   const [elapsedTime, setElapsedTime] = useState('00:00:00')
   const [selectedProject, setSelectedProject] = useState<number | undefined>()
   const [notes, setNotes] = useState('')
@@ -16,13 +18,8 @@ export default function ClockWidget() {
   useEffect(() => {
     if (clockStatus === 'clocked-in' && currentEntry?.clock_in) {
       const updateTimer = () => {
-        // Parse the clock_in timestamp - ensure it's treated as UTC if no timezone specified
-        let clockInTime = currentEntry.clock_in
-        // If the timestamp doesn't have a timezone indicator, treat it as UTC
-        if (!clockInTime.endsWith('Z') && !clockInTime.includes('+') && !clockInTime.includes('-', 10)) {
-          clockInTime = clockInTime + 'Z'
-        }
-        const start = new Date(clockInTime).getTime()
+        // Parse the clock_in timestamp using the settings context
+        const start = parseUTCTimestamp(currentEntry.clock_in).getTime()
         const now = Date.now()
         const breakMs = (currentEntry.break_minutes || 0) * 60 * 1000
         
@@ -47,7 +44,7 @@ export default function ClockWidget() {
     } else {
       setElapsedTime('00:00:00')
     }
-  }, [clockStatus, currentEntry])
+  }, [clockStatus, currentEntry, parseUTCTimestamp])
 
   const handleClockIn = async () => {
     setIsLoading(true)
@@ -145,7 +142,7 @@ export default function ClockWidget() {
           <p className="time-display">{elapsedTime}</p>
           <p className="text-text-slate text-sm font-mono mt-2">
             {clockStatus === 'clocked-in' || clockStatus === 'on-break'
-              ? `Since ${new Date(currentEntry?.clock_in || '').toLocaleTimeString()}`
+              ? `Since ${formatTime(currentEntry?.clock_in || '')}`
               : 'Ready to start'}
           </p>
         </div>

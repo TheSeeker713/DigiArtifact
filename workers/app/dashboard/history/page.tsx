@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth, TimeEntry } from '@/contexts/AuthContext'
-import { format, parseISO, differenceInMinutes, startOfWeek, endOfWeek, subWeeks, addWeeks } from 'date-fns'
+import { useSettings } from '@/contexts/SettingsContext'
+import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
 import Cookies from 'js-cookie'
 
 export default function HistoryPage() {
   const { user } = useAuth()
+  const { formatTime, formatDate, parseUTCTimestamp } = useSettings()
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [weekOffset, setWeekOffset] = useState(0)
@@ -47,7 +49,9 @@ export default function HistoryPage() {
   const formatDuration = (clockIn: string, clockOut: string | null, breakMinutes: number) => {
     if (!clockOut) return 'In Progress'
     
-    const minutes = differenceInMinutes(parseISO(clockOut), parseISO(clockIn)) - breakMinutes
+    const start = parseUTCTimestamp(clockIn).getTime()
+    const end = parseUTCTimestamp(clockOut).getTime()
+    const minutes = Math.floor((end - start) / 60000) - breakMinutes
     const hours = Math.floor(minutes / 60)
     const mins = minutes % 60
     
@@ -56,7 +60,9 @@ export default function HistoryPage() {
 
   const totalWeeklyMinutes = entries.reduce((total, entry) => {
     if (!entry.clock_out) return total
-    const minutes = differenceInMinutes(parseISO(entry.clock_out), parseISO(entry.clock_in)) - entry.break_minutes
+    const start = parseUTCTimestamp(entry.clock_in).getTime()
+    const end = parseUTCTimestamp(entry.clock_out).getTime()
+    const minutes = Math.floor((end - start) / 60000) - entry.break_minutes
     return total + minutes
   }, 0)
 
@@ -65,7 +71,7 @@ export default function HistoryPage() {
 
   // Group entries by date
   const entriesByDate = entries.reduce((acc, entry) => {
-    const date = format(parseISO(entry.clock_in), 'yyyy-MM-dd')
+    const date = format(parseUTCTimestamp(entry.clock_in), 'yyyy-MM-dd')
     if (!acc[date]) acc[date] = []
     acc[date].push(entry)
     return acc
@@ -142,13 +148,15 @@ export default function HistoryPage() {
               <div key={date} className="card">
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-baked-clay/30">
                   <h3 className="font-heading text-lg text-sand">
-                    {format(parseISO(date), 'EEEE, MMMM d')}
+                    {formatDate(parseUTCTimestamp(dayEntries[0].clock_in), { year: false })}
                   </h3>
                   <p className="text-relic-gold font-mono">
                     {(() => {
                       const dayMinutes = dayEntries.reduce((total, entry) => {
                         if (!entry.clock_out) return total
-                        return total + differenceInMinutes(parseISO(entry.clock_out), parseISO(entry.clock_in)) - entry.break_minutes
+                        const start = parseUTCTimestamp(entry.clock_in).getTime()
+                        const end = parseUTCTimestamp(entry.clock_out).getTime()
+                        return total + Math.floor((end - start) / 60000) - entry.break_minutes
                       }, 0)
                       return `${Math.floor(dayMinutes / 60)}h ${dayMinutes % 60}m`
                     })()}
@@ -173,8 +181,8 @@ export default function HistoryPage() {
                             {entry.project_name || 'No Project'}
                           </p>
                           <p className="text-text-slate text-sm font-mono">
-                            {format(parseISO(entry.clock_in), 'h:mm a')}
-                            {entry.clock_out && ` → ${format(parseISO(entry.clock_out), 'h:mm a')}`}
+                            {formatTime(entry.clock_in)}
+                            {entry.clock_out && ` → ${formatTime(entry.clock_out)}`}
                           </p>
                           {entry.notes && (
                             <p className="text-text-slate/70 text-xs mt-1 italic">

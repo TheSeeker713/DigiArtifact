@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
+import { useSettings } from '@/contexts/SettingsContext'
 import ClockWidget from '@/components/ClockWidget'
 import WeeklyChart from '@/components/WeeklyChart'
 import RecentEntries from '@/components/RecentEntries'
@@ -8,6 +9,7 @@ import QuickStats from '@/components/QuickStats'
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
+  const { formatDate } = useSettings()
 
   if (isLoading) {
     return (
@@ -28,12 +30,7 @@ export default function DashboardPage() {
           Welcome back, <span className="text-relic-gold">{user?.name?.split(' ')[0] || 'Worker'}</span>
         </h1>
         <p className="text-text-slate font-mono text-sm">
-          {new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
+          {formatDate(new Date())}
         </p>
       </div>
 

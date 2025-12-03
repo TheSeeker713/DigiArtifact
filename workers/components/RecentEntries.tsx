@@ -1,15 +1,18 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { format, parseISO, differenceInMinutes } from 'date-fns'
+import { useSettings } from '@/contexts/SettingsContext'
 
 export default function RecentEntries() {
   const { todayEntries } = useAuth()
+  const { formatTime, parseUTCTimestamp } = useSettings()
 
   const formatDuration = (clockIn: string, clockOut: string | null, breakMinutes: number) => {
     if (!clockOut) return 'In Progress'
     
-    const minutes = differenceInMinutes(parseISO(clockOut), parseISO(clockIn)) - breakMinutes
+    const start = parseUTCTimestamp(clockIn).getTime()
+    const end = parseUTCTimestamp(clockOut).getTime()
+    const minutes = Math.floor((end - start) / 60000) - breakMinutes
     const hours = Math.floor(minutes / 60)
     const mins = minutes % 60
     
@@ -47,8 +50,8 @@ export default function RecentEntries() {
                     {entry.project_name || 'No Project'}
                   </p>
                   <p className="text-text-slate text-xs font-mono">
-                    {format(parseISO(entry.clock_in), 'h:mm a')}
-                    {entry.clock_out && ` - ${format(parseISO(entry.clock_out), 'h:mm a')}`}
+                    {formatTime(entry.clock_in)}
+                    {entry.clock_out && ` - ${formatTime(entry.clock_out)}`}
                   </p>
                 </div>
               </div>
