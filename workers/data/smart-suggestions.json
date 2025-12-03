@@ -1,0 +1,1422 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-12-03",
+  "idleTimeoutMs": 15000,
+  "categories": {
+    "productivity": {
+      "name": "Productivity",
+      "icon": "⚡"
+    },
+    "time_management": {
+      "name": "Time Management",
+      "icon": "⏰"
+    },
+    "wellbeing": {
+      "name": "Wellbeing",
+      "icon": "💚"
+    },
+    "project_notes": {
+      "name": "Project Notes",
+      "icon": "📝"
+    },
+    "break_notes": {
+      "name": "Break Notes",
+      "icon": "☕"
+    },
+    "task_completion": {
+      "name": "Task Completion",
+      "icon": "✅"
+    },
+    "blockers": {
+      "name": "Blockers & Issues",
+      "icon": "🚧"
+    },
+    "creative": {
+      "name": "Creative Work",
+      "icon": "🎨"
+    },
+    "technical": {
+      "name": "Technical Work",
+      "icon": "💻"
+    },
+    "communication": {
+      "name": "Communication",
+      "icon": "💬"
+    }
+  },
+  "suggestions": [
+    {
+      "id": 1,
+      "text": "Consider taking a short break to refresh your focus.",
+      "category": "wellbeing",
+      "trigger": "idle",
+      "context": ["notes", "reports"],
+      "priority": "low"
+    },
+    {
+      "id": 2,
+      "text": "Would you like to add what you accomplished so far?",
+      "category": "productivity",
+      "trigger": "idle",
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 3,
+      "text": "Try breaking this task into smaller steps.",
+      "category": "productivity",
+      "trigger": "keywords",
+      "keywords": ["stuck", "confused", "hard", "difficult", "struggling"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 4,
+      "text": "Remember to document any blockers you encountered.",
+      "category": "blockers",
+      "trigger": "keywords",
+      "keywords": ["blocked", "waiting", "pending", "can't", "cannot"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 5,
+      "text": "Great progress! Consider noting what made this session productive.",
+      "category": "task_completion",
+      "trigger": "keywords",
+      "keywords": ["finished", "done", "completed", "shipped", "deployed"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 6,
+      "text": "You've been working for a while. A 5-minute break can boost creativity.",
+      "category": "wellbeing",
+      "trigger": "time_elapsed",
+      "timeThresholdMinutes": 90,
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 7,
+      "text": "Describe the problem you're solving in simple terms.",
+      "category": "project_notes",
+      "trigger": "idle",
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 8,
+      "text": "What's the next actionable step after this?",
+      "category": "productivity",
+      "trigger": "keywords",
+      "keywords": ["then", "next", "after", "later", "tomorrow"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 9,
+      "text": "Consider adding time estimates for remaining tasks.",
+      "category": "time_management",
+      "trigger": "keywords",
+      "keywords": ["estimate", "how long", "time", "hours", "minutes"],
+      "context": ["notes", "reports"],
+      "priority": "low"
+    },
+    {
+      "id": 10,
+      "text": "Remember to hydrate! Grab some water.",
+      "category": "wellbeing",
+      "trigger": "time_elapsed",
+      "timeThresholdMinutes": 45,
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 11,
+      "text": "Would you like to add details about the video export settings?",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["video", "render", "export", "encoding", "premiere", "davinci"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 12,
+      "text": "Consider noting the AI tools or prompts used.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["ai", "chatgpt", "midjourney", "stable diffusion", "prompt", "generated"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 13,
+      "text": "Document any design decisions made during this session.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["design", "layout", "ui", "ux", "figma", "photoshop"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 14,
+      "text": "What inspired this creative direction?",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["inspired", "idea", "concept", "vision", "creative"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 15,
+      "text": "Note any errors or bugs encountered during coding.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["bug", "error", "crash", "failed", "exception", "undefined"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 16,
+      "text": "Consider adding the git commit message or branch name.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["commit", "push", "merge", "branch", "git", "github"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 17,
+      "text": "Document the API endpoints you worked with.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["api", "endpoint", "fetch", "request", "response", "backend"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 18,
+      "text": "What files or components were modified?",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["file", "component", "module", "updated", "changed", "modified"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 19,
+      "text": "Note the specific meeting outcome or action items.",
+      "category": "communication",
+      "trigger": "keywords",
+      "keywords": ["meeting", "call", "discussed", "agreed", "decided"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 20,
+      "text": "Who was involved in this collaboration?",
+      "category": "communication",
+      "trigger": "keywords",
+      "keywords": ["team", "colleague", "client", "collaboration", "together"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 21,
+      "text": "Add context about the email or message sent.",
+      "category": "communication",
+      "trigger": "keywords",
+      "keywords": ["email", "sent", "replied", "message", "slack", "discord"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 22,
+      "text": "Quick break logged! Ready to get back to it?",
+      "category": "break_notes",
+      "trigger": "keywords",
+      "keywords": ["break", "pause", "rest", "lunch", "coffee"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 23,
+      "text": "Stretch those muscles! Even 30 seconds helps.",
+      "category": "wellbeing",
+      "trigger": "time_elapsed",
+      "timeThresholdMinutes": 60,
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 24,
+      "text": "You can add multiple notes to track your progress.",
+      "category": "productivity",
+      "trigger": "idle",
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 25,
+      "text": "Consider rating this task's difficulty for future reference.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["complex", "simple", "easy", "tricky", "challenging"],
+      "context": ["notes", "reports"],
+      "priority": "low"
+    },
+    {
+      "id": 26,
+      "text": "What resources or documentation helped with this?",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["docs", "documentation", "stackoverflow", "tutorial", "guide"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 27,
+      "text": "Note any dependencies or libraries added.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["install", "npm", "package", "dependency", "library", "import"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 28,
+      "text": "Database changes? Remember to document schema updates.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["database", "sql", "table", "column", "migration", "schema"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 29,
+      "text": "What tests were written or updated?",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["test", "testing", "unit", "integration", "spec", "jest"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 30,
+      "text": "Note the deployment environment (dev, staging, prod).",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["deploy", "deployed", "production", "staging", "live", "server"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 31,
+      "text": "What's the priority level of this task?",
+      "category": "productivity",
+      "trigger": "keywords",
+      "keywords": ["priority", "urgent", "important", "critical", "asap"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 32,
+      "text": "Add a deadline if this task has one.",
+      "category": "time_management",
+      "trigger": "keywords",
+      "keywords": ["deadline", "due", "by", "until", "before"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 33,
+      "text": "Consider noting any shortcuts or efficiencies discovered.",
+      "category": "productivity",
+      "trigger": "keywords",
+      "keywords": ["faster", "quicker", "shortcut", "efficient", "tip"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 34,
+      "text": "What would you do differently next time?",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["learned", "lesson", "improvement", "better", "optimize"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 35,
+      "text": "Good job! Remember to celebrate small wins.",
+      "category": "wellbeing",
+      "trigger": "keywords",
+      "keywords": ["success", "worked", "fixed", "solved", "finally"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 36,
+      "text": "Looks like you're researching. Note key findings!",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["research", "investigating", "looking into", "exploring", "reading"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 37,
+      "text": "Working with images? Note file formats and dimensions.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["image", "photo", "png", "jpg", "resolution", "dimensions"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 38,
+      "text": "Audio work? Document sample rates and export settings.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["audio", "sound", "music", "mp3", "wav", "mixing"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 39,
+      "text": "Consider adding color codes or style references used.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["color", "hex", "style", "theme", "palette", "css"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 40,
+      "text": "Animation work? Note keyframes or timing details.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["animation", "animate", "keyframe", "motion", "transition"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 41,
+      "text": "What platform is this being published to?",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["publish", "upload", "post", "share", "platform"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 42,
+      "text": "Client feedback? Document the specific requests.",
+      "category": "communication",
+      "trigger": "keywords",
+      "keywords": ["client", "feedback", "revision", "requested", "wants"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 43,
+      "text": "Quote or invoice work? Note the amounts and items.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["quote", "invoice", "billing", "payment", "cost"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 44,
+      "text": "Planning session? List out the main objectives.",
+      "category": "productivity",
+      "trigger": "keywords",
+      "keywords": ["planning", "plan", "goals", "objectives", "roadmap"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 45,
+      "text": "Review work? Note what was approved or needs changes.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["review", "approved", "changes", "revise", "feedback"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 46,
+      "text": "Consider linking related tasks or projects.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["related", "connected", "part of", "depends", "linked"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 47,
+      "text": "What's the current status of this work?",
+      "category": "project_notes",
+      "trigger": "idle",
+      "context": ["reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 48,
+      "text": "Percentage complete? Give a rough estimate.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["progress", "percent", "complete", "halfway", "almost"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 49,
+      "text": "Consider adding version numbers if applicable.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["version", "v1", "v2", "release", "update"],
+      "context": ["notes", "reports"],
+      "priority": "low"
+    },
+    {
+      "id": 50,
+      "text": "What environment variables or configs were changed?",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["config", "env", "environment", "settings", "variable"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 51,
+      "text": "Security considerations? Document any changes.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["security", "auth", "password", "token", "permission"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 52,
+      "text": "Performance work? Note the improvements measured.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["performance", "speed", "optimization", "faster", "cache"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 53,
+      "text": "Working on accessibility? Document ARIA or a11y changes.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["accessibility", "a11y", "aria", "screen reader", "contrast"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 54,
+      "text": "Mobile work? Note responsive breakpoints used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["mobile", "responsive", "breakpoint", "tablet", "viewport"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 55,
+      "text": "Third-party integration? Document the service and API.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["integration", "third-party", "api", "service", "connect"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 56,
+      "text": "Consider adding screenshots or visual references.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["screenshot", "image", "visual", "example", "preview"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 57,
+      "text": "Refactoring? Note the before and after improvements.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["refactor", "cleanup", "reorganize", "restructure", "improve"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 58,
+      "text": "Learning something new? Document your takeaways.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["learning", "study", "course", "tutorial", "training"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 59,
+      "text": "Writing content? Note word count or length.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["writing", "content", "article", "blog", "copy"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 60,
+      "text": "Social media work? Track the platforms and post types.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["social", "twitter", "instagram", "linkedin", "tiktok"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 61,
+      "text": "You seem focused! Keep up the great work.",
+      "category": "wellbeing",
+      "trigger": "time_elapsed",
+      "timeThresholdMinutes": 30,
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 62,
+      "text": "Any risks or concerns to flag?",
+      "category": "blockers",
+      "trigger": "keywords",
+      "keywords": ["risk", "concern", "worried", "problem", "issue"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 63,
+      "text": "What dependencies does this task have?",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["depends", "dependency", "requires", "needs", "before"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 64,
+      "text": "Consider noting the scope of changes made.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["scope", "impact", "affects", "changes", "update"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 65,
+      "text": "Troubleshooting? Document the symptoms and solutions.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["troubleshoot", "debug", "diagnose", "investigate", "trace"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 66,
+      "text": "What workarounds are in place?",
+      "category": "blockers",
+      "trigger": "keywords",
+      "keywords": ["workaround", "temporary", "hack", "fix", "bandaid"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 67,
+      "text": "Technical debt? Flag it for future cleanup.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["debt", "todo", "fixme", "later", "cleanup"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 68,
+      "text": "Browser testing? Note which browsers were checked.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["browser", "chrome", "firefox", "safari", "edge"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 69,
+      "text": "Form work? Document validation rules used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["form", "input", "validation", "field", "submit"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 70,
+      "text": "State management changes? Note the approach used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["state", "context", "redux", "zustand", "store"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 71,
+      "text": "Hook or utility created? Document its purpose.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["hook", "utility", "helper", "function", "use"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 72,
+      "text": "Type definitions? Note any TypeScript changes.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["typescript", "type", "interface", "generic", "typed"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 73,
+      "text": "Build or bundler config? Document the changes.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["build", "webpack", "vite", "bundle", "compile"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 74,
+      "text": "Linting or formatting? Note any rule changes.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["lint", "eslint", "prettier", "format", "style"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 75,
+      "text": "Working with dates? Document timezone handling.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["date", "time", "timezone", "utc", "moment"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 76,
+      "text": "File uploads? Note size limits and formats allowed.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["upload", "file", "attachment", "media", "storage"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 77,
+      "text": "Email work? Document templates or triggers.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["email", "notification", "template", "send", "mailgun"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 78,
+      "text": "Logging or monitoring? Note what's being tracked.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["log", "logging", "monitor", "analytics", "track"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 79,
+      "text": "Error handling? Document the approach used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["error", "catch", "try", "handle", "exception"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 80,
+      "text": "Working with JSON or data? Note the structure.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["json", "data", "object", "array", "parse"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 81,
+      "text": "Regex work? Document the patterns used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["regex", "pattern", "match", "replace", "expression"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 82,
+      "text": "Chart or graph work? Note the library and data source.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["chart", "graph", "visualization", "d3", "recharts"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 83,
+      "text": "Map integration? Document the service used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["map", "location", "google maps", "mapbox", "geolocation"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 84,
+      "text": "Payment integration? Document the provider and flow.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["payment", "stripe", "paypal", "checkout", "billing"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 85,
+      "text": "Search feature? Note indexing and query approach.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["search", "filter", "query", "find", "algolia"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 86,
+      "text": "Pagination work? Document the approach used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["pagination", "page", "infinite", "scroll", "load more"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 87,
+      "text": "Modal or dialog? Note the trigger and content.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["modal", "dialog", "popup", "overlay", "confirm"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 88,
+      "text": "Navigation changes? Document the routing updates.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["navigation", "route", "link", "menu", "breadcrumb"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 89,
+      "text": "Table or list work? Note sorting and filtering logic.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["table", "list", "grid", "sort", "column"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 90,
+      "text": "Icon or asset work? Document the source library.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["icon", "svg", "asset", "lucide", "heroicons"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 91,
+      "text": "Font changes? Note the typefaces and weights used.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["font", "typography", "typeface", "google fonts", "weight"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 92,
+      "text": "Dark mode work? Document the toggle logic.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["dark mode", "theme", "light mode", "toggle", "scheme"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 93,
+      "text": "Skeleton or loading state? Note the placeholder approach.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["loading", "skeleton", "spinner", "placeholder", "pending"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 94,
+      "text": "Toast or notification? Document the messaging system.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["toast", "notification", "alert", "snackbar", "message"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 95,
+      "text": "Drag and drop? Note the library and handlers.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["drag", "drop", "dnd", "reorder", "sortable"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 96,
+      "text": "Keyboard shortcuts? Document the bindings.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["keyboard", "shortcut", "hotkey", "keybind", "ctrl"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 97,
+      "text": "Websocket or real-time? Document the connection.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["websocket", "realtime", "socket", "live", "pusher"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 98,
+      "text": "Cron or scheduled job? Document the timing.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["cron", "schedule", "job", "automated", "recurring"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 99,
+      "text": "Backup or migration? Document the process.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["backup", "migrate", "restore", "export", "import"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 100,
+      "text": "Great milestone! You've made significant progress.",
+      "category": "wellbeing",
+      "trigger": "keywords",
+      "keywords": ["milestone", "major", "big", "significant", "breakthrough"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 101,
+      "text": "Consider adding context for future you to understand.",
+      "category": "project_notes",
+      "trigger": "idle",
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 102,
+      "text": "What assumptions are being made here?",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["assume", "assuming", "expect", "should", "probably"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 103,
+      "text": "Edge cases? Document any special handling.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["edge case", "special", "unusual", "corner", "rare"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 104,
+      "text": "Null or undefined handling? Note the approach.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["null", "undefined", "empty", "missing", "optional"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 105,
+      "text": "Race condition or async issue? Document the solution.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["race", "async", "promise", "await", "concurrent"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 106,
+      "text": "Memory or resource considerations? Note optimizations.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["memory", "leak", "resource", "garbage", "cleanup"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 107,
+      "text": "Rate limiting? Document the thresholds.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["rate limit", "throttle", "debounce", "limit", "quota"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 108,
+      "text": "Feature flag? Document the toggle and conditions.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["feature flag", "toggle", "rollout", "experiment", "ab test"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 109,
+      "text": "Internationalization? Note languages and translations.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["i18n", "translation", "language", "locale", "intl"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 110,
+      "text": "SEO work? Document meta tags and optimizations.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["seo", "meta", "og", "sitemap", "robots"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 111,
+      "text": "PWA features? Document service worker changes.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["pwa", "service worker", "offline", "manifest", "install"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 112,
+      "text": "Docker or container work? Note the configuration.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["docker", "container", "dockerfile", "compose", "kubernetes"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 113,
+      "text": "CI/CD changes? Document the pipeline updates.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["ci", "cd", "pipeline", "github actions", "workflow"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 114,
+      "text": "Cloud infrastructure? Note the services used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["aws", "azure", "gcp", "cloudflare", "vercel"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 115,
+      "text": "DNS or domain changes? Document the records.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["dns", "domain", "cname", "record", "nameserver"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 116,
+      "text": "SSL or certificate work? Note expiration and setup.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["ssl", "certificate", "https", "tls", "cert"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 117,
+      "text": "Prompt engineering? Document effective prompts.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["prompt", "llm", "gpt", "claude", "ai prompt"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 118,
+      "text": "Model training or fine-tuning? Note the parameters.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["training", "fine-tune", "model", "dataset", "epoch"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 119,
+      "text": "Image generation? Document the settings used.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["generate", "dall-e", "midjourney", "stable", "comfyui"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 120,
+      "text": "Voice or TTS work? Note the service and settings.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["voice", "tts", "speech", "elevenlabs", "whisper"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 121,
+      "text": "Video editing? Document timeline and effects used.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["edit", "cut", "timeline", "effects", "transition"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 122,
+      "text": "Color grading? Note the LUT or adjustments made.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["color", "grade", "lut", "correction", "curves"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 123,
+      "text": "Thumbnail or cover design? Document the dimensions.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["thumbnail", "cover", "banner", "header", "artwork"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 124,
+      "text": "Script or screenplay? Note the format and length.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["script", "screenplay", "dialogue", "scene", "act"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 125,
+      "text": "Storyboard work? Document the scenes planned.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["storyboard", "sequence", "shot", "frame", "visual"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 126,
+      "text": "3D modeling? Note the software and poly count.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["3d", "blender", "maya", "model", "mesh", "polygon"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 127,
+      "text": "Texture or material work? Document the approach.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["texture", "material", "uv", "shader", "pbr"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 128,
+      "text": "Lighting setup? Note the configuration used.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["lighting", "light", "hdri", "render", "shadow"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 129,
+      "text": "Physics or simulation? Document the settings.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["physics", "simulation", "particle", "fluid", "cloth"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 130,
+      "text": "Game development? Note the engine and platform.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["game", "unity", "unreal", "godot", "gamedev"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 131,
+      "text": "Level design? Document the layout decisions.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["level", "map", "environment", "world", "area"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 132,
+      "text": "UI/UX wireframe? Note the tools and components.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["wireframe", "prototype", "mockup", "sketch", "figma"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 133,
+      "text": "User testing feedback? Document the insights.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["user test", "usability", "feedback", "interview", "survey"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 134,
+      "text": "Brand guidelines? Note the standards applied.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["brand", "guideline", "standard", "identity", "logo"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 135,
+      "text": "Print design? Document bleed and resolution.",
+      "category": "creative",
+      "trigger": "keywords",
+      "keywords": ["print", "cmyk", "bleed", "dpi", "prepress"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 136,
+      "text": "Data analysis? Note the key findings.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["analysis", "data", "insight", "metric", "trend"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 137,
+      "text": "Dashboard or report? Document the KPIs tracked.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["dashboard", "report", "kpi", "metric", "analytics"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 138,
+      "text": "Spreadsheet work? Note formulas or macros used.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["spreadsheet", "excel", "sheets", "formula", "macro"],
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 139,
+      "text": "Automation created? Document the workflow.",
+      "category": "technical",
+      "trigger": "keywords",
+      "keywords": ["automation", "zapier", "n8n", "workflow", "automate"],
+      "context": ["notes", "reports"],
+      "priority": "high"
+    },
+    {
+      "id": 140,
+      "text": "You're doing great! Take it one step at a time.",
+      "category": "wellbeing",
+      "trigger": "keywords",
+      "keywords": ["overwhelmed", "stressed", "too much", "anxiety", "anxious"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 141,
+      "text": "Stuck on this? Try explaining it out loud.",
+      "category": "productivity",
+      "trigger": "idle",
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 142,
+      "text": "Consider stepping away for a few minutes to gain perspective.",
+      "category": "wellbeing",
+      "trigger": "idle",
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 143,
+      "text": "What's the simplest version of this that could work?",
+      "category": "productivity",
+      "trigger": "keywords",
+      "keywords": ["complex", "complicated", "overwhelming", "massive", "huge"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 144,
+      "text": "Would it help to sketch this out on paper first?",
+      "category": "productivity",
+      "trigger": "idle",
+      "context": ["notes"],
+      "priority": "low"
+    },
+    {
+      "id": 145,
+      "text": "Remember: Done is better than perfect.",
+      "category": "wellbeing",
+      "trigger": "keywords",
+      "keywords": ["perfect", "perfectionist", "never done", "keep changing"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 146,
+      "text": "Wrap up for the day? Add a handoff note for tomorrow.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["tomorrow", "continue", "resume", "next session", "leaving"],
+      "context": ["notes"],
+      "priority": "high"
+    },
+    {
+      "id": 147,
+      "text": "Session summary: What were the main accomplishments?",
+      "category": "project_notes",
+      "trigger": "time_elapsed",
+      "timeThresholdMinutes": 120,
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 148,
+      "text": "Any follow-up tasks to add for later?",
+      "category": "productivity",
+      "trigger": "keywords",
+      "keywords": ["follow up", "later", "remember", "don't forget", "todo"],
+      "context": ["notes"],
+      "priority": "medium"
+    },
+    {
+      "id": 149,
+      "text": "Document any lessons learned this session.",
+      "category": "project_notes",
+      "trigger": "keywords",
+      "keywords": ["learned", "realized", "discovered", "figured out", "understood"],
+      "context": ["notes", "reports"],
+      "priority": "medium"
+    },
+    {
+      "id": 150,
+      "text": "Great work today! Remember to rest and recharge.",
+      "category": "wellbeing",
+      "trigger": "keywords",
+      "keywords": ["done for today", "finished", "signing off", "logging out", "bye"],
+      "context": ["notes"],
+      "priority": "low"
+    }
+  ],
+  "fallbackSuggestions": [
+    {
+      "id": "fb1",
+      "text": "What are you working on right now?",
+      "category": "project_notes",
+      "priority": "low"
+    },
+    {
+      "id": "fb2",
+      "text": "Add details to help track your progress.",
+      "category": "productivity",
+      "priority": "low"
+    },
+    {
+      "id": "fb3",
+      "text": "Describe what you've accomplished so far.",
+      "category": "task_completion",
+      "priority": "low"
+    },
+    {
+      "id": "fb4",
+      "text": "Any notes to add before moving on?",
+      "category": "project_notes",
+      "priority": "low"
+    },
+    {
+      "id": "fb5",
+      "text": "Consider adding context for future reference.",
+      "category": "project_notes",
+      "priority": "low"
+    }
+  ]
+}

@@ -619,6 +619,101 @@ export default function SettingsPage() {
                   Set whether your week starts on Sunday or Monday for weekly reports.
                 </p>
               </div>
+
+              {/* Smart Suggestions Settings */}
+              <div className="card">
+                <h2 className="font-heading text-xl text-relic-gold mb-4">Smart Suggestions</h2>
+                <p className="text-text-slate text-sm mb-6">
+                  Get helpful suggestions while writing notes and reports. Suggestions appear based on 
+                  keywords in your text or when you pause for a moment.
+                </p>
+
+                <div className="space-y-4">
+                  {/* Enable/Disable */}
+                  <div className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg">
+                    <div>
+                      <p className="text-sand font-medium">Enable Smart Suggestions</p>
+                      <p className="text-text-slate text-xs mt-1">
+                        Show contextual suggestions in notes and reports
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        defaultChecked={true}
+                        onChange={(e) => {
+                          localStorage.setItem('smart_suggestions_enabled', e.target.checked.toString())
+                        }}
+                      />
+                      <div className="w-11 h-6 bg-baked-clay/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-relic-gold/70"></div>
+                    </label>
+                  </div>
+
+                  {/* Idle Timeout */}
+                  <div className="p-4 bg-obsidian/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sand font-medium">Idle Suggestion Delay</p>
+                        <p className="text-text-slate text-xs mt-1">
+                          How long to wait before showing a suggestion when you pause typing
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        min="5"
+                        max="30"
+                        step="5"
+                        defaultValue="15"
+                        className="flex-1 h-2 bg-baked-clay/30 rounded-lg appearance-none cursor-pointer accent-relic-gold"
+                        onChange={(e) => {
+                          localStorage.setItem('smart_suggestions_idle_timeout', e.target.value)
+                          const label = document.getElementById('idle-timeout-label')
+                          if (label) label.textContent = `${e.target.value} seconds`
+                        }}
+                      />
+                      <span id="idle-timeout-label" className="text-relic-gold font-mono text-sm w-24 text-right">
+                        15 seconds
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Suggestion Categories */}
+                  <div className="p-4 bg-obsidian/50 rounded-lg">
+                    <p className="text-sand font-medium mb-3">Suggestion Categories</p>
+                    <p className="text-text-slate text-xs mb-4">
+                      Choose which types of suggestions you'd like to see
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'productivity', label: '⚡ Productivity', default: true },
+                        { id: 'wellbeing', label: '💚 Wellbeing', default: true },
+                        { id: 'technical', label: '💻 Technical', default: true },
+                        { id: 'creative', label: '🎨 Creative', default: true },
+                        { id: 'blockers', label: '🚧 Blockers', default: true },
+                        { id: 'time_management', label: '⏰ Time', default: true },
+                      ].map(cat => (
+                        <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-obsidian/50 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            defaultChecked={cat.default}
+                            className="w-4 h-4 rounded border-baked-clay/30 text-relic-gold focus:ring-relic-gold/50"
+                            onChange={(e) => {
+                              const saved = localStorage.getItem('smart_suggestions_categories')
+                              const categories = saved ? JSON.parse(saved) : {}
+                              categories[cat.id] = e.target.checked
+                              localStorage.setItem('smart_suggestions_categories', JSON.stringify(categories))
+                            }}
+                          />
+                          <span className="text-text-slate text-sm">{cat.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
