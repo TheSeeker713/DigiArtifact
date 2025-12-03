@@ -389,6 +389,44 @@ export default function SettingsPage() {
                   </a>
                 </div>
               </div>
+
+              {/* Hidden Easter Egg */}
+              <details className="mt-6 group">
+                <summary className="text-text-slate/30 text-xs cursor-pointer hover:text-text-slate/50 transition-colors">
+                  🤫
+                </summary>
+                <div className="mt-4 p-6 bg-obsidian/50 rounded-lg border border-relic-gold/20 text-center">
+                  <svg className="w-32 h-32 mx-auto mb-4" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* Burrito Wrap */}
+                    <ellipse cx="64" cy="64" rx="56" ry="32" fill="#E8C07D" stroke="#C9A65C" strokeWidth="3"/>
+                    {/* Tortilla fold lines */}
+                    <path d="M20 50 Q64 35 108 50" stroke="#C9A65C" strokeWidth="2" fill="none"/>
+                    <path d="M20 78 Q64 93 108 78" stroke="#C9A65C" strokeWidth="2" fill="none"/>
+                    {/* Rice filling */}
+                    <ellipse cx="64" cy="58" rx="35" ry="8" fill="#FFFFFF" opacity="0.9"/>
+                    {/* Beans */}
+                    <ellipse cx="50" cy="64" rx="6" ry="4" fill="#5D3A1A"/>
+                    <ellipse cx="64" cy="66" rx="5" ry="3" fill="#5D3A1A"/>
+                    <ellipse cx="78" cy="63" rx="6" ry="4" fill="#5D3A1A"/>
+                    {/* Cheese */}
+                    <path d="M45 55 L50 62 L55 55 L60 62 L65 55 L70 62 L75 55 L80 62 L85 55" stroke="#FFD700" strokeWidth="3" fill="none" strokeLinecap="round"/>
+                    {/* Lettuce */}
+                    <path d="M35 70 Q45 65 55 72 Q65 68 75 73 Q85 68 95 72" stroke="#4CAF50" strokeWidth="4" fill="none" strokeLinecap="round"/>
+                    {/* Tomato chunks */}
+                    <circle cx="48" cy="70" r="4" fill="#E53935"/>
+                    <circle cx="72" cy="68" r="3" fill="#E53935"/>
+                    <circle cx="60" cy="72" r="3.5" fill="#E53935"/>
+                    {/* Sour cream drizzle */}
+                    <path d="M40 60 Q50 58 60 61 Q70 59 80 62" stroke="#FFFFFF" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                    {/* Guac */}
+                    <ellipse cx="55" cy="75" rx="8" ry="4" fill="#7CB342" opacity="0.8"/>
+                    <ellipse cx="75" cy="74" rx="6" ry="3" fill="#7CB342" opacity="0.8"/>
+                  </svg>
+                  <p className="text-relic-gold font-heading text-lg mb-2">🌯 One Burrito Sandwich 🌯</p>
+                  <p className="text-text-slate text-sm">Made with love, as requested.</p>
+                  <p className="text-text-slate/50 text-xs mt-2 italic">- Your friendly coding assistant</p>
+                </div>
+              </details>
             </div>
           )}
 
