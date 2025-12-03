@@ -111,7 +111,11 @@ export function useSmartSuggestions({
     
     setCurrentSuggestion(suggestion)
     setShowSuggestion(true)
-    setShownSuggestionIds(prev => new Set([...prev, suggestion.id]))
+    setShownSuggestionIds(prev => {
+      const newSet = new Set(Array.from(prev))
+      newSet.add(suggestion.id)
+      return newSet
+    })
     onSuggestionShown?.(suggestion)
   }, [suggestionsEnabled, onSuggestionShown])
 

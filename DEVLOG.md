@@ -565,6 +565,46 @@ All immediate priority features have been implemented!
 
 ---
 
+## December 5, 2025 (Later) - Production Build Fix 🔧
+
+**Issue Discovered**: Live site at `workers.digiartifact.com` was not showing new features (gamification widgets, schedule system, etc.)
+
+**Root Causes Identified**:
+
+1. **Missing `lucide-react` dependency** - Icon library was imported but not installed
+   - Affected: `NotesTool.tsx`, `ReportsTool.tsx`, `SmartSuggestionBubble.tsx`
+   - Fix: `npm install lucide-react`
+
+2. **TypeScript Set iteration error** in `useSmartSuggestions.ts`
+   - Error: `Type 'Set<string | number>' can only be iterated through when using the '--downlevelIteration' flag`
+   - Location: Line 114 `setShownSuggestionIds(prev => new Set([...prev, suggestion.id]))`
+   - Fix: Replaced spread operator with `Array.from()`:
+     ```typescript
+     setShownSuggestionIds(prev => {
+       const newSet = new Set(Array.from(prev))
+       newSet.add(suggestion.id)
+       return newSet
+     })
+     ```
+
+**Build Result**: ✅ All 14 routes compiled successfully
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `workers/package.json` | Added `lucide-react: ^0.555.0` to dependencies |
+| `workers/hooks/useSmartSuggestions.ts` | Fixed Set iteration TypeScript error |
+
+### Deployment Note
+The Workers Portal requires a separate build/deploy cycle:
+```bash
+cd workers
+npm run build
+# Deploy to hosting platform (Vercel/Cloudflare Pages)
+```
+
+---
+
 ## Credits
 
 **Development**: DigiArtifact and J.W.

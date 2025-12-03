@@ -14,13 +14,14 @@
     "api:deploy": "wrangler deploy"
   },
   "dependencies": {
+    "chart.js": "^4.4.1",
+    "date-fns": "^3.3.1",
+    "js-cookie": "^3.0.5",
+    "lucide-react": "^0.555.0",
     "next": "^14.2.18",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "chart.js": "^4.4.1",
     "react-chartjs-2": "^5.2.0",
-    "date-fns": "^3.3.1",
-    "js-cookie": "^3.0.5"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240222.0",
