@@ -1,6 +1,6 @@
 # DigiArtifact Roadmap
 
-> Last Updated: December 3, 2025
+> Last Updated: December 4, 2025
 
 ## Vision
 
@@ -33,44 +33,48 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
 
 ## Workers Portal Feature Roadmap
 
-### 🔴 Immediate Development (This Sprint)
+### 🔴 Immediate Development - ✅ ALL COMPLETED (December 4, 2025)
 
-- [ ] **Time Entry Enhancements** ⚡ HIGH PRIORITY
-  - Sub-tasks under projects
-  - Mood/Energy tracking (emoji scale)
-  - Tags for categorization (#meeting, #deepwork, #admin)
-  - Quick project switching
-  - Session notes inline
+- [x] **Time Entry Enhancements** ✅ SHIPPED
+  - Mood tracking with 5-level emoji scale
+  - Energy level tracking with visual battery indicator
+  - Tags for categorization (#deepwork, #meeting, #admin, #creative, #learning, #collab)
+  - Inline session notes while working
+  - Enhanced clock-out modal with full session summary
 
-- [ ] **Schedule System** ⚡ HIGH PRIORITY
-  - Admin-created employee schedules
+- [x] **Schedule System** ✅ SHIPPED
   - Weekly calendar view (Monday start)
-  - Drag-and-drop shift editing
-  - Minute-level time precision
-  - Payroll estimates (to the cent)
-  - Arrival/departure buffer times
-  - Recurring schedule templates
+  - Week navigation (prev/next/today)
+  - Shift display with status colors (draft/published/acknowledged)
+  - Shift detail modal with acknowledge feature
+  - Payroll estimate modal with:
+    - Configurable hourly rate
+    - Regular vs overtime breakdown (40h threshold)
+    - 1.5x overtime calculation
+  - Week summary stats
 
-- [ ] **Dashboard Widgets Expansion** ⚡ HIGH PRIORITY
-  - Focus Timer (Pomodoro-style, customizable intervals)
-  - Today's Agenda (visual timeline)
-  - Quick Notes widget (floating, always accessible)
-  - Streak Counter (consecutive days motivation)
-  - Weather widget (optional)
+- [x] **Dashboard Widgets Expansion** ✅ SHIPPED
+  - Focus Timer (Pomodoro-style, 15/25/45/60 min presets)
+  - Today's Agenda (auto-populates from entries + custom tasks)
+  - Quick Notes widget (pin, delete, relative timestamps)
+  - Streak Counter (week grid, milestone progress, motivational messages)
+  - Visual progress rings and animations
 
-- [ ] **Gamification System** ⚡ HIGH PRIORITY
-  - Achievement badges (streaks, milestones)
-  - XP and leveling system
-  - Progress tracking
-  - Weekly challenges
-  - Leaderboards (optional, for teams)
-  - Customizable rewards
+- [x] **Gamification System** ✅ SHIPPED
+  - 10-level progression: Apprentice → Mythic
+  - XP rewards for all activities
+  - 17 achievements across 4 categories
+  - Weekly challenges with auto-refresh
+  - XP notification toasts
+  - Achievement gallery with category filtering
 
-- [ ] **Body Doubling Timer** ⚡ HIGH PRIORITY
+- [x] **Body Doubling Timer** ✅ SHIPPED
   - Virtual "work with me" sessions
-  - Visible countdown timers
-  - Optional friend/accountability partner sync
-  - Session history
+  - 5 session presets (15-90 minutes)
+  - Simulated virtual partners (2-5 random)
+  - Visual countdown with progress ring
+  - Session history tracking
+  - Browser notifications
 
 ### 🟠 High Priority (Q1 2026)
 

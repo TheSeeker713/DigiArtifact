@@ -4,6 +4,33 @@ import { useState, useEffect } from 'react'
 import { useAuth, ClockStatus } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
 
+// Mood/Energy options
+const MOOD_OPTIONS = [
+  { emoji: '😴', label: 'Tired', value: 1 },
+  { emoji: '😐', label: 'Neutral', value: 2 },
+  { emoji: '😊', label: 'Good', value: 3 },
+  { emoji: '🔥', label: 'Energized', value: 4 },
+  { emoji: '⚡', label: 'Hyper-focused', value: 5 },
+]
+
+const ENERGY_OPTIONS = [
+  { emoji: '🔋', label: 'Low', value: 1, color: 'text-red-400' },
+  { emoji: '🔋', label: 'Medium', value: 2, color: 'text-yellow-400' },
+  { emoji: '🔋', label: 'Good', value: 3, color: 'text-green-400' },
+  { emoji: '🔋', label: 'High', value: 4, color: 'text-emerald-400' },
+  { emoji: '⚡', label: 'Peak', value: 5, color: 'text-cyan-400' },
+]
+
+// Common work tags
+const PRESET_TAGS = [
+  { tag: 'deepwork', icon: '🎯', label: 'Deep Work' },
+  { tag: 'meeting', icon: '👥', label: 'Meeting' },
+  { tag: 'admin', icon: '📋', label: 'Admin' },
+  { tag: 'creative', icon: '🎨', label: 'Creative' },
+  { tag: 'learning', icon: '📚', label: 'Learning' },
+  { tag: 'collab', icon: '🤝', label: 'Collaboration' },
+]
+
 export default function ClockWidget() {
   const { clockStatus, currentEntry, projects, clockIn, clockOut, startBreak, endBreak } = useAuth()
   const { formatTime, parseUTCTimestamp, timezone } = useSettings()
@@ -13,6 +40,13 @@ export default function ClockWidget() {
   const [showNotesModal, setShowNotesModal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  // New state for enhanced features
+  const [mood, setMood] = useState<number>(3)
+  const [energy, setEnergy] = useState<number>(3)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [showMoodPicker, setShowMoodPicker] = useState(false)
+  const [inlineNotes, setInlineNotes] = useState('')
 
   // Update elapsed time every second when clocked in
   useEffect(() => {
@@ -66,14 +100,52 @@ export default function ClockWidget() {
     setIsLoading(true)
     setError('')
     try {
-      await clockOut(notes)
+      // Combine notes with mood/energy/tags data
+      const enhancedNotes = buildEnhancedNotes()
+      await clockOut(enhancedNotes)
       setNotes('')
+      setInlineNotes('')
+      setSelectedTags([])
+      setMood(3)
+      setEnergy(3)
       setShowNotesModal(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clock out')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const buildEnhancedNotes = () => {
+    const parts: string[] = []
+    
+    // Add mood/energy metadata
+    const moodEmoji = MOOD_OPTIONS.find(m => m.value === mood)?.emoji || ''
+    const energyLabel = ENERGY_OPTIONS.find(e => e.value === energy)?.label || ''
+    parts.push(`[Mood: ${moodEmoji}] [Energy: ${energyLabel}]`)
+    
+    // Add tags
+    if (selectedTags.length > 0) {
+      parts.push(`Tags: ${selectedTags.map(t => `#${t}`).join(' ')}`)
+    }
+    
+    // Add notes
+    if (inlineNotes.trim()) {
+      parts.push(`Notes: ${inlineNotes.trim()}`)
+    }
+    if (notes.trim()) {
+      parts.push(notes.trim())
+    }
+    
+    return parts.join('\n')
+  }
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    )
   }
 
   const handleBreak = async () => {
@@ -138,7 +210,7 @@ export default function ClockWidget() {
         </div>
 
         {/* Time Display */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <p className="time-display">{elapsedTime}</p>
           <p className="text-text-slate text-sm font-mono mt-2">
             {clockStatus === 'clocked-in' || clockStatus === 'on-break'
@@ -146,6 +218,87 @@ export default function ClockWidget() {
               : 'Ready to start'}
           </p>
         </div>
+
+        {/* Mood/Energy Display (when clocked in) */}
+        {(clockStatus === 'clocked-in' || clockStatus === 'on-break') && (
+          <div className="mb-6">
+            {/* Mood & Energy Row */}
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <button
+                onClick={() => setShowMoodPicker(!showMoodPicker)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-obsidian/50 border border-relic-gold/20 hover:border-relic-gold/50 transition-colors"
+                aria-label="Set mood"
+              >
+                <span className="text-xl">{MOOD_OPTIONS.find(m => m.value === mood)?.emoji}</span>
+                <span className="text-xs text-text-slate font-mono">Mood</span>
+              </button>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-obsidian/50 border border-relic-gold/20">
+                {ENERGY_OPTIONS.map((e) => (
+                  <button
+                    key={e.value}
+                    onClick={() => setEnergy(e.value)}
+                    className={`w-4 h-6 rounded transition-all ${
+                      e.value <= energy 
+                        ? e.value <= 2 ? 'bg-red-400' : e.value <= 3 ? 'bg-yellow-400' : 'bg-green-400'
+                        : 'bg-obsidian/80'
+                    } ${energy === e.value ? 'ring-2 ring-relic-gold' : ''}`}
+                    aria-label={`Energy level ${e.label}`}
+                    title={e.label}
+                  />
+                ))}
+                <span className="text-xs text-text-slate font-mono ml-1">Energy</span>
+              </div>
+            </div>
+            
+            {/* Mood Picker Dropdown */}
+            {showMoodPicker && (
+              <div className="flex justify-center gap-2 mb-4 p-2 rounded-lg bg-obsidian/70 border border-relic-gold/20">
+                {MOOD_OPTIONS.map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => { setMood(m.value); setShowMoodPicker(false) }}
+                    className={`text-2xl p-2 rounded-lg hover:bg-relic-gold/20 transition-colors ${
+                      mood === m.value ? 'bg-relic-gold/30 ring-2 ring-relic-gold' : ''
+                    }`}
+                    title={m.label}
+                    aria-label={m.label}
+                  >
+                    {m.emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Tags */}
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
+              {PRESET_TAGS.map((t) => (
+                <button
+                  key={t.tag}
+                  onClick={() => toggleTag(t.tag)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-mono transition-all ${
+                    selectedTags.includes(t.tag)
+                      ? 'bg-relic-gold/30 text-relic-gold border border-relic-gold'
+                      : 'bg-obsidian/50 text-text-slate border border-baked-clay/30 hover:border-relic-gold/50'
+                  }`}
+                >
+                  <span>{t.icon}</span>
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Inline Notes */}
+            <div className="relative">
+              <input
+                type="text"
+                value={inlineNotes}
+                onChange={(e) => setInlineNotes(e.target.value)}
+                placeholder="Quick note... (what are you working on?)"
+                className="input-field text-sm"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Project Selection (when clocked out) */}
         {clockStatus === 'clocked-out' && projects.length > 0 && (
@@ -216,20 +369,114 @@ export default function ClockWidget() {
         </div>
       </div>
 
-      {/* Notes Modal */}
+      {/* Enhanced Notes Modal */}
       {showNotesModal && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md">
-            <h3 className="font-heading text-xl text-relic-gold mb-4">Clock Out Notes</h3>
-            <p className="text-text-slate text-sm mb-4">
-              Add any notes about your work session (optional)
+          <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="font-heading text-xl text-relic-gold mb-2">Session Complete!</h3>
+            <p className="text-text-slate text-sm mb-6">
+              How was your work session? (helps track productivity patterns)
             </p>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="input-field min-h-[100px] mb-4"
-              placeholder="What did you work on?"
-            />
+            
+            {/* Session Summary */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-obsidian/50 border border-relic-gold/20 mb-6">
+              <div>
+                <p className="text-sand font-mono text-sm">Session Duration</p>
+                <p className="text-relic-gold font-heading text-2xl">{elapsedTime}</p>
+              </div>
+              {currentEntry?.project_name && (
+                <div className="text-right">
+                  <p className="text-sand font-mono text-sm">Project</p>
+                  <div className="flex items-center gap-2 justify-end">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: currentEntry.project_color || '#cca43b' }}
+                    />
+                    <span className="text-text-slate">{currentEntry.project_name}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mood Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-mono text-sand mb-3">How did you feel?</label>
+              <div className="flex justify-center gap-2">
+                {MOOD_OPTIONS.map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => setMood(m.value)}
+                    className={`flex flex-col items-center p-3 rounded-lg transition-all ${
+                      mood === m.value 
+                        ? 'bg-relic-gold/30 ring-2 ring-relic-gold' 
+                        : 'bg-obsidian/50 hover:bg-relic-gold/10'
+                    }`}
+                  >
+                    <span className="text-2xl mb-1">{m.emoji}</span>
+                    <span className="text-xs text-text-slate">{m.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Energy Level */}
+            <div className="mb-6">
+              <label className="block text-sm font-mono text-sand mb-3">Energy Level</label>
+              <div className="flex items-center justify-center gap-1">
+                {ENERGY_OPTIONS.map((e) => (
+                  <button
+                    key={e.value}
+                    onClick={() => setEnergy(e.value)}
+                    className={`flex flex-col items-center p-2 rounded transition-all ${
+                      energy === e.value ? 'ring-2 ring-relic-gold' : ''
+                    }`}
+                  >
+                    <div 
+                      className={`w-8 h-12 rounded ${
+                        e.value <= energy 
+                          ? e.value <= 2 ? 'bg-red-400' : e.value <= 3 ? 'bg-yellow-400' : 'bg-green-400'
+                          : 'bg-obsidian border border-baked-clay/30'
+                      }`}
+                    />
+                    <span className="text-xs text-text-slate mt-1">{e.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tags Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-mono text-sand mb-3">What type of work?</label>
+              <div className="flex flex-wrap gap-2">
+                {PRESET_TAGS.map((t) => (
+                  <button
+                    key={t.tag}
+                    onClick={() => toggleTag(t.tag)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-mono transition-all ${
+                      selectedTags.includes(t.tag)
+                        ? 'bg-relic-gold/30 text-relic-gold border border-relic-gold'
+                        : 'bg-obsidian/50 text-text-slate border border-baked-clay/30 hover:border-relic-gold/50'
+                    }`}
+                  >
+                    <span>{t.icon}</span>
+                    <span>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="mb-6">
+              <label className="block text-sm font-mono text-sand mb-2">Session Notes</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="input-field min-h-[80px]"
+                placeholder="What did you accomplish? Any blockers or wins?"
+              />
+            </div>
+
+            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowNotesModal(false)}
@@ -242,7 +489,7 @@ export default function ClockWidget() {
                 disabled={isLoading}
                 className="btn-clock-out flex-1"
               >
-                {isLoading ? 'Clocking Out...' : 'Clock Out'}
+                {isLoading ? 'Saving...' : 'Complete Session'}
               </button>
             </div>
           </div>

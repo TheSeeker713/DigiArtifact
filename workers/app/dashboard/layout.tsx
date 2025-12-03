@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
+import { GamificationProvider } from '@/contexts/GamificationContext'
 import Sidebar from '@/components/Sidebar'
 import MobileNav from '@/components/MobileNav'
 
@@ -25,20 +26,22 @@ export default function DashboardLayout({
   return (
     <AuthProvider>
       <SettingsProvider>
-      <div className="min-h-screen">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <Sidebar />
-        </div>
-        
-        {/* Mobile Navigation */}
-        <MobileNav />
-        
-        {/* Main Content */}
-        <main className="lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8">
-          {children}
-        </main>
-      </div>
+        <GamificationProvider>
+          <div className="min-h-screen">
+            {/* Desktop Sidebar */}
+            <div className="hidden lg:block">
+              <Sidebar />
+            </div>
+            
+            {/* Mobile Navigation */}
+            <MobileNav />
+            
+            {/* Main Content */}
+            <main className="lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8">
+              {children}
+            </main>
+          </div>
+        </GamificationProvider>
       </SettingsProvider>
     </AuthProvider>
   )

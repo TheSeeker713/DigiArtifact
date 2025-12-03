@@ -6,6 +6,12 @@ import ClockWidget from '@/components/ClockWidget'
 import WeeklyChart from '@/components/WeeklyChart'
 import RecentEntries from '@/components/RecentEntries'
 import QuickStats from '@/components/QuickStats'
+import FocusTimer from '@/components/FocusTimer'
+import StreakCounter from '@/components/StreakCounter'
+import QuickNotesWidget from '@/components/QuickNotesWidget'
+import TodaysAgenda from '@/components/TodaysAgenda'
+import GamificationWidget from '@/components/GamificationWidget'
+import BodyDoublingTimer from '@/components/BodyDoublingTimer'
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
@@ -39,15 +45,25 @@ export default function DashboardPage() {
         <QuickStats />
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Clock Widget - Takes 1 column */}
-        <div className="lg:col-span-1">
+      {/* Main Grid - 3 columns on large screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Clock & Focus Tools */}
+        <div className="space-y-6">
           <ClockWidget />
+          <FocusTimer />
+          <BodyDoublingTimer />
         </div>
 
-        {/* Charts and Activity - Takes 2 columns */}
-        <div className="lg:col-span-2 space-y-8">
+        {/* Middle Column - Activity & Progress */}
+        <div className="space-y-6">
+          <TodaysAgenda />
+          <StreakCounter />
+          <QuickNotesWidget />
+        </div>
+
+        {/* Right Column - Stats & Gamification */}
+        <div className="space-y-6">
+          <GamificationWidget />
           <WeeklyChart />
           <RecentEntries />
         </div>

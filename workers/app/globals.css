@@ -184,4 +184,37 @@
   .text-glow-cyan {
     text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
   }
+  
+  /* XP notification animation */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Gamification level-up animation */
+  .animate-level-up {
+    animation: levelUp 0.5s ease-out forwards;
+  }
+  
+  @keyframes levelUp {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
 }
