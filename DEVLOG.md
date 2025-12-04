@@ -605,6 +605,108 @@ npm run build
 
 ---
 
+## December 3, 2025 (Evening) - Backend Persistence & Carry-Over System 🔄
+
+**Session Focus**: Implementing D1 database sync for XP/Schedule and unfinished task carry-over logic  
+**Status**: 🟢 ALL SHIPPED  
+**Files Changed**: 4 files modified, 1 new file created
+
+### Step 1: System Health & Bug Audit ✅
+
+Reviewed recently created files for issues:
+- **BlockTimeline.tsx**: Fixed streak state management, added loading states
+- **useDynamicSchedule.ts**: Added cleanup for sync timeout refs, proper useEffect dependencies
+- **No memory leaks found**: All event listeners and timeouts properly cleaned up
+
+### Step 2: Backend Persistence (Critical Upgrade) ✅
+
+#### Task A: XP Sync to D1
+- **`workers/api/src/index.ts`**: Added new gamification endpoints:
+  - `GET /api/gamification` - Retrieve user's XP, level, streak data
+  - `POST /api/gamification/xp` - Award XP with reason and action type
+  - `POST /api/gamification/streak` - Update streak (with intelligent day tracking)
+
+#### Task B: Schedule Sync to D1
+- **`workers/api/src/index.ts`**: Added schedule block endpoints:
+  - `GET /api/schedule/blocks?date=` - Fetch blocks for a specific date
+  - `POST /api/schedule/blocks` - Bulk save blocks with shift creation
+  - `PUT /api/schedule/blocks/:id` - Update single block status
+  - `GET /api/schedule/incomplete` - Get incomplete blocks from yesterday
+  - `POST /api/schedule/carryover` - Mark blocks as carried over
+
+#### Database Schema Updates
+- **`workers/api/schema-v3-blocks.sql`**: Added new tables:
+  - `user_gamification` - Central XP, level, streak tracking per user
+  - `xp_transactions` - Log of all XP earned with timestamps
+  - Added indexes for efficient querying
+
+### Step 3: Carry-Over Logic ✅
+
+- **`workers/components/MorningCheckIn.tsx`** (NEW): Morning check-in modal
+  - Displays incomplete blocks from previous day
+  - Checkbox selection for which blocks to carry over
+  - Shows total minutes being added
+  - "Skip for Today" and "Add to Today" actions
+  - Dismissal persisted to localStorage (won't show again that day)
+  - Friendly UI with tips about streaks
+
+- **`workers/hooks/useDynamicSchedule.ts`**: Enhanced with carry-over features:
+  - `checkForIncomplete()` - API call to check yesterday's blocks
+  - `carryOverBlocks(blockIds)` - Mark blocks as carried and add to today
+  - `dismissCarryOver()` - User chose to skip carry-over
+  - `incompleteBlocks` state with full block info
+
+### Step 4: Quality Assurance ✅
+
+- **AuthContext Integration**: All API calls use `getAuthHeaders()` with Bearer token
+- **Carry-Over Conditions**: 
+  - Only triggers if `has_incomplete` is true from API
+  - Won't show if user dismissed today (localStorage check)
+  - Won't show if yesterday was fully completed
+- **Loading States**: Added `isLoading` and `isSyncing` indicators
+- **Debounced Sync**: Backend saves debounced to 2 seconds to prevent API spam
+
+### API Endpoints Added
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/gamification` | GET | Get user XP, level, streak |
+| `/api/gamification/xp` | POST | Award XP (with level-up check) |
+| `/api/gamification/streak` | POST | Update streak counter |
+| `/api/schedule/blocks` | GET | Get blocks for date |
+| `/api/schedule/blocks` | POST | Bulk save blocks |
+| `/api/schedule/blocks/:id` | PUT | Update single block |
+| `/api/schedule/incomplete` | GET | Get yesterday's incomplete |
+| `/api/schedule/carryover` | POST | Mark blocks as carried |
+
+### New File Summary
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `workers/components/MorningCheckIn.tsx` | Carry-over morning modal | ~180 |
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `workers/api/src/index.ts` | Added 8 new API endpoints for gamification and schedule sync |
+| `workers/api/schema-v3-blocks.sql` | Added `user_gamification` and `xp_transactions` tables |
+| `workers/hooks/useDynamicSchedule.ts` | Added API sync, carry-over logic, loading states |
+| `workers/components/BlockTimeline.tsx` | Integrated MorningCheckIn, loading states, async completion |
+
+### Technical Highlights
+
+- **Dual Storage Strategy**: localStorage for instant UI + D1 for persistence
+- **Debounced Sync**: 2-second debounce prevents API spam on rapid changes
+- **Level Calculation**: Server-side level calculation with 10 tier thresholds
+- **Streak Logic**: Intelligent day comparison (yesterday = continue, otherwise = reset)
+- **XP Transactions Log**: Full audit trail of all XP earned
+
+### Build Result
+✅ All 15 routes compiled successfully
+
+---
+
 ## December 6, 2025 - Block-Based Scheduling System 🧱
 
 **Session Focus**: Building a dynamic, milestone-driven block scheduling system with gamification  

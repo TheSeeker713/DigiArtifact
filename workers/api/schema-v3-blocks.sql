@@ -3,6 +3,55 @@
 -- Updated: December 2025
 
 -- ============================================
+-- USER GAMIFICATION TABLES
+-- ============================================
+
+-- User Gamification: Central tracking for XP, level, and streaks
+CREATE TABLE IF NOT EXISTS user_gamification (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE,
+  
+  -- XP and Level
+  total_xp INTEGER DEFAULT 0,
+  level INTEGER DEFAULT 1,
+  
+  -- Streak tracking
+  current_streak INTEGER DEFAULT 0,
+  longest_streak INTEGER DEFAULT 0,
+  last_activity_date DATE,
+  
+  -- Cumulative stats
+  total_work_minutes INTEGER DEFAULT 0,
+  total_sessions INTEGER DEFAULT 0,
+  focus_sessions INTEGER DEFAULT 0,
+  
+  -- Achievement tracking (JSON array of unlocked achievement IDs)
+  achievements TEXT DEFAULT '[]',
+  
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- XP Transactions: Log of all XP earned
+CREATE TABLE IF NOT EXISTS xp_transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  amount INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  action_type TEXT DEFAULT 'general',                     -- 'block_complete', 'streak', 'milestone', etc.
+  block_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (block_id) REFERENCES schedule_blocks(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_xp_transactions_user ON xp_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_xp_transactions_date ON xp_transactions(created_at);
+
+-- ============================================
 -- BLOCK-BASED SCHEDULING TABLES
 -- ============================================
 

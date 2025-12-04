@@ -680,6 +680,376 @@ export default {
         return jsonResponse({ user }, 200, origin);
       }
 
+      // ============================================
+      // GAMIFICATION ENDPOINTS
+      // ============================================
+
+      // Get user gamification data
+      if (path === '/api/gamification' && method === 'GET') {
+        const gamification = await env.DB.prepare(`
+          SELECT total_xp, level, current_streak, longest_streak, 
+                 total_work_minutes, total_sessions, focus_sessions,
+                 achievements, last_activity_date
+          FROM user_gamification
+          WHERE user_id = ?
+        `).bind(user!.id).first();
+
+        if (!gamification) {
+          // Create default gamification record
+          await env.DB.prepare(`
+            INSERT INTO user_gamification (user_id, total_xp, level, current_streak, achievements)
+            VALUES (?, 0, 1, 0, '[]')
+          `).bind(user!.id).run();
+          
+          return jsonResponse({
+            total_xp: 0,
+            level: 1,
+            current_streak: 0,
+            longest_streak: 0,
+            total_work_minutes: 0,
+            total_sessions: 0,
+            focus_sessions: 0,
+            achievements: [],
+          }, 200, origin);
+        }
+
+        return jsonResponse({
+          ...gamification,
+          achievements: JSON.parse(gamification.achievements as string || '[]'),
+        }, 200, origin);
+      }
+
+      // Update XP (award XP for actions)
+      if (path === '/api/gamification/xp' && method === 'POST') {
+        const { amount, reason, action_type } = await request.json() as {
+          amount: number;
+          reason: string;
+          action_type?: string;
+        };
+
+        if (!amount || amount < 0) {
+          return jsonResponse({ error: 'Valid XP amount required' }, 400, origin);
+        }
+
+        // Get current gamification data
+        let gamification = await env.DB.prepare(`
+          SELECT id, total_xp, level, current_streak, longest_streak,
+                 total_work_minutes, total_sessions, focus_sessions
+          FROM user_gamification
+          WHERE user_id = ?
+        `).bind(user!.id).first<{
+          id: number;
+          total_xp: number;
+          level: number;
+          current_streak: number;
+          longest_streak: number;
+          total_work_minutes: number;
+          total_sessions: number;
+          focus_sessions: number;
+        }>();
+
+        if (!gamification) {
+          // Create initial record
+          const result = await env.DB.prepare(`
+            INSERT INTO user_gamification (user_id, total_xp, level, current_streak, achievements, last_activity_date)
+            VALUES (?, ?, 1, 1, '[]', date('now'))
+            RETURNING *
+          `).bind(user!.id, amount).first();
+          
+          // Log the XP transaction
+          await env.DB.prepare(`
+            INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+            VALUES (?, ?, ?, ?)
+          `).bind(user!.id, amount, reason, action_type || 'general').run();
+
+          return jsonResponse({ 
+            success: true, 
+            total_xp: amount, 
+            level: 1,
+            xp_gained: amount,
+          }, 200, origin);
+        }
+
+        // Calculate new level based on XP
+        const newTotalXP = gamification.total_xp + amount;
+        const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2500, 4000, 6000, 10000];
+        let newLevel = 1;
+        for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+          if (newTotalXP >= LEVEL_THRESHOLDS[i]) {
+            newLevel = i + 1;
+            break;
+          }
+        }
+
+        const leveledUp = newLevel > gamification.level;
+
+        // Update gamification data
+        await env.DB.prepare(`
+          UPDATE user_gamification
+          SET total_xp = ?,
+              level = ?,
+              last_activity_date = date('now'),
+              updated_at = datetime('now')
+          WHERE user_id = ?
+        `).bind(newTotalXP, newLevel, user!.id).run();
+
+        // Log the XP transaction
+        await env.DB.prepare(`
+          INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+          VALUES (?, ?, ?, ?)
+        `).bind(user!.id, amount, reason, action_type || 'general').run();
+
+        return jsonResponse({
+          success: true,
+          total_xp: newTotalXP,
+          level: newLevel,
+          xp_gained: amount,
+          leveled_up: leveledUp,
+        }, 200, origin);
+      }
+
+      // Update streak
+      if (path === '/api/gamification/streak' && method === 'POST') {
+        const { increment } = await request.json() as { increment?: boolean };
+
+        const gamification = await env.DB.prepare(`
+          SELECT current_streak, longest_streak, last_activity_date
+          FROM user_gamification
+          WHERE user_id = ?
+        `).bind(user!.id).first<{
+          current_streak: number;
+          longest_streak: number;
+          last_activity_date: string;
+        }>();
+
+        if (!gamification) {
+          return jsonResponse({ error: 'Gamification record not found' }, 404, origin);
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        const lastActivity = gamification.last_activity_date;
+        
+        let newStreak = gamification.current_streak;
+        
+        if (increment) {
+          // Check if last activity was yesterday (continue streak) or today (already counted)
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          if (lastActivity === yesterdayStr) {
+            newStreak += 1;
+          } else if (lastActivity !== today) {
+            // Streak broken, start fresh
+            newStreak = 1;
+          }
+          // If last activity is today, don't change streak
+        }
+
+        const newLongestStreak = Math.max(newStreak, gamification.longest_streak);
+
+        await env.DB.prepare(`
+          UPDATE user_gamification
+          SET current_streak = ?,
+              longest_streak = ?,
+              last_activity_date = ?,
+              updated_at = datetime('now')
+          WHERE user_id = ?
+        `).bind(newStreak, newLongestStreak, today, user!.id).run();
+
+        return jsonResponse({
+          success: true,
+          current_streak: newStreak,
+          longest_streak: newLongestStreak,
+        }, 200, origin);
+      }
+
+      // ============================================
+      // SCHEDULE BLOCKS ENDPOINTS
+      // ============================================
+
+      // Get schedule blocks for a date
+      if (path === '/api/schedule/blocks' && method === 'GET') {
+        const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+
+        const blocks = await env.DB.prepare(`
+          SELECT sb.*, s.start_time as shift_start, s.end_time as shift_end
+          FROM schedule_blocks sb
+          LEFT JOIN shifts s ON sb.shift_id = s.id
+          WHERE sb.user_id = ? AND date(sb.start_time) = ?
+          ORDER BY sb.order_index ASC
+        `).bind(user!.id, date).all();
+
+        return jsonResponse({ 
+          blocks: blocks.results,
+          date,
+        }, 200, origin);
+      }
+
+      // Save/Update schedule blocks (bulk upsert)
+      if (path === '/api/schedule/blocks' && method === 'POST') {
+        const { blocks, date } = await request.json() as {
+          blocks: Array<{
+            id?: string;
+            type: string;
+            order_index: number;
+            start_time: string;
+            end_time: string;
+            duration_minutes: number;
+            label: string;
+            status: string;
+            project_id?: number;
+            notes?: string;
+            xp_earned?: number;
+          }>;
+          date: string;
+        };
+
+        if (!blocks || !Array.isArray(blocks)) {
+          return jsonResponse({ error: 'Blocks array required' }, 400, origin);
+        }
+
+        // Get or create shift for this date
+        let shift = await env.DB.prepare(`
+          SELECT id FROM shifts WHERE user_id = ? AND date(start_time) = ?
+        `).bind(user!.id, date).first<{ id: number }>();
+
+        if (!shift) {
+          const firstBlock = blocks[0];
+          const lastBlock = blocks[blocks.length - 1];
+          
+          shift = await env.DB.prepare(`
+            INSERT INTO shifts (user_id, start_time, end_time, status)
+            VALUES (?, ?, ?, 'draft')
+            RETURNING id
+          `).bind(user!.id, firstBlock.start_time, lastBlock.end_time).first<{ id: number }>();
+        }
+
+        // Delete existing blocks for this shift and reinsert
+        await env.DB.prepare(`
+          DELETE FROM schedule_blocks WHERE shift_id = ?
+        `).bind(shift!.id).run();
+
+        // Insert all blocks
+        for (const block of blocks) {
+          await env.DB.prepare(`
+            INSERT INTO schedule_blocks 
+            (shift_id, user_id, block_type, order_index, start_time, end_time, 
+             duration_minutes, label, status, project_id, notes, xp_earned)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            shift!.id,
+            user!.id,
+            block.type,
+            block.order_index,
+            block.start_time,
+            block.end_time,
+            block.duration_minutes,
+            block.label,
+            block.status,
+            block.project_id || null,
+            block.notes || null,
+            block.xp_earned || 0
+          ).run();
+        }
+
+        return jsonResponse({ 
+          success: true, 
+          shift_id: shift!.id,
+          blocks_saved: blocks.length,
+        }, 200, origin);
+      }
+
+      // Update single block status
+      if (path.match(/^\/api\/schedule\/blocks\/\d+$/) && method === 'PUT') {
+        const blockId = path.split('/').pop();
+        const updates = await request.json() as {
+          status?: string;
+          end_time?: string;
+          xp_earned?: number;
+          notes?: string;
+        };
+
+        const result = await env.DB.prepare(`
+          UPDATE schedule_blocks
+          SET status = COALESCE(?, status),
+              end_time = COALESCE(?, end_time),
+              xp_earned = COALESCE(?, xp_earned),
+              notes = COALESCE(?, notes),
+              updated_at = datetime('now')
+          WHERE id = ? AND user_id = ?
+          RETURNING *
+        `).bind(
+          updates.status || null,
+          updates.end_time || null,
+          updates.xp_earned,
+          updates.notes || null,
+          blockId,
+          user!.id
+        ).first();
+
+        if (!result) {
+          return jsonResponse({ error: 'Block not found' }, 404, origin);
+        }
+
+        return jsonResponse({ block: result }, 200, origin);
+      }
+
+      // Get incomplete blocks from previous day (for carry-over)
+      if (path === '/api/schedule/incomplete' && method === 'GET') {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        const incompleteBlocks = await env.DB.prepare(`
+          SELECT * FROM schedule_blocks
+          WHERE user_id = ? 
+            AND date(start_time) = ?
+            AND block_type IN ('WORK', 'FLEX')
+            AND status IN ('pending', 'skipped', 'partial')
+          ORDER BY order_index ASC
+        `).bind(user!.id, yesterdayStr).all();
+
+        // Calculate total incomplete minutes
+        const totalIncompleteMinutes = incompleteBlocks.results.reduce((sum: number, b: any) => {
+          return sum + (b.duration_minutes || 0);
+        }, 0);
+
+        return jsonResponse({
+          date: yesterdayStr,
+          incomplete_blocks: incompleteBlocks.results,
+          total_incomplete_minutes: totalIncompleteMinutes,
+          has_incomplete: incompleteBlocks.results.length > 0,
+        }, 200, origin);
+      }
+
+      // Mark incomplete blocks as carried over
+      if (path === '/api/schedule/carryover' && method === 'POST') {
+        const { block_ids, carry_to_date } = await request.json() as {
+          block_ids: number[];
+          carry_to_date: string;
+        };
+
+        if (!block_ids || !carry_to_date) {
+          return jsonResponse({ error: 'block_ids and carry_to_date required' }, 400, origin);
+        }
+
+        // Update original blocks as carried_over
+        await env.DB.prepare(`
+          UPDATE schedule_blocks
+          SET status = 'carried_over',
+              notes = COALESCE(notes, '') || ' [Carried to ${carry_to_date}]',
+              updated_at = datetime('now')
+          WHERE id IN (${block_ids.join(',')}) AND user_id = ?
+        `).bind(user!.id).run();
+
+        return jsonResponse({
+          success: true,
+          blocks_carried: block_ids.length,
+          carry_to_date,
+        }, 200, origin);
+      }
+
       // 404 for unknown routes
       return jsonResponse({ error: 'Not found' }, 404, origin);
 

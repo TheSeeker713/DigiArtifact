@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { format, differenceInMinutes, isAfter, isBefore, addMinutes } from 'date-fns'
 import { useDynamicSchedule, formatBlockTime, ScheduleBlock, BlockType } from '@/hooks/useDynamicSchedule'
 import { useGamification } from '@/contexts/GamificationContext'
+import MorningCheckIn from '@/components/MorningCheckIn'
 
 interface BlockTimelineProps {
   startTime?: string
@@ -315,21 +316,49 @@ export default function BlockTimeline({
     skipBlock,
     startBlock,
     resetSchedule,
-  } = useDynamicSchedule({ startTime, carriedMinutes })
+    incompleteBlocks,
+    carryOverBlocks,
+    dismissCarryOver,
+    isLoading,
+    isSyncing,
+  } = useDynamicSchedule({ startTime, carriedMinutes, enableApiSync: true })
   
   const [showConfetti, setShowConfetti] = useState(false)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [currentMilestone, setCurrentMilestone] = useState('')
   const [xpGained, setXpGained] = useState(0)
   const [editingBlock, setEditingBlock] = useState<string | null>(null)
+  const [showMorningCheckIn, setShowMorningCheckIn] = useState(false)
   
   // Day streak tracking (simulated - would come from API)
   const [streakDays, setStreakDays] = useState(5)
   const STREAK_TARGET = 6
   
+  // Show morning check-in if there are incomplete blocks
+  useEffect(() => {
+    if (incompleteBlocks?.hasIncomplete) {
+      setShowMorningCheckIn(true)
+    }
+  }, [incompleteBlocks])
+  
+  // Handle carry-over from morning check-in
+  const handleCarryOver = async (blockIds: number[]): Promise<boolean> => {
+    const success = await carryOverBlocks(blockIds)
+    if (success) {
+      setShowMorningCheckIn(false)
+    }
+    return success
+  }
+  
+  // Handle dismissing morning check-in
+  const handleDismissCheckIn = () => {
+    dismissCarryOver()
+    setShowMorningCheckIn(false)
+  }
+  
   // Handle block completion with XP and confetti
-  const handleCompleteBlock = useCallback((blockId: string) => {
-    const result = completeBlock(blockId)
+  const handleCompleteBlock = useCallback(async (blockId: string) => {
+    const result = await completeBlock(blockId)
     
     // Award XP through gamification system
     addXP(result.xpEarned, result.milestone || 'Block completed')
@@ -389,6 +418,39 @@ export default function BlockTimeline({
         onClose={() => setShowMilestoneModal(false)}
         milestoneName={currentMilestone}
       />
+      
+      {/* Morning Check-in Modal for Carry-Over */}
+      {showMorningCheckIn && incompleteBlocks && (
+        <MorningCheckIn
+          incompleteInfo={incompleteBlocks}
+          onCarryOver={handleCarryOver}
+          onDismiss={handleDismissCheckIn}
+        />
+      )}
+      
+      {/* Loading State */}
+      {isLoading && (
+        <div className="card flex items-center justify-center py-8">
+          <div className="flex items-center gap-3">
+            <svg className="w-6 h-6 animate-spin text-relic-gold" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span className="text-sand">Loading schedule...</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Syncing Indicator */}
+      {isSyncing && (
+        <div className="fixed bottom-4 left-4 z-40 flex items-center gap-2 bg-obsidian/90 border border-relic-gold/30 rounded-lg px-3 py-2">
+          <svg className="w-4 h-4 animate-spin text-relic-gold" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span className="text-sand/70 text-sm">Syncing...</span>
+        </div>
+      )}
       
       {/* Day Streak Progress Bar */}
       <div className="card">
