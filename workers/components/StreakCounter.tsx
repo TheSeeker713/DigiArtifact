@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface StreakData {
@@ -10,6 +10,8 @@ interface StreakData {
   lastWorkDate: string | null
   weekActivity: boolean[] // Sun-Sat, true if worked
 }
+
+const STORAGE_KEY = 'workers_streak_data'
 
 export default function StreakCounter() {
   const { todayEntries, weeklyHours } = useAuth()
@@ -22,66 +24,89 @@ export default function StreakCounter() {
   })
   const [showDetails, setShowDetails] = useState(false)
 
-  // Calculate streak data from weekly hours
+  // Load streak history from localStorage
   useEffect(() => {
-    // Convert weekly hours to activity - weeklyHours is [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
-    const weekActivity = weeklyHours.map(hours => hours > 0)
-    
-    // Calculate current streak (consecutive days ending today or yesterday)
-    let currentStreak = 0
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        setStreakData(prev => ({
+          ...prev,
+          longestStreak: parsed.longestStreak || 0,
+          totalDaysWorked: parsed.totalDaysWorked || 0,
+          lastWorkDate: parsed.lastWorkDate || null,
+        }))
+      } catch {
+        // Invalid data
+      }
+    }
+  }, [])
+
+  // Calculate and save streak data
+  useEffect(() => {
     const today = new Date()
     const dayOfWeek = today.getDay() // 0 = Sunday
     
-    // Map to our array index (Mon=0 in weeklyHours)
-    const todayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    // weeklyHours is [Mon, Tue, Wed, Thu, Fri, Sat, Sun] from API
+    // We need to convert to [Sun, Mon, Tue, Wed, Thu, Fri, Sat] for display
+    const weekActivity = [
+      weeklyHours[6] > 0, // Sun (index 6 in weeklyHours)
+      weeklyHours[0] > 0, // Mon
+      weeklyHours[1] > 0, // Tue
+      weeklyHours[2] > 0, // Wed
+      weeklyHours[3] > 0, // Thu
+      weeklyHours[4] > 0, // Fri
+      weeklyHours[5] > 0, // Sat
+    ]
     
-    // Check if worked today
-    const workedToday = todayEntries.length > 0 || weeklyHours[todayIndex] > 0
+    // Check if worked today (either from entries or weeklyHours)
+    const workedToday = todayEntries.length > 0 || weekActivity[dayOfWeek]
     
-    // Count streak backwards from today
-    if (workedToday) {
-      currentStreak = 1
-      for (let i = todayIndex - 1; i >= 0; i--) {
-        if (weeklyHours[i] > 0) {
-          currentStreak++
-        } else {
-          break
-        }
-      }
-    } else if (todayIndex > 0 && weeklyHours[todayIndex - 1] > 0) {
-      // Didn't work today but worked yesterday - streak is still active
-      currentStreak = 1
-      for (let i = todayIndex - 2; i >= 0; i--) {
-        if (weeklyHours[i] > 0) {
-          currentStreak++
-        } else {
-          break
-        }
+    // Calculate current streak by looking at weekActivity backwards from today
+    let currentStreak = 0
+    
+    // Start from today and go backwards
+    for (let i = 0; i <= dayOfWeek; i++) {
+      const checkDay = dayOfWeek - i
+      if (weekActivity[checkDay]) {
+        currentStreak++
+      } else if (i === 0) {
+        // Today hasn't worked yet - check if yesterday worked
+        continue
+      } else {
+        // Found a gap - streak ends
+        break
       }
     }
-
+    
+    // If we didn't work today but have entries loading, still count
+    if (!weekActivity[dayOfWeek] && todayEntries.length > 0) {
+      currentStreak = Math.max(1, currentStreak)
+    }
+    
     // Calculate total days worked this week
     const totalDaysWorked = weekActivity.filter(Boolean).length
+    
+    // Update longest streak if current beats it
+    const longestStreak = Math.max(currentStreak, streakData.longestStreak)
 
-    // Simulate longest streak (would come from backend in production)
-    const longestStreak = Math.max(currentStreak, 7) // Placeholder
-
-    setStreakData({
+    const newStreakData: StreakData = {
       currentStreak,
       longestStreak,
       totalDaysWorked,
-      lastWorkDate: workedToday ? today.toISOString() : null,
-      weekActivity: [
-        weeklyHours[6] > 0, // Sun
-        weeklyHours[0] > 0, // Mon
-        weeklyHours[1] > 0, // Tue
-        weeklyHours[2] > 0, // Wed
-        weeklyHours[3] > 0, // Thu
-        weeklyHours[4] > 0, // Fri
-        weeklyHours[5] > 0, // Sat
-      ],
-    })
-  }, [weeklyHours, todayEntries])
+      lastWorkDate: workedToday ? today.toISOString() : streakData.lastWorkDate,
+      weekActivity,
+    }
+    
+    setStreakData(newStreakData)
+    
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      longestStreak,
+      totalDaysWorked,
+      lastWorkDate: newStreakData.lastWorkDate,
+    }))
+  }, [weeklyHours, todayEntries, streakData.longestStreak, streakData.lastWorkDate])
 
   const getStreakMessage = () => {
     if (streakData.currentStreak === 0) {

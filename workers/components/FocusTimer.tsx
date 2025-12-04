@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 type TimerMode = 'focus' | 'short-break' | 'long-break'
 
@@ -9,6 +9,15 @@ interface TimerConfig {
   shortBreak: number
   longBreak: number
   sessionsUntilLongBreak: number
+}
+
+interface TimerState {
+  mode: TimerMode
+  timeRemaining: number
+  isRunning: boolean
+  completedSessions: number
+  customFocusTime: number
+  startedAt: number | null // Timestamp when timer started
 }
 
 const DEFAULT_CONFIG: TimerConfig = {
@@ -25,6 +34,8 @@ const PRESET_DURATIONS = [
   { label: '60 min', value: 60 * 60 },
 ]
 
+const STORAGE_KEY = 'workers_focus_timer_state'
+
 export default function FocusTimer() {
   const [mode, setMode] = useState<TimerMode>('focus')
   const [timeRemaining, setTimeRemaining] = useState(DEFAULT_CONFIG.focus)
@@ -33,6 +44,63 @@ export default function FocusTimer() {
   const [config, setConfig] = useState<TimerConfig>(DEFAULT_CONFIG)
   const [showSettings, setShowSettings] = useState(false)
   const [customFocusTime, setCustomFocusTime] = useState(DEFAULT_CONFIG.focus)
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  
+  // Ref to track if we've loaded from storage
+  const hasLoadedRef = useRef(false)
+
+  // Load state from localStorage on mount
+  useEffect(() => {
+    if (hasLoadedRef.current) return
+    hasLoadedRef.current = true
+    
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        const state: TimerState = JSON.parse(saved)
+        setMode(state.mode)
+        setCompletedSessions(state.completedSessions)
+        setCustomFocusTime(state.customFocusTime)
+        
+        // If timer was running, calculate elapsed time
+        if (state.isRunning && state.startedAt) {
+          const elapsed = Math.floor((Date.now() - state.startedAt) / 1000)
+          const remaining = Math.max(0, state.timeRemaining - elapsed)
+          
+          if (remaining > 0) {
+            setTimeRemaining(remaining)
+            setIsRunning(true)
+            setStartedAt(state.startedAt)
+          } else {
+            // Timer completed while away
+            setTimeRemaining(0)
+            setIsRunning(false)
+            setStartedAt(null)
+          }
+        } else {
+          setTimeRemaining(state.timeRemaining)
+          setIsRunning(false)
+        }
+      } catch {
+        // Invalid state, use defaults
+      }
+    }
+  }, [])
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!hasLoadedRef.current) return
+    
+    const state: TimerState = {
+      mode,
+      timeRemaining,
+      isRunning,
+      completedSessions,
+      customFocusTime,
+      startedAt,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  }, [mode, timeRemaining, isRunning, completedSessions, customFocusTime, startedAt])
 
   // Timer logic
   useEffect(() => {
@@ -86,16 +154,27 @@ export default function FocusTimer() {
       // Reset timer if it was at 0
       setTimeRemaining(mode === 'focus' ? customFocusTime : mode === 'short-break' ? config.shortBreak : config.longBreak)
     }
+    
+    if (!isRunning) {
+      // Starting timer - record start time
+      setStartedAt(Date.now())
+    } else {
+      // Pausing timer - clear start time
+      setStartedAt(null)
+    }
+    
     setIsRunning(!isRunning)
   }
 
   const resetTimer = () => {
     setIsRunning(false)
+    setStartedAt(null)
     setTimeRemaining(mode === 'focus' ? customFocusTime : mode === 'short-break' ? config.shortBreak : config.longBreak)
   }
 
   const selectMode = (newMode: TimerMode) => {
     setIsRunning(false)
+    setStartedAt(null)
     setMode(newMode)
     switch (newMode) {
       case 'focus':

@@ -390,55 +390,109 @@ export default function GoalsPage() {
         </div>
       )}
 
-      {/* Streak History */}
+      {/* Streak History Calendar */}
       <div className="card">
         <h2 className="font-display text-lg font-semibold text-relic-gold mb-4">
-          Goal Streaks Calendar
+          Weekly Goal Progress
         </h2>
-        <div className="grid grid-cols-7 gap-1">
-          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
-            <div key={i} className="text-center text-xs text-sand/40 font-mono py-1">
-              {day}
-            </div>
-          ))}
-          {/* Last 28 days */}
-          {Array.from({ length: 28 }).map((_, i) => {
-            const dayIndex = 27 - i
-            const hasActivity = Math.random() > 0.3 // Simulated
-            const metGoal = hasActivity && Math.random() > 0.2
-            const isFuture = dayIndex < 0
+        <p className="text-sm text-sand/60 mb-4">
+          Track your goal completion over the past 4 weeks
+        </p>
+        
+        {/* Weekly grid - 4 weeks x 7 days */}
+        <div className="space-y-2">
+          {/* Header row */}
+          <div className="grid grid-cols-8 gap-1">
+            <div className="text-xs text-sand/40 font-mono"></div>
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+              <div key={i} className="text-center text-xs text-sand/40 font-mono">
+                {day}
+              </div>
+            ))}
+          </div>
+          
+          {/* Week rows */}
+          {Array.from({ length: 4 }).map((_, weekIndex) => {
+            const weekLabel = weekIndex === 0 ? 'This week' : 
+                             weekIndex === 1 ? 'Last week' : 
+                             `${weekIndex + 1} weeks ago`
             
             return (
-              <div
-                key={i}
-                className={`aspect-square rounded-sm flex items-center justify-center text-xs ${
-                  isFuture
-                    ? 'bg-slate/10'
-                    : metGoal
-                    ? 'bg-emerald-500/50'
-                    : hasActivity
-                    ? 'bg-amber-500/30'
-                    : 'bg-slate/20'
-                }`}
-                title={`${28 - dayIndex} days ago`}
-              >
-                {metGoal && <span className="text-[10px]">✓</span>}
+              <div key={weekIndex} className="grid grid-cols-8 gap-1 items-center">
+                <div className="text-xs text-sand/40 font-mono truncate" title={weekLabel}>
+                  {weekIndex === 0 ? 'This' : weekIndex === 1 ? 'Last' : `-${weekIndex}w`}
+                </div>
+                {Array.from({ length: 7 }).map((_, dayIndex) => {
+                  // For current week, use actual weeklyHours data
+                  // weeklyHours is [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+                  const today = new Date()
+                  const currentDayOfWeek = today.getDay() // 0 = Sunday
+                  const adjustedDayIndex = dayIndex // Mon = 0 in our display
+                  
+                  let hasActivity = false
+                  let metGoal = false
+                  let isFuture = false
+                  
+                  if (weekIndex === 0) {
+                    // This week - use actual data
+                    const todayIndex = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1
+                    
+                    if (adjustedDayIndex > todayIndex) {
+                      isFuture = true
+                    } else {
+                      const hoursWorked = weeklyHours[adjustedDayIndex] || 0
+                      hasActivity = hoursWorked > 0
+                      // Goal met if worked at least 6 hours (configurable)
+                      metGoal = hoursWorked >= 6
+                    }
+                  } else {
+                    // Past weeks - show based on localStorage history if available
+                    // For now, leave empty (would be populated from API)
+                    hasActivity = false
+                    metGoal = false
+                  }
+                  
+                  return (
+                    <div
+                      key={dayIndex}
+                      className={`aspect-square rounded-md flex items-center justify-center transition-all ${
+                        isFuture
+                          ? 'bg-slate/10 border border-dashed border-slate/20'
+                          : metGoal
+                          ? 'bg-emerald-500/50 border border-emerald-500/30'
+                          : hasActivity
+                          ? 'bg-amber-500/30 border border-amber-500/20'
+                          : 'bg-slate/20 border border-slate/10'
+                      }`}
+                      title={isFuture ? 'Upcoming' : metGoal ? 'Goal met!' : hasActivity ? 'Worked' : 'No activity'}
+                    >
+                      {metGoal && <span className="text-emerald-300 text-sm">✓</span>}
+                      {hasActivity && !metGoal && <span className="text-amber-300/70 text-[10px]">●</span>}
+                    </div>
+                  )
+                })}
               </div>
             )
           })}
         </div>
+        
+        {/* Legend */}
         <div className="flex items-center justify-center gap-4 mt-4 text-xs text-sand/60">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-slate/20" />
+            <span className="w-3 h-3 rounded-sm bg-slate/20 border border-slate/10" />
             No activity
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-amber-500/30" />
+            <span className="w-3 h-3 rounded-sm bg-amber-500/30 border border-amber-500/20" />
             Worked
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-emerald-500/50" />
-            Goal met
+            <span className="w-3 h-3 rounded-sm bg-emerald-500/50 border border-emerald-500/30" />
+            Goal met (6h+)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-slate/10 border border-dashed border-slate/20" />
+            Upcoming
           </span>
         </div>
       </div>

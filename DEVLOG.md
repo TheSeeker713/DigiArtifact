@@ -605,6 +605,118 @@ npm run build
 
 ---
 
+## December 6, 2025 - Block-Based Scheduling System 🧱
+
+**Session Focus**: Building a dynamic, milestone-driven block scheduling system with gamification  
+**Status**: 🟢 ALL SHIPPED  
+**Files Changed**: 4 new files created, 6 files modified
+
+### Block-Based Scheduling System ✅ SHIPPED
+
+A comprehensive time-block scheduling system designed for neurodivergent productivity, featuring 2-hour work blocks with strategic breaks.
+
+#### Database Schema v3 - Block System
+- **`workers/api/schema-v3-blocks.sql`**: Extended schema for blocks
+  - `shifts`: Parent table for work shifts
+  - `schedule_blocks`: Individual WORK/BREAK blocks with minute-precision
+  - `block_rewards`: XP and streak tracking per block completion
+  - `milestones`: Achievement definitions (Bronze → Diamond)
+  - `milestone_progress`: User progress toward milestones
+
+#### Dynamic Schedule Hook
+- **`workers/hooks/useDynamicSchedule.ts`**: Schedule generation & management
+  - `generateDefaultSchedule()`: Creates 2h Work → 15m Break → 2h Work → 30m Break pattern
+  - **Time-Shifting Logic**: When Block N's end time changes, all subsequent blocks shift automatically
+  - Maintains 8-hour total work time constraint
+  - Block status tracking: pending → in_progress → completed → skipped
+  - Quick template generation (9-5, Early Bird, Night Owl, Split Shift, Creative Flow)
+  - LocalStorage persistence
+
+#### Block Timeline Component
+- **`workers/components/BlockTimeline.tsx`**: Visual timeline with gamification
+  - Vertical timeline with connected blocks
+  - **Confetti Effect**: 60 particles on block completion
+  - **XP Toast**: +50 XP awarded per completed block
+  - **Streak Progress Bar**: 6-day target visualization
+  - **Weekly Milestone Modal**: Celebration at 100% completion
+  - Editable time inputs with auto-shifting
+  - Real-time progress tracking
+  - Status icons: ⏳ pending, 🔄 in progress, ✅ completed, ⏭️ skipped
+
+#### Block Schedule Page
+- **`workers/app/dashboard/blocks/page.tsx`**: Full scheduling interface
+  - Quick templates with one-click generation
+  - Stats cards: Total Work, Sessions, Completed, XP Earned
+  - Save schedule functionality
+  - Integration with GamificationContext for XP
+
+### Bug Fixes Applied ✅
+
+#### Focus Timer Persistence
+- **`workers/components/FocusTimer.tsx`**: Added localStorage persistence
+  - Timer state (timeLeft, isRunning, mode) saved on every change
+  - Session count persists between page loads
+  - Configuration (focus/break durations) persists
+  - Proper cleanup on unmount
+
+#### Streak Counter Accuracy
+- **`workers/components/StreakCounter.tsx`**: Improved calculation
+  - Added `useMemo` for streak calculation with proper dependencies
+  - Fixed day-of-week mapping for accurate streak display
+  - LocalStorage persistence for streak data
+  - Prevents unnecessary recalculations
+
+#### Goals Calendar Fix
+- **`workers/app/dashboard/goals/page.tsx`**: Real activity tracking
+  - Replaced `Math.random()` calendar with localStorage-based tracking
+  - 28-day activity grid with actual tracked days
+  - `workers_goal_calendar` localStorage key
+  - Activity recorded on task completion
+
+### New CSS Animations
+- **`workers/app/globals.css`**: Block system animations
+  - `animate-confetti`: Combined fall + spin animation
+  - `@keyframes confetti-fall`: Y-axis descent with fade
+  - `@keyframes confetti-spin`: 360° rotation
+  - `animate-shimmer`: Gradient sweep effect
+  - `animate-fall-and-fade`: XP toast animation
+
+### Navigation Updates
+- **`workers/components/Sidebar.tsx`**: Added "Block Schedule" link with grid icon
+- **`workers/components/MobileNav.tsx`**: Added "Block Schedule" for mobile, renamed "Schedule" to "Weekly View"
+
+### New File Summary
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `workers/api/schema-v3-blocks.sql` | Block scheduling database schema | ~150 |
+| `workers/hooks/useDynamicSchedule.ts` | Dynamic schedule hook with time-shifting | ~330 |
+| `workers/components/BlockTimeline.tsx` | Visual timeline with gamification | ~600 |
+| `workers/app/dashboard/blocks/page.tsx` | Block Schedule page with templates | ~500 |
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `workers/components/FocusTimer.tsx` | Added localStorage persistence for timer state |
+| `workers/components/StreakCounter.tsx` | Fixed streak calculation with useMemo |
+| `workers/app/dashboard/goals/page.tsx` | Real activity tracking instead of random data |
+| `workers/app/globals.css` | Added confetti, shimmer, fall-and-fade animations |
+| `workers/components/Sidebar.tsx` | Added Block Schedule nav item |
+| `workers/components/MobileNav.tsx` | Added Block Schedule, renamed Schedule to Weekly View |
+
+### Technical Highlights
+- **Milestone System**: Bronze (3d) → Silver (7d) → Gold (14d) → Platinum (30d) → Diamond (60d)
+- **Block Pattern**: 2h work → 15m break → 2h work → 30m break (repeating)
+- **Time-Shifting**: Automatic adjustment of all subsequent blocks when one changes
+- **8-Hour Enforcement**: Total work time capped at 8 hours
+- **LocalStorage Keys**: `workers_block_schedule`, `workers_focus_timer`, `workers_streak_data`, `workers_goal_calendar`
+
+### Build Result
+✅ All 15 routes compiled successfully (added `/dashboard/blocks`)
+
+---
+
 ## Credits
 
 **Development**: DigiArtifact and J.W.
@@ -623,4 +735,4 @@ npm run build
 
 ---
 
-*Last Updated: December 5, 2025*
+*Last Updated: December 6, 2025*
