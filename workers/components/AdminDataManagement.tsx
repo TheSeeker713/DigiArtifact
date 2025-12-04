@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import Cookies from 'js-cookie'
+
+// API base URL
+const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
 interface User {
   id: string
@@ -58,28 +62,20 @@ export default function AdminDataManagement() {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch('/api/admin/users', {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/admin/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (response.ok) {
         const data = await response.json()
         setUsers(data.users || [])
       } else {
-        // Mock data for demo
-        setUsers([
-          { id: '1', name: 'Admin User', role: 'admin', created_at: '2024-01-01' },
-          { id: '2', name: 'John Doe', role: 'user', created_at: '2024-02-15' },
-          { id: '3', name: 'Jane Smith', role: 'user', created_at: '2024-03-20' },
-        ])
+        console.error('Failed to fetch users:', response.status)
+        setUsers([])
       }
     } catch (error) {
       console.error('Failed to fetch users:', error)
-      // Use mock data
-      setUsers([
-        { id: '1', name: 'Admin User', role: 'admin', created_at: '2024-01-01' },
-        { id: '2', name: 'John Doe', role: 'user', created_at: '2024-02-15' },
-      ])
+      setUsers([])
     } finally {
       setIsLoading(false)
     }
@@ -87,62 +83,62 @@ export default function AdminDataManagement() {
 
   const fetchGlobalStats = async () => {
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch('/api/admin/stats', {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/admin/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (response.ok) {
         const data = await response.json()
         setGlobalStats(data)
       } else {
-        // Mock stats
+        console.error('Failed to fetch global stats:', response.status)
         setGlobalStats({
-          totalTimeEntries: 1247,
-          totalBlocks: 534,
-          totalXpTransactions: 3892,
-          totalNotes: 156,
-          storageUsed: '2.4 MB'
+          totalTimeEntries: 0,
+          totalBlocks: 0,
+          totalXpTransactions: 0,
+          totalNotes: 0,
+          storageUsed: 'N/A'
         })
       }
     } catch (error) {
       console.error('Failed to fetch global stats:', error)
       setGlobalStats({
-        totalTimeEntries: 1247,
-        totalBlocks: 534,
-        totalXpTransactions: 3892,
-        totalNotes: 156,
-        storageUsed: '2.4 MB'
+        totalTimeEntries: 0,
+        totalBlocks: 0,
+        totalXpTransactions: 0,
+        totalNotes: 0,
+        storageUsed: 'N/A'
       })
     }
   }
 
   const fetchUserStats = async (userId: string) => {
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`/api/admin/users/${userId}/stats`, {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/admin/users/${userId}/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (response.ok) {
         const data = await response.json()
         setUserStats(data)
       } else {
-        // Mock stats
+        console.error('Failed to fetch user stats:', response.status)
         setUserStats({
-          totalTimeEntries: 142,
-          totalBlocks: 78,
-          totalXpTransactions: 456,
-          totalNotes: 23,
-          storageUsed: '0.3 MB'
+          totalTimeEntries: 0,
+          totalBlocks: 0,
+          totalXpTransactions: 0,
+          totalNotes: 0,
+          storageUsed: 'N/A'
         })
       }
     } catch (error) {
       console.error('Failed to fetch user stats:', error)
       setUserStats({
-        totalTimeEntries: 142,
-        totalBlocks: 78,
-        totalXpTransactions: 456,
-        totalNotes: 23,
-        storageUsed: '0.3 MB'
+        totalTimeEntries: 0,
+        totalBlocks: 0,
+        totalXpTransactions: 0,
+        totalNotes: 0,
+        storageUsed: 'N/A'
       })
     }
   }
@@ -150,10 +146,10 @@ export default function AdminDataManagement() {
   const handleExportData = async (userId?: string) => {
     setIsExporting(true)
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = Cookies.get('workers_token')
       const endpoint = userId 
-        ? `/api/admin/export/${userId}` 
-        : '/api/admin/export/all'
+        ? `${API_BASE}/admin/export/${userId}` 
+        : `${API_BASE}/admin/export/all`
       
       const response = await fetch(endpoint, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -163,15 +159,14 @@ export default function AdminDataManagement() {
       if (response.ok) {
         data = await response.json()
       } else {
-        // Generate mock export data
+        // Generate minimal export if API fails
         data = {
           exportedAt: new Date().toISOString(),
           scope: userId ? `User: ${users.find(u => u.id === userId)?.name}` : 'Global',
+          error: 'Failed to fetch full data',
           timeEntries: [],
           blocks: [],
           xpTransactions: [],
-          notes: [],
-          gamification: {},
         }
       }
 
@@ -201,28 +196,32 @@ export default function AdminDataManagement() {
     
     setIsPurging(true)
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`/api/admin/users/${selectedUserId}/purge`, {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/admin/users/${selectedUserId}/purge`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
-      if (response.ok || true) { // Always show success for demo
+      if (response.ok) {
+        const result = await response.json()
         setPurgeResult({ 
           success: true, 
-          message: `All data for ${users.find(u => u.id === selectedUserId)?.name} has been permanently deleted.` 
+          message: result.message || `All data for ${users.find(u => u.id === selectedUserId)?.name} has been permanently deleted.` 
         })
         setShowUserPurgeModal(false)
         setSelectedUserId('')
         setUserStats(null)
         setPurgeStep(1)
         setConfirmText('')
+        // Refresh stats after purge
+        fetchGlobalStats()
       } else {
-        throw new Error('Purge failed')
+        const error = await response.json()
+        throw new Error(error.error || 'Purge failed')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Purge failed:', error)
-      setPurgeResult({ success: false, message: 'Purge operation failed. Please try again.' })
+      setPurgeResult({ success: false, message: error.message || 'Purge operation failed. Please try again.' })
     } finally {
       setIsPurging(false)
     }
@@ -233,27 +232,30 @@ export default function AdminDataManagement() {
     
     setIsPurging(true)
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch('/api/admin/purge/all', {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/admin/purge/all`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
-      if (response.ok || true) { // Always show success for demo
+      if (response.ok) {
+        const result = await response.json()
         setPurgeResult({ 
           success: true, 
-          message: 'All database data has been permanently deleted. User accounts remain intact.' 
+          message: result.message || 'All database data has been permanently deleted. User accounts remain intact.' 
         })
         setShowGlobalPurgeModal(false)
         setPurgeStep(1)
         setConfirmText('')
+        // Refresh stats after purge
         fetchGlobalStats()
       } else {
-        throw new Error('Global purge failed')
+        const error = await response.json()
+        throw new Error(error.error || 'Global purge failed')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Global purge failed:', error)
-      setPurgeResult({ success: false, message: 'Global purge operation failed. Please try again.' })
+      setPurgeResult({ success: false, message: error.message || 'Global purge operation failed. Please try again.' })
     } finally {
       setIsPurging(false)
     }

@@ -131,7 +131,7 @@ export async function generatePDFReport(
     value: data.totalHours.toFixed(1),
     unit: 'hrs',
     color: COLORS.primary,
-    icon: '⏱️'
+    icon: ''
   })
 
   // Card 2: Time Entries
@@ -140,7 +140,7 @@ export async function generatePDFReport(
     value: data.totalEntries.toString(),
     unit: 'sessions',
     color: COLORS.accent2,
-    icon: '📋'
+    icon: ''
   })
 
   // Card 3: Daily Average
@@ -149,7 +149,7 @@ export async function generatePDFReport(
     value: data.averagePerDay.toFixed(1),
     unit: 'hrs/day',
     color: COLORS.accent,
-    icon: '📊'
+    icon: ''
   })
 
   yPos = cardY + cardHeight + 15
@@ -162,7 +162,7 @@ export async function generatePDFReport(
     pdf.setTextColor(...hexToRgb(COLORS.text))
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('📈 Daily Hours Overview', margin, yPos)
+    pdf.text('Daily Hours Overview', margin, yPos)
     yPos += 5
 
     try {
@@ -196,7 +196,7 @@ export async function generatePDFReport(
     pdf.setTextColor(...hexToRgb(COLORS.text))
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('🎯 Project Breakdown', margin, yPos)
+    pdf.text('Project Breakdown', margin, yPos)
     yPos += 5
 
     try {
@@ -341,7 +341,7 @@ export async function generatePDFReport(
     pdf.text(day.hours.toFixed(1) + 'h', margin + colWidths[0] + 3, yPos + 5)
     
     // Status
-    const status = day.hours >= 8 ? '✓ Full Day' : day.hours > 0 ? '◐ Partial' : '○ Off'
+    const status = day.hours >= 8 ? '[OK] Full Day' : day.hours > 0 ? '[--] Partial' : '[  ] Off'
     const statusColor = day.hours >= 8 ? COLORS.accent : day.hours > 0 ? COLORS.accent3 : COLORS.muted
     pdf.setTextColor(...hexToRgb(statusColor))
     pdf.text(status, margin + colWidths[0] + colWidths[1] + 3, yPos + 5)
@@ -377,7 +377,7 @@ export async function generatePDFReport(
     pdf.setTextColor(...hexToRgb(COLORS.text))
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('📁 Project Time Allocation', margin, yPos)
+    pdf.text('Project Time Allocation', margin, yPos)
     yPos += 8
 
     // Table header
@@ -496,7 +496,7 @@ export async function generatePDFReport(
       pdf.setTextColor(...hexToRgb(COLORS.accent3))
       pdf.setFontSize(18)
       pdf.setFont('helvetica', 'bold')
-      pdf.text(`🔥 ${data.streakData.currentStreak} days`, streakX + 5, yPos + 18)
+      pdf.text(`${data.streakData.currentStreak} day streak`, streakX + 5, yPos + 18)
       
       pdf.setTextColor(...hexToRgb(COLORS.muted))
       pdf.setFontSize(8)

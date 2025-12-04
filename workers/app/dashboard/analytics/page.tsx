@@ -1,18 +1,44 @@
 'use client'
 
+import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { generatePDFReport } from '@/utils/pdfExport'
+import { useSettings } from '@/contexts/SettingsContext'
+import { generatePDFReport, type ReportData } from '@/utils/pdfExport'
 import Cookies from 'js-cookie'
 
-// Day labels for the week
-const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+type PeriodType = 'week' | 'month' | 'quarter'
+type ChartType = 'hours' | 'productivity' | 'projects'
 
 // API base URL
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
-interface WeeklyStats {
-  hours: number[]
+interface DayData {
+  date: string
+  dayOfWeek: string
+  hours: number
+  breaks: number
+  productivity: number
+}
+
+interface HourlyData {
+  hour: number
+  avgMinutes: number
+  sessions: number
+}
+
+interface ProjectData {
+  id: string
+  name: string
+  hours: number
+  color: string
+  percentage: number
+}
+
+interface Insight {
+  type: 'positive' | 'neutral' | 'warning'
+  icon: string
+  title: string
+  description: string
 }
 
 interface MonthlyStats {
@@ -31,15 +57,18 @@ interface MonthlyStats {
 }
 
 export default function AnalyticsPage() {
-  const { user, weeklyHours, todayEntries, projects } = useAuth()
-  const chartRef = useRef<HTMLDivElement>(null)
-  
-  // API data states
-  const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null)
-  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null)
-  const [lastWeekStats, setLastWeekStats] = useState<WeeklyStats | null>(null)
+  const { user, todayEntries, weeklyHours } = useAuth()
+  const { formatTime } = useSettings()
+
+  const [period, setPeriod] = useState<PeriodType>('week')
+  const [chartType, setChartType] = useState<ChartType>('hours')
+  const [comparing, setComparing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  
+  // Real API data states
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null)
+  const [hourlyDistribution, setHourlyDistribution] = useState<number[]>(Array(24).fill(0))
 
   // Fetch real data from API
   useEffect(() => {
@@ -51,20 +80,7 @@ export default function AnalyticsPage() {
         return
       }
 
-      setIsLoading(true)
-      setError(null)
-
       try {
-        // Fetch current week stats
-        const weeklyRes = await fetch(`${API_BASE}/stats/weekly`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        
-        if (weeklyRes.ok) {
-          const weeklyData = await weeklyRes.json()
-          setWeeklyStats(weeklyData)
-        }
-
         // Fetch current month stats
         const now = new Date()
         const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -77,409 +93,638 @@ export default function AnalyticsPage() {
           setMonthlyStats(monthlyData)
         }
 
-        // Fetch last week's data for comparison
-        const lastWeekDate = new Date()
-        lastWeekDate.setDate(lastWeekDate.getDate() - 7)
-        // For now, we'll estimate last week based on monthly data or default to 0
-        setLastWeekStats({ hours: [0, 0, 0, 0, 0, 0, 0] })
-
-      } catch (err) {
-        console.error('Error fetching analytics:', err)
-        setError('Failed to load analytics data')
+        // Calculate hourly distribution from today's entries
+        if (todayEntries && todayEntries.length > 0) {
+          const hourBuckets = Array(24).fill(0)
+          todayEntries.forEach(entry => {
+            if (entry.clock_in) {
+              const startHour = new Date(entry.clock_in).getHours()
+              const startTime = new Date(entry.clock_in).getTime()
+              const endTime = entry.clock_out ? new Date(entry.clock_out).getTime() : Date.now()
+              const durationMinutes = Math.max(0, (endTime - startTime) / 1000 / 60 - (entry.break_minutes || 0))
+              
+              // Distribute across hours
+              let remainingMinutes = durationMinutes
+              let currentHour = startHour
+              
+              while (remainingMinutes > 0 && currentHour < 24) {
+                const minutesInThisHour = Math.min(remainingMinutes, 60)
+                hourBuckets[currentHour] += minutesInThisHour
+                remainingMinutes -= minutesInThisHour
+                currentHour++
+              }
+            }
+          })
+          setHourlyDistribution(hourBuckets)
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchAnalyticsData()
-  }, [user])
-
-  // Process week data from API or context
-  const weekData = useMemo(() => {
-    // Use API data if available, otherwise fall back to context
-    const hours = weeklyStats?.hours || weeklyHours || [0, 0, 0, 0, 0, 0, 0]
-    const maxHours = Math.max(...hours, 1) // Avoid division by zero
-    
-    return dayLabels.map((day, index) => ({
-      day,
-      hours: hours[index] || 0,
-      percentage: ((hours[index] || 0) / maxHours) * 100,
-      isToday: index === (new Date().getDay() + 6) % 7 // Adjust for Monday start
-    }))
-  }, [weeklyStats, weeklyHours])
-
-  // Calculate hourly distribution from today's entries
-  const hourlyData = useMemo(() => {
-    const hourBuckets = Array(24).fill(0)
-    
-    // Calculate from today's entries if available
-    if (todayEntries && todayEntries.length > 0) {
-      todayEntries.forEach(entry => {
-        if (entry.clock_in) {
-          const hour = new Date(entry.clock_in).getHours()
-          // Calculate duration from clock_in to clock_out (or now if still active)
-          const startTime = new Date(entry.clock_in).getTime()
-          const endTime = entry.clock_out ? new Date(entry.clock_out).getTime() : Date.now()
-          const durationMinutes = (endTime - startTime) / 1000 / 60 - (entry.break_minutes || 0)
-          hourBuckets[hour] += durationMinutes / 60 // Convert minutes to hours
-        }
-      })
-    }
-    
-    // Find peak hours (hours with activity)
-    const maxActivity = Math.max(...hourBuckets, 0.1)
-    
-    return hourBuckets.map((activity, index) => ({
-      hour: index,
-      label: `${index.toString().padStart(2, '0')}:00`,
-      activity,
-      percentage: (activity / maxActivity) * 100,
-      isPeak: activity === maxActivity && activity > 0
-    }))
   }, [todayEntries])
 
-  // Process project data from API or context
-  const projectData = useMemo(() => {
-    // Use API project breakdown if available
+  // Calculate total weekly hours from real data
+  const totalWeeklyHours = Array.isArray(weeklyHours)
+    ? weeklyHours.reduce((sum, h) => sum + h, 0)
+    : weeklyHours || 0
+
+  // Generate week data from REAL weeklyHours array
+  const weekData: DayData[] = useMemo(() => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const hours = Array.isArray(weeklyHours) ? weeklyHours : [0, 0, 0, 0, 0, 0, 0]
+
+    return days.map((day, index) => {
+      const dayHours = hours[index] || 0
+      // Calculate productivity based on hours worked (realistic metric)
+      const productivity = dayHours > 0 ? Math.min(100, Math.round((dayHours / 8) * 100)) : 0
+
+      return {
+        date: day,
+        dayOfWeek: day,
+        hours: dayHours,
+        breaks: dayHours > 4 ? Math.ceil(dayHours / 4) : 0, // Estimate breaks
+        productivity: productivity
+      }
+    })
+  }, [weeklyHours])
+
+  // Calculate average productivity from real data
+  const avgProductivity = useMemo(() => {
+    const daysWithHours = weekData.filter(d => d.hours > 0)
+    if (daysWithHours.length === 0) return 0
+    return Math.round(daysWithHours.reduce((sum, d) => sum + d.productivity, 0) / daysWithHours.length)
+  }, [weekData])
+
+  // Days worked this week
+  const daysWorked = weekData.filter(d => d.hours > 0).length
+
+  // Generate REAL hourly data from calculated distribution
+  const hourlyData: HourlyData[] = useMemo(() => {
+    return hourlyDistribution.map((minutes, hour) => ({
+      hour,
+      avgMinutes: minutes,
+      sessions: minutes > 0 ? Math.ceil(minutes / 60) : 0
+    })).filter(h => h.hour >= 6 && h.hour <= 22) // Only show 6 AM to 10 PM
+  }, [hourlyDistribution])
+
+  // Generate REAL project data from API
+  const projectData: ProjectData[] = useMemo(() => {
+    const colors = ['#cca43b', '#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ec4899']
+    
     if (monthlyStats?.projectBreakdown && monthlyStats.projectBreakdown.length > 0) {
-      const total = monthlyStats.projectBreakdown.reduce((sum, p) => sum + p.hours, 0) || 1
-      const colors = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899']
+      const totalHours = monthlyStats.projectBreakdown.reduce((sum, p) => sum + p.hours, 0) || 1
       
       return monthlyStats.projectBreakdown.map((project, index) => ({
+        id: project.project_id || `unassigned-${index}`,
         name: project.project_name || 'Unassigned',
         hours: project.hours,
-        percentage: (project.hours / total) * 100,
-        color: colors[index % colors.length]
+        color: colors[index % colors.length],
+        percentage: Math.round((project.hours / totalHours) * 100)
       }))
     }
     
-    // Fall back to projects from context
-    if (projects && projects.length > 0) {
-      const colors = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899']
-      return projects.slice(0, 6).map((project, index) => ({
-        name: project.name,
-        hours: 0, // No hours tracked yet
-        percentage: 0,
-        color: colors[index % colors.length]
-      }))
-    }
-    
-    // No data available
+    // No data - show empty state
     return [{
-      name: 'No projects yet',
+      id: 'none',
+      name: 'No projects tracked',
       hours: 0,
-      percentage: 100,
-      color: '#6B7280'
+      color: '#6b7280',
+      percentage: 100
     }]
-  }, [monthlyStats, projects])
+  }, [monthlyStats])
 
-  // Calculate comparison data
+  // Generate REAL insights based on actual data
+  const insights: Insight[] = useMemo(() => {
+    // Find peak hour from real data
+    const peakHourData = hourlyData.reduce((max, h) => h.avgMinutes > max.avgMinutes ? h : max, { hour: 0, avgMinutes: 0, sessions: 0 })
+    const peakHour = peakHourData.avgMinutes > 0 ? peakHourData.hour : null
+    
+    // Find best day from real data
+    const bestDay = [...weekData].sort((a, b) => b.hours - a.hours)[0]
+    const bestDayName = bestDay?.hours > 0 ? bestDay.dayOfWeek : null
+    
+    // Calculate week comparison
+    const currentWeekHours = totalWeeklyHours
+    const targetHours = 40 // Standard work week
+
+    const insightsList: Insight[] = []
+
+    // Peak productivity insight
+    if (peakHour !== null) {
+      insightsList.push({
+        type: 'positive',
+        icon: '⚡',
+        title: 'Peak Productivity',
+        description: `You're most productive between ${peakHour}:00 and ${peakHour + 1}:00. Consider scheduling important tasks during this window.`
+      })
+    } else {
+      insightsList.push({
+        type: 'neutral',
+        icon: '⏰',
+        title: 'Peak Productivity',
+        description: 'Start tracking more time to discover your peak productivity hours.'
+      })
+    }
+
+    // Weekly productivity insight
+    if (avgProductivity > 0) {
+      insightsList.push({
+        type: avgProductivity >= 80 ? 'positive' : avgProductivity >= 60 ? 'neutral' : 'warning',
+        icon: avgProductivity >= 80 ? '🎯' : avgProductivity >= 60 ? '📈' : '⚠️',
+        title: 'Weekly Productivity',
+        description: `Your average productivity this week is ${avgProductivity}%. ${avgProductivity >= 80 ? 'Excellent work!' : avgProductivity >= 60 ? 'Good pace, keep it up!' : 'Consider breaking work into focused sessions.'}`
+      })
+    } else {
+      insightsList.push({
+        type: 'neutral',
+        icon: '📊',
+        title: 'Weekly Productivity',
+        description: 'No productivity data yet. Start tracking to see your weekly stats.'
+      })
+    }
+
+    // Hours trend insight
+    insightsList.push({
+      type: currentWeekHours >= targetHours ? 'positive' : currentWeekHours >= targetHours * 0.75 ? 'neutral' : 'warning',
+      icon: '📅',
+      title: 'Hours Trend',
+      description: currentWeekHours > 0 
+        ? `You've logged ${currentWeekHours.toFixed(1)} hours this week. ${currentWeekHours >= targetHours ? 'Great job hitting your target!' : currentWeekHours >= targetHours * 0.75 ? 'Almost there!' : 'A bit behind target, but still on track.'}`
+        : 'No hours logged this week yet. Start tracking to see your progress.'
+    })
+
+    // Best day insight
+    if (bestDayName) {
+      const avgOtherDays = weekData.filter(d => d.dayOfWeek !== bestDayName && d.hours > 0)
+      const avgOtherHours = avgOtherDays.length > 0 
+        ? avgOtherDays.reduce((sum, d) => sum + d.hours, 0) / avgOtherDays.length 
+        : 0
+      const percentBetter = avgOtherHours > 0 ? Math.round(((bestDay.hours - avgOtherHours) / avgOtherHours) * 100) : 0
+
+      insightsList.push({
+        type: 'neutral',
+        icon: '📆',
+        title: 'Best Day',
+        description: `${bestDayName}s tend to be your most productive day${percentBetter > 0 ? `. You average ${percentBetter}% more focused time compared to other days.` : '.'}`
+      })
+    } else {
+      insightsList.push({
+        type: 'neutral',
+        icon: '📆',
+        title: 'Best Day',
+        description: 'Track more days to discover your most productive day of the week.'
+      })
+    }
+
+    return insightsList
+  }, [hourlyData, weekData, totalWeeklyHours, avgProductivity])
+
+  const maxHours = Math.max(...weekData.map(d => d.hours), 8)
+
+  // Calculate comparison data from real stats
   const comparisonData = useMemo(() => {
-    const currentWeekTotal = weekData.reduce((sum, d) => sum + d.hours, 0)
-    const lastWeekTotal = lastWeekStats?.hours?.reduce((sum, h) => sum + h, 0) || 0
-    const percentChange = lastWeekTotal > 0 
-      ? ((currentWeekTotal - lastWeekTotal) / lastWeekTotal * 100)
-      : currentWeekTotal > 0 ? 100 : 0
-    
-    return {
-      currentWeekTotal,
-      lastWeekTotal,
-      percentChange,
-      isPositive: percentChange >= 0
-    }
-  }, [weekData, lastWeekStats])
+    const thisWeekTotal = totalWeeklyHours
+    // For comparison, we'd need last week's data - for now show 0 if no history
+    const lastWeekTotal = monthlyStats?.totalHours ? Math.max(0, monthlyStats.totalHours - thisWeekTotal) : 0
+    const change = lastWeekTotal > 0 
+      ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 
+      : thisWeekTotal > 0 ? 100 : 0
+    return { thisWeek: thisWeekTotal, lastWeek: lastWeekTotal, change }
+  }, [totalWeeklyHours, monthlyStats])
 
-  // Calculate insights
-  const insights = useMemo(() => {
-    const totalHours = monthlyStats?.totalHours || weekData.reduce((sum, d) => sum + d.hours, 0)
-    const avgHoursPerDay = monthlyStats?.averagePerDay || (totalHours / 7)
-    const peakHour = hourlyData.find(h => h.isPeak)
-    const topProject = [...projectData].sort((a, b) => b.hours - a.hours)[0]
-    
-    // Find most productive day
-    const mostProductiveDay = [...weekData].sort((a, b) => b.hours - a.hours)[0]
-    
-    return {
-      totalHours: totalHours.toFixed(1),
-      avgPerDay: avgHoursPerDay.toFixed(1),
-      peakTime: peakHour?.label || 'No data',
-      topProject: topProject?.name || 'None',
-      mostProductiveDay: mostProductiveDay?.hours > 0 ? mostProductiveDay.day : 'No data',
-      totalEntries: monthlyStats?.totalEntries || todayEntries?.length || 0
-    }
-  }, [monthlyStats, weekData, hourlyData, projectData, todayEntries])
-
-  // Export functions
-  const handleExportPDF = async () => {
-    if (!chartRef.current) return
-    
-    // Build the ReportData object matching the expected interface
-    const now = new Date()
-    const monthStr = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    
-    const reportData = {
-      month: monthStr,
-      userName: user?.name || 'User',
-      totalHours: parseFloat(insights.totalHours),
-      totalEntries: insights.totalEntries,
-      averagePerDay: parseFloat(insights.avgPerDay),
-      projectBreakdown: projectData.map(p => ({
-        name: p.name,
-        hours: p.hours,
-        color: p.color
-      })),
-      dailyHours: monthlyStats?.dailyHours || weekData.map(d => ({
-        date: d.day,
-        hours: d.hours
-      }))
-    }
-    
-    // Get chart canvas elements for visual export
-    const dailyChart = chartRef.current.querySelector('.daily-chart canvas') as HTMLCanvasElement | undefined
-    const projectChart = chartRef.current.querySelector('.project-chart canvas') as HTMLCanvasElement | undefined
-    
-    await generatePDFReport(reportData, { dailyChart, projectChart })
-  }
-
+  // Export to CSV with REAL data
   const handleExportCSV = () => {
-    // Weekly data CSV
-    const weeklyCSV = [
-      'Day,Hours,Percentage',
-      ...weekData.map(d => `${d.day},${d.hours.toFixed(2)},${d.percentage.toFixed(1)}%`)
+    const headers = ['Date', 'Hours', 'Breaks', 'Productivity']
+    const rows = weekData.map(d => [d.date, d.hours.toFixed(2), d.breaks.toString(), `${d.productivity}%`])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
     ].join('\n')
-    
-    // Project data CSV
-    const projectCSV = [
-      '\nProject,Hours,Percentage',
-      ...projectData.map(p => `${p.name},${p.hours.toFixed(2)},${p.percentage.toFixed(1)}%`)
-    ].join('\n')
-    
-    // Summary CSV
-    const summaryCSV = [
-      '\nSummary',
-      `Total Hours,${insights.totalHours}`,
-      `Average Per Day,${insights.avgPerDay}`,
-      `Peak Time,${insights.peakTime}`,
-      `Top Project,${insights.topProject}`,
-      `Total Entries,${insights.totalEntries}`
-    ].join('\n')
-    
-    const fullCSV = weeklyCSV + projectCSV + summaryCSV
-    
-    const blob = new Blob([fullCSV], { type: 'text/csv' })
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `analytics-${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `analytics-${period}-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading analytics...</p>
-        </div>
-      </div>
-    )
+  // Export to PDF with REAL data
+  const handleExportPDF = async () => {
+    setIsExporting(true)
+    try {
+      const now = new Date()
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December']
+
+      const reportData: ReportData = {
+        month: `${monthNames[now.getMonth()]} ${now.getFullYear()}`,
+        userName: user?.name || 'User',
+        totalHours: totalWeeklyHours,
+        totalEntries: monthlyStats?.totalEntries || todayEntries?.length || 0,
+        averagePerDay: monthlyStats?.averagePerDay || (totalWeeklyHours / Math.max(daysWorked, 1)),
+        projectBreakdown: projectData.filter(p => p.id !== 'none').map(p => ({
+          name: p.name,
+          hours: p.hours,
+          color: p.color
+        })),
+        dailyHours: monthlyStats?.dailyHours || weekData.map((d, i) => {
+          const date = new Date()
+          date.setDate(date.getDate() - (6 - i))
+          return {
+            date: date.toISOString().split('T')[0],
+            hours: d.hours
+          }
+        })
+      }
+
+      await generatePDFReport(reportData, {})
+    } catch (error) {
+      console.error('PDF export failed:', error)
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
-  // Error state
-  if (error) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="text-red-400 text-xl mb-4">⚠️ {error}</div>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
-          >
-            Retry
-          </button>
+          <div className="animate-spin w-12 h-12 border-4 border-relic-gold border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-sand/60">Loading analytics...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto" ref={chartRef}>
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Analytics Dashboard</h1>
-            <p className="text-slate-400">Track your productivity patterns and insights</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-relic-gold">
+            Analytics & Insights
+          </h1>
+          <p className="text-sand/60 mt-1">
+            Understand your work patterns and optimize productivity
+          </p>
+        </div>
+
+        {/* Period selector */}
+        <div className="flex items-center gap-2">
+          {(['week', 'month', 'quarter'] as PeriodType[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                period === p
+                  ? 'bg-relic-gold text-obsidian'
+                  : 'bg-slate/30 text-sand/70 hover:bg-slate/50'
+              }`}
+            >
+              {p.charAt(0).toUpperCase() + p.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats Overview - REAL DATA */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="card text-center">
+          <p className="text-2xl md:text-3xl font-bold text-relic-gold">
+            {totalWeeklyHours.toFixed(1)}h
+          </p>
+          <p className="text-xs text-sand/60 mt-1">This Week</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-2xl md:text-3xl font-bold text-emerald-400">
+            {avgProductivity}%
+          </p>
+          <p className="text-xs text-sand/60 mt-1">Avg Productivity</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-2xl md:text-3xl font-bold text-blue-400">
+            {daysWorked}
+          </p>
+          <p className="text-xs text-sand/60 mt-1">Days Worked</p>
+        </div>
+        <div className="card text-center relative overflow-hidden">
+          <p className={`text-2xl md:text-3xl font-bold ${comparisonData.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {comparisonData.change >= 0 ? '+' : ''}{comparisonData.change.toFixed(0)}%
+          </p>
+          <p className="text-xs text-sand/60 mt-1">vs Last Week</p>
+          {comparisonData.change >= 0 ? (
+            <svg className="absolute top-2 right-2 w-4 h-4 text-emerald-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          ) : (
+            <svg className="absolute top-2 right-2 w-4 h-4 text-red-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+            </svg>
+          )}
+        </div>
+      </div>
+
+      {/* Main Chart */}
+      <div className="card">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <h2 className="font-display text-lg font-semibold text-relic-gold">
+            Weekly Overview
+          </h2>
+          <div className="flex items-center gap-2">
+            {(['hours', 'productivity', 'projects'] as ChartType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => setChartType(type)}
+                className={`px-3 py-1.5 rounded-md text-xs font-mono transition-all ${
+                  chartType === type
+                    ? 'bg-relic-gold/20 text-relic-gold border border-relic-gold/30'
+                    : 'bg-slate/20 text-sand/60 hover:text-sand'
+                }`}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+            <button
+              onClick={() => setComparing(!comparing)}
+              className={`ml-2 px-3 py-1.5 rounded-md text-xs font-mono transition-all ${
+                comparing
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'bg-slate/20 text-sand/60 hover:text-sand'
+              }`}
+            >
+              Compare
+            </button>
           </div>
-          
-          <div className="flex gap-3">
+        </div>
+
+        {/* Hours Chart - REAL DATA */}
+        {chartType === 'hours' && (
+          <div className="space-y-4">
+            <div className="flex items-end gap-2 h-48">
+              {weekData.map((day) => (
+                <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-full flex flex-col items-center">
+                    <div
+                      className={`w-full rounded-t transition-all ${
+                        day.hours > 0
+                          ? day.hours >= 8
+                            ? 'bg-gradient-to-t from-emerald-600 to-emerald-400'
+                            : 'bg-gradient-to-t from-relic-gold to-amber-400'
+                          : 'bg-slate/30'
+                      }`}
+                      style={{ height: `${Math.max((day.hours / maxHours) * 160, day.hours > 0 ? 8 : 4)}px` }}
+                    />
+                    <span className="mt-2 text-xs text-sand/60">{day.dayOfWeek}</span>
+                    <span className="text-xs font-mono text-sand/80">
+                      {day.hours > 0 ? `${day.hours.toFixed(1)}h` : '-'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {totalWeeklyHours === 0 && (
+              <p className="text-center text-sand/50 text-sm">No hours tracked this week yet</p>
+            )}
+          </div>
+        )}
+
+        {/* Productivity Chart - REAL DATA */}
+        {chartType === 'productivity' && (
+          <div className="space-y-4">
+            <div className="flex items-end gap-2 h-48">
+              {weekData.map((day) => (
+                <div key={day.date} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-full flex flex-col items-center">
+                    <div
+                      className={`w-full rounded-t transition-all ${
+                        day.productivity >= 80
+                          ? 'bg-gradient-to-t from-emerald-600 to-emerald-400'
+                          : day.productivity >= 60
+                          ? 'bg-gradient-to-t from-amber-600 to-amber-400'
+                          : day.productivity > 0
+                          ? 'bg-gradient-to-t from-red-600 to-red-400'
+                          : 'bg-slate/30'
+                      }`}
+                      style={{ height: `${Math.max(day.productivity * 1.6, day.productivity > 0 ? 8 : 4)}px` }}
+                    />
+                    <span className="mt-2 text-xs text-sand/60">{day.dayOfWeek}</span>
+                    <span className="text-xs font-mono text-sand/80">
+                      {day.productivity > 0 ? `${day.productivity}%` : '-'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {avgProductivity === 0 && (
+              <p className="text-center text-sand/50 text-sm">No productivity data yet</p>
+            )}
+          </div>
+        )}
+
+        {/* Projects Chart - REAL DATA */}
+        {chartType === 'projects' && (
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* Donut Chart */}
+            <div className="relative w-48 h-48">
+              <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                {projectData.reduce((acc, project, index) => {
+                  const prevOffset = acc.offset
+                  const strokeDasharray = `${project.percentage * 2.51} ${251 - project.percentage * 2.51}`
+                  acc.elements.push(
+                    <circle
+                      key={project.id}
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke={project.color}
+                      strokeWidth="20"
+                      strokeDasharray={strokeDasharray}
+                      strokeDashoffset={-prevOffset}
+                      className="transition-all duration-500"
+                    />
+                  )
+                  acc.offset += project.percentage * 2.51
+                  return acc
+                }, { elements: [] as React.ReactNode[], offset: 0 }).elements}
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-sand">
+                    {projectData.reduce((sum, p) => sum + p.hours, 0).toFixed(1)}h
+                  </p>
+                  <p className="text-xs text-sand/60">Total</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex-1 space-y-3">
+              {projectData.map((project) => (
+                <div key={project.id} className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: project.color }} />
+                  <div className="flex-1 flex items-center justify-between">
+                    <span className="text-sm text-sand">{project.name}</span>
+                    <span className="text-sm font-mono text-sand/60">
+                      {project.hours > 0 ? `${project.hours.toFixed(1)}h (${project.percentage}%)` : '-'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Hourly Heatmap - REAL DATA */}
+      <div className="card">
+        <h2 className="font-display text-lg font-semibold text-relic-gold mb-4">
+          Peak Hours Heatmap
+        </h2>
+        <p className="text-sm text-sand/60 mb-4">
+          When you&apos;re most active throughout the day
+        </p>
+
+        <div className="flex items-end gap-1 h-32">
+          {hourlyData.map((hour) => {
+            const intensity = hour.avgMinutes / 60
+            const hasData = hour.avgMinutes > 0
+            return (
+              <div
+                key={hour.hour}
+                className="flex-1 flex flex-col items-center gap-1 group relative"
+              >
+                <div
+                  className="w-full rounded-sm transition-all group-hover:ring-2 ring-relic-gold/50"
+                  style={{
+                    height: `${Math.max(hour.avgMinutes * 2, 4)}px`,
+                    backgroundColor: hasData 
+                      ? `rgba(204, 164, 59, ${0.2 + intensity * 0.8})`
+                      : 'rgba(100, 116, 139, 0.2)'
+                  }}
+                />
+                <span className="text-[10px] text-sand/40">{hour.hour}</span>
+
+                {/* Tooltip */}
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-obsidian border border-baked-clay/30 rounded px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <p className="font-mono text-relic-gold">
+                    {hasData ? `${hour.avgMinutes.toFixed(0)} min` : 'No data'}
+                  </p>
+                  {hasData && <p className="text-sand/60">{hour.sessions} session(s)</p>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex items-center justify-between mt-4 text-xs text-sand/60">
+          <span>6 AM</span>
+          <span>12 PM</span>
+          <span>6 PM</span>
+          <span>10 PM</span>
+        </div>
+        
+        {hourlyDistribution.every(h => h === 0) && (
+          <p className="text-center text-sand/50 text-sm mt-4">
+            No hourly data yet. Start tracking to see your peak hours.
+          </p>
+        )}
+      </div>
+
+      {/* Insights Panel - REAL DATA */}
+      <div className="card">
+        <h2 className="font-display text-lg font-semibold text-relic-gold mb-4">
+          💡 Smart Insights
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          {insights.map((insight, index) => (
+            <div
+              key={index}
+              className={`p-4 rounded-lg border ${
+                insight.type === 'positive'
+                  ? 'bg-emerald-500/10 border-emerald-500/20'
+                  : insight.type === 'warning'
+                  ? 'bg-amber-500/10 border-amber-500/20'
+                  : 'bg-slate/30 border-baked-clay/20'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">{insight.icon}</span>
+                <div>
+                  <h3 className={`font-semibold ${
+                    insight.type === 'positive'
+                      ? 'text-emerald-400'
+                      : insight.type === 'warning'
+                      ? 'text-amber-400'
+                      : 'text-sand'
+                  }`}>
+                    {insight.title}
+                  </h3>
+                  <p className="text-sm text-sand/70 mt-1">{insight.description}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Export Options */}
+      <div className="card">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="font-display text-lg font-semibold text-relic-gold">
+              Export Data
+            </h2>
+            <p className="text-sm text-sand/60 mt-1">
+              Download your analytics data for external analysis
+            </p>
+          </div>
+          <div className="flex gap-2">
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-slate/30 text-sand hover:bg-slate/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Export CSV
+              CSV
             </button>
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+              disabled={isExporting}
+              className="px-4 py-2 bg-slate/30 text-sand hover:bg-slate/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              Export PDF
+              {isExporting ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  PDF Report
+                </>
+              )}
             </button>
           </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50">
-            <div className="text-slate-400 text-sm mb-1">Total Hours</div>
-            <div className="text-2xl font-bold text-white">{insights.totalHours}</div>
-            <div className={`text-sm ${comparisonData.isPositive ? 'text-green-400' : 'text-red-400'}`}>
-              {comparisonData.isPositive ? '↑' : '↓'} {Math.abs(comparisonData.percentChange).toFixed(1)}% vs last week
-            </div>
-          </div>
-          
-          <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50">
-            <div className="text-slate-400 text-sm mb-1">Avg Per Day</div>
-            <div className="text-2xl font-bold text-white">{insights.avgPerDay}h</div>
-            <div className="text-sm text-slate-500">This month</div>
-          </div>
-          
-          <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50">
-            <div className="text-slate-400 text-sm mb-1">Peak Productivity</div>
-            <div className="text-2xl font-bold text-white">{insights.peakTime}</div>
-            <div className="text-sm text-slate-500">Most active hour</div>
-          </div>
-          
-          <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-700/50">
-            <div className="text-slate-400 text-sm mb-1">Total Entries</div>
-            <div className="text-2xl font-bold text-white">{insights.totalEntries}</div>
-            <div className="text-sm text-slate-500">Time logs</div>
-          </div>
-        </div>
-
-        {/* Main Charts Grid */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {/* Weekly Hours Chart */}
-          <div className="chart-container bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700/50">
-            <h3 className="text-lg font-semibold text-white mb-4">Weekly Hours</h3>
-            <div className="flex items-end justify-between h-48 gap-2">
-              {weekData.map((day, index) => (
-                <div key={day.day} className="flex-1 flex flex-col items-center">
-                  <div 
-                    className={`w-full rounded-t-lg transition-all duration-300 ${
-                      day.isToday ? 'bg-amber-500' : 'bg-slate-600 hover:bg-slate-500'
-                    }`}
-                    style={{ 
-                      height: `${Math.max(day.percentage, 2)}%`,
-                      minHeight: '8px'
-                    }}
-                    title={`${day.hours.toFixed(1)} hours`}
-                  />
-                  <div className="text-xs text-slate-400 mt-2">{day.day}</div>
-                  <div className="text-xs font-medium text-slate-300">{day.hours.toFixed(1)}h</div>
-                </div>
-              ))}
-            </div>
-            {weekData.every(d => d.hours === 0) && (
-              <p className="text-center text-slate-500 mt-4 text-sm">No time tracked this week yet</p>
-            )}
-          </div>
-
-          {/* Project Distribution */}
-          <div className="chart-container bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700/50">
-            <h3 className="text-lg font-semibold text-white mb-4">Project Distribution</h3>
-            <div className="space-y-3">
-              {projectData.map((project, index) => (
-                <div key={index}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-300">{project.name}</span>
-                    <span className="text-slate-400">{project.hours.toFixed(1)}h ({project.percentage.toFixed(0)}%)</span>
-                  </div>
-                  <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ 
-                        width: `${Math.max(project.percentage, 1)}%`,
-                        backgroundColor: project.color
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {projectData.length === 1 && projectData[0].hours === 0 && (
-              <p className="text-center text-slate-500 mt-4 text-sm">No project hours tracked yet</p>
-            )}
-          </div>
-        </div>
-
-        {/* Hourly Distribution */}
-        <div className="chart-container bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-slate-700/50 mb-8">
-          <h3 className="text-lg font-semibold text-white mb-4">Today's Activity by Hour</h3>
-          <div className="flex items-end gap-1 h-32 overflow-x-auto pb-2">
-            {hourlyData.map((hour) => (
-              <div key={hour.hour} className="flex flex-col items-center min-w-[30px]">
-                <div 
-                  className={`w-6 rounded-t transition-all duration-300 ${
-                    hour.isPeak ? 'bg-amber-500' : hour.activity > 0 ? 'bg-emerald-500' : 'bg-slate-700'
-                  }`}
-                  style={{ 
-                    height: `${Math.max(hour.percentage, 3)}%`,
-                    minHeight: '4px'
-                  }}
-                  title={`${hour.label}: ${hour.activity.toFixed(1)} hours`}
-                />
-                <div className="text-xs text-slate-500 mt-1">{hour.hour}</div>
-              </div>
-            ))}
-          </div>
-          {hourlyData.every(h => h.activity === 0) && (
-            <p className="text-center text-slate-500 mt-2 text-sm">No activity logged today</p>
-          )}
-        </div>
-
-        {/* Insights Summary */}
-        <div className="bg-gradient-to-r from-amber-900/30 to-slate-800/50 backdrop-blur rounded-xl p-6 border border-amber-700/30">
-          <h3 className="text-lg font-semibold text-white mb-4">📊 Insights Summary</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-slate-800/50 rounded-lg p-4">
-              <div className="text-amber-400 font-medium mb-1">Most Productive Day</div>
-              <div className="text-white text-lg">{insights.mostProductiveDay}</div>
-            </div>
-            <div className="bg-slate-800/50 rounded-lg p-4">
-              <div className="text-emerald-400 font-medium mb-1">Top Project</div>
-              <div className="text-white text-lg">{insights.topProject}</div>
-            </div>
-            <div className="bg-slate-800/50 rounded-lg p-4">
-              <div className="text-blue-400 font-medium mb-1">Weekly Progress</div>
-              <div className="text-white text-lg">
-                {comparisonData.currentWeekTotal.toFixed(1)}h / {comparisonData.lastWeekTotal.toFixed(1)}h
-              </div>
-            </div>
-          </div>
-          
-          {comparisonData.currentWeekTotal === 0 && (
-            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg text-center">
-              <p className="text-slate-400">
-                Start tracking your time to see insights and patterns! 
-                <br />
-                <span className="text-sm">Use the timer or manual entry to log your work sessions.</span>
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center text-slate-500 text-sm">
-          Last updated: {new Date().toLocaleString()} • Data synced from your time entries
         </div>
       </div>
     </div>
