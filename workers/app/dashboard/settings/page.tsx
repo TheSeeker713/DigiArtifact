@@ -6,8 +6,10 @@ import { useSettings, TIMEZONE_OPTIONS, TimeFormat } from '@/contexts/SettingsCo
 import Cookies from 'js-cookie'
 import WalkthroughTutorial, { useTutorial } from '@/components/WalkthroughTutorial'
 import AdminDataManagement from '@/components/AdminDataManagement'
+import ScheduleEditor from '@/components/ScheduleEditor'
+import AdminUserManagement from '@/components/AdminUserManagement'
 
-type TabType = 'about' | 'help' | 'account' | 'notifications' | 'time-display' | 'data-management'
+type TabType = 'about' | 'help' | 'account' | 'notifications' | 'time-display' | 'schedule' | 'data-management' | 'user-management' | 'debug'
 
 // Fortune Cookie Easter Egg Component
 const FORTUNES = [
@@ -185,12 +187,17 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'account' as TabType, label: 'Account', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+    { id: 'schedule' as TabType, label: 'My Schedule', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
     { id: 'time-display' as TabType, label: 'Time & Display', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'notifications' as TabType, label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
     { id: 'help' as TabType, label: 'Help', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'about' as TabType, label: 'About', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    // Admin-only tab
-    ...(isAdmin ? [{ id: 'data-management' as TabType, label: 'Data Management', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' }] : []),
+    // Admin-only tabs
+    ...(isAdmin ? [
+      { id: 'user-management' as TabType, label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z' },
+      { id: 'data-management' as TabType, label: 'Data', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
+      { id: 'debug' as TabType, label: 'Debug', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
+    ] : []),
   ]
 
   return (
@@ -905,10 +912,105 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* Schedule Tab */}
+          {activeTab === 'schedule' && (
+            <div className="card">
+              <ScheduleEditor />
+            </div>
+          )}
+
+          {/* User Management Tab (Admin Only) */}
+          {activeTab === 'user-management' && isAdmin && (
+            <div className="card">
+              <AdminUserManagement />
+            </div>
+          )}
+
           {/* Data Management Tab (Admin Only) */}
           {activeTab === 'data-management' && (
             <div className="card">
               <AdminDataManagement />
+            </div>
+          )}
+
+          {/* Debug Tab (Admin Only) */}
+          {activeTab === 'debug' && isAdmin && (
+            <div className="space-y-6">
+              <div className="card">
+                <h2 className="font-heading text-xl text-relic-gold mb-4">Debug Console</h2>
+                <p className="text-text-slate text-sm mb-6">
+                  Monitor application errors, warnings, and debug information. The debug panel 
+                  also appears in the bottom-right corner when errors occur.
+                </p>
+                
+                <div className="space-y-4">
+                  {/* Debug Features Info */}
+                  <div className="p-4 bg-obsidian/50 rounded-lg">
+                    <h3 className="text-sand font-mono text-sm mb-3">Features</h3>
+                    <ul className="text-text-slate text-sm space-y-2">
+                      <li className="flex items-start gap-2">
+                        <span className="text-relic-gold">•</span>
+                        <span>Automatic error and warning capture from JavaScript runtime</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-relic-gold">•</span>
+                        <span>Unhandled promise rejection tracking</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-relic-gold">•</span>
+                        <span>Floating alert button when new errors occur</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-relic-gold">•</span>
+                        <span>Copy logs to clipboard or export as JSON</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-relic-gold">•</span>
+                        <span>Filter by log level (info, warning, error, debug)</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  {/* Open Debug Panel Button */}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        // Dispatch event to open debug panel
+                        window.dispatchEvent(new CustomEvent('open-debug-panel'))
+                      }}
+                      className="btn-rune flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      Open Debug Panel
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        // Test error logging
+                        console.error('Test error from Debug Settings')
+                      }}
+                      className="px-4 py-2 text-sm bg-status-offline/20 hover:bg-status-offline/30 text-status-offline rounded-lg transition-colors"
+                    >
+                      Test Error Log
+                    </button>
+                  </div>
+                  
+                  {/* Keyboard shortcut info */}
+                  <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <p className="text-blue-400 text-sm flex items-start gap-2">
+                      <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>
+                        The debug panel button appears in the bottom-right corner of the screen. 
+                        It pulses and turns red/amber when there are unread errors or warnings.
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

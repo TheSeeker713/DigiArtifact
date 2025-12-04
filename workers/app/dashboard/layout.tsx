@@ -7,10 +7,13 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
 import { GamificationProvider } from '@/contexts/GamificationContext'
 import { PWAProvider } from '@/contexts/PWAContext'
+import { TutorialProvider } from '@/contexts/TutorialContext'
+import { DebugProvider } from '@/contexts/DebugContext'
 import Sidebar from '@/components/Sidebar'
 import MobileNav from '@/components/MobileNav'
 import MobileQuickActions from '@/components/MobileQuickActions'
 import InstallPrompt from '@/components/InstallPrompt'
+import DebugPanel from '@/components/DebugPanel'
 import WalkthroughTutorial, { useTutorial } from '@/components/WalkthroughTutorial'
 
 // Inner component to use hooks inside providers
@@ -38,6 +41,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         
         {/* PWA Install Prompt & Offline Banner */}
         <InstallPrompt />
+        
+        {/* Debug Panel (Admin only - renders conditionally inside) */}
+        <DebugPanel />
       </div>
 
       {/* Onboarding Tutorial (shows on first visit) */}
@@ -69,7 +75,11 @@ export default function DashboardLayout({
       <SettingsProvider>
         <GamificationProvider>
           <PWAProvider>
-            <DashboardContent>{children}</DashboardContent>
+            <TutorialProvider>
+              <DebugProvider>
+                <DashboardContent>{children}</DashboardContent>
+              </DebugProvider>
+            </TutorialProvider>
           </PWAProvider>
         </GamificationProvider>
       </SettingsProvider>
