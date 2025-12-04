@@ -8,3 +8,16 @@ assets/video/*.mp4
 
 # Large MP3 files in assets
 assets/video/*.mp3
+
+# ===========================================
+# BACKUP FILES
+# ===========================================
+# Offline backup archives (stored in parent directory)
+*.backup
+*.7z
+digiArtifact.backup/
+digiArtifact.backup.*
+
+# Temporary backup folders
+**/backup/
+**/*.bak
