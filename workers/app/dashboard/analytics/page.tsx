@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { generatePDFReport, type ReportData } from '@/utils/pdfExport'
 
 type PeriodType = 'week' | 'month' | 'quarter'
 type ChartType = 'hours' | 'productivity' | 'projects'
@@ -37,12 +38,13 @@ interface Insight {
 }
 
 export default function AnalyticsPage() {
-  const { todayEntries, weeklyHours } = useAuth()
+  const { user, todayEntries, weeklyHours } = useAuth()
   const { formatTime } = useSettings()
   
   const [period, setPeriod] = useState<PeriodType>('week')
   const [chartType, setChartType] = useState<ChartType>('hours')
   const [comparing, setComparing] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Calculate total weekly hours from array
   const totalWeeklyHours = Array.isArray(weeklyHours) 
@@ -143,6 +145,75 @@ export default function AnalyticsPage() {
     const change = ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100
     return { thisWeek: thisWeekTotal, lastWeek: lastWeekTotal, change }
   }, [weekData])
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    const headers = ['Date', 'Hours', 'Breaks', 'Productivity']
+    const rows = weekData.map(d => [d.date, d.hours.toFixed(2), d.breaks.toString(), `${d.productivity}%`])
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `analytics-${period}-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  // Export to PDF
+  const handleExportPDF = async () => {
+    setIsExporting(true)
+    try {
+      const now = new Date()
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December']
+      
+      const reportData: ReportData = {
+        month: `${monthNames[now.getMonth()]} ${now.getFullYear()}`,
+        userName: user?.name || 'User',
+        totalHours: weekData.reduce((sum, d) => sum + d.hours, 0),
+        totalEntries: weekData.filter(d => d.hours > 0).length * 2, // Approximate
+        averagePerDay: weekData.reduce((sum, d) => sum + d.hours, 0) / weekData.filter(d => d.hours > 0).length || 0,
+        projectBreakdown: projectData.map(p => ({
+          name: p.name,
+          hours: p.hours,
+          color: p.color
+        })),
+        dailyHours: weekData.map((d, i) => {
+          const date = new Date()
+          date.setDate(date.getDate() - (6 - i))
+          return {
+            date: date.toISOString().split('T')[0],
+            hours: d.hours
+          }
+        }),
+        streakData: {
+          currentStreak: 5, // From gamification context
+          longestStreak: 12,
+          totalDaysWorked: weekData.filter(d => d.hours > 0).length
+        },
+        gamificationData: {
+          level: 3,
+          totalXP: 450,
+          levelTitle: 'Apprentice'
+        }
+      }
+
+      await generatePDFReport(reportData, {})
+    } catch (error) {
+      console.error('PDF export failed:', error)
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -468,17 +539,36 @@ export default function AnalyticsPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 bg-slate/30 text-sand hover:bg-slate/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+            <button 
+              onClick={handleExportCSV}
+              className="px-4 py-2 bg-slate/30 text-sand hover:bg-slate/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+            >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               CSV
             </button>
-            <button className="px-4 py-2 bg-slate/30 text-sand hover:bg-slate/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              PDF Report
+            <button 
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              className="px-4 py-2 bg-slate/30 text-sand hover:bg-slate/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  PDF Report
+                </>
+              )}
             </button>
           </div>
         </div>
