@@ -1050,6 +1050,167 @@ export default {
         }, 200, origin);
       }
 
+      // ===== ADMIN DATA MANAGEMENT ENDPOINTS =====
+
+      // Get all users (admin only)
+      if (path === '/api/admin/users' && method === 'GET') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const users = await env.DB.prepare(`
+          SELECT id, email, name, role, created_at,
+            (SELECT MAX(clock_in) FROM time_entries WHERE user_id = users.id) as last_activity
+          FROM users
+          ORDER BY name ASC
+        `).all();
+
+        return jsonResponse({ users: users.results }, 200, origin);
+      }
+
+      // Get global database stats (admin only)
+      if (path === '/api/admin/stats' && method === 'GET') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const stats = await env.DB.batch([
+          env.DB.prepare(`SELECT COUNT(*) as count FROM time_entries`),
+          env.DB.prepare(`SELECT COUNT(*) as count FROM schedule_blocks`),
+          env.DB.prepare(`SELECT COUNT(*) as count FROM xp_transactions`),
+          env.DB.prepare(`SELECT COUNT(*) as count FROM projects`),
+        ]);
+
+        return jsonResponse({
+          totalTimeEntries: (stats[0].results[0] as any)?.count || 0,
+          totalBlocks: (stats[1].results[0] as any)?.count || 0,
+          totalXpTransactions: (stats[2].results[0] as any)?.count || 0,
+          totalNotes: (stats[3].results[0] as any)?.count || 0,
+          storageUsed: 'N/A', // D1 doesn't expose storage stats easily
+        }, 200, origin);
+      }
+
+      // Get user-specific stats (admin only)
+      if (path.match(/^\/api\/admin\/users\/\d+\/stats$/) && method === 'GET') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const userId = path.split('/')[4];
+
+        const stats = await env.DB.batch([
+          env.DB.prepare(`SELECT COUNT(*) as count FROM time_entries WHERE user_id = ?`).bind(userId),
+          env.DB.prepare(`SELECT COUNT(*) as count FROM schedule_blocks WHERE user_id = ?`).bind(userId),
+          env.DB.prepare(`SELECT COUNT(*) as count FROM xp_transactions WHERE user_id = ?`).bind(userId),
+        ]);
+
+        return jsonResponse({
+          totalTimeEntries: (stats[0].results[0] as any)?.count || 0,
+          totalBlocks: (stats[1].results[0] as any)?.count || 0,
+          totalXpTransactions: (stats[2].results[0] as any)?.count || 0,
+          totalNotes: 0,
+          storageUsed: 'N/A',
+        }, 200, origin);
+      }
+
+      // Export user data (admin only)
+      if (path.match(/^\/api\/admin\/export\/\d+$/) && method === 'GET') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const userId = path.split('/').pop();
+
+        const [userInfo, timeEntries, blocks, xpTxs, gamification] = await Promise.all([
+          env.DB.prepare(`SELECT id, email, name, role, created_at FROM users WHERE id = ?`).bind(userId).first(),
+          env.DB.prepare(`SELECT * FROM time_entries WHERE user_id = ?`).bind(userId).all(),
+          env.DB.prepare(`SELECT * FROM schedule_blocks WHERE user_id = ?`).bind(userId).all(),
+          env.DB.prepare(`SELECT * FROM xp_transactions WHERE user_id = ?`).bind(userId).all(),
+          env.DB.prepare(`SELECT * FROM user_gamification WHERE user_id = ?`).bind(userId).first(),
+        ]);
+
+        return jsonResponse({
+          exportedAt: new Date().toISOString(),
+          scope: `User: ${(userInfo as any)?.name || 'Unknown'}`,
+          user: userInfo,
+          timeEntries: timeEntries.results,
+          blocks: blocks.results,
+          xpTransactions: xpTxs.results,
+          gamification: gamification,
+        }, 200, origin);
+      }
+
+      // Export all data (admin only)
+      if (path === '/api/admin/export/all' && method === 'GET') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const [users, timeEntries, blocks, xpTxs, gamification, projects] = await Promise.all([
+          env.DB.prepare(`SELECT id, email, name, role, created_at FROM users`).all(),
+          env.DB.prepare(`SELECT * FROM time_entries`).all(),
+          env.DB.prepare(`SELECT * FROM schedule_blocks`).all(),
+          env.DB.prepare(`SELECT * FROM xp_transactions`).all(),
+          env.DB.prepare(`SELECT * FROM user_gamification`).all(),
+          env.DB.prepare(`SELECT * FROM projects`).all(),
+        ]);
+
+        return jsonResponse({
+          exportedAt: new Date().toISOString(),
+          scope: 'Global',
+          users: users.results,
+          timeEntries: timeEntries.results,
+          blocks: blocks.results,
+          xpTransactions: xpTxs.results,
+          gamification: gamification.results,
+          projects: projects.results,
+        }, 200, origin);
+      }
+
+      // Purge user data (admin only)
+      if (path.match(/^\/api\/admin\/users\/\d+\/purge$/) && method === 'DELETE') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        const userId = path.split('/')[4];
+
+        // Delete user data but preserve the user account
+        await env.DB.batch([
+          env.DB.prepare(`DELETE FROM time_entries WHERE user_id = ?`).bind(userId),
+          env.DB.prepare(`DELETE FROM schedule_blocks WHERE user_id = ?`).bind(userId),
+          env.DB.prepare(`DELETE FROM xp_transactions WHERE user_id = ?`).bind(userId),
+          env.DB.prepare(`DELETE FROM user_gamification WHERE user_id = ?`).bind(userId),
+        ]);
+
+        return jsonResponse({
+          success: true,
+          message: `All data for user ${userId} has been purged`,
+        }, 200, origin);
+      }
+
+      // Global purge (admin only) - DANGEROUS
+      if (path === '/api/admin/purge/all' && method === 'DELETE') {
+        if (user!.role !== 'admin') {
+          return jsonResponse({ error: 'Admin access required' }, 403, origin);
+        }
+
+        // Delete all data but preserve user accounts
+        await env.DB.batch([
+          env.DB.prepare(`DELETE FROM time_entries`),
+          env.DB.prepare(`DELETE FROM schedule_blocks`),
+          env.DB.prepare(`DELETE FROM xp_transactions`),
+          env.DB.prepare(`DELETE FROM user_gamification`),
+          // Keep projects but clear assignments
+          env.DB.prepare(`UPDATE projects SET description = NULL`),
+        ]);
+
+        return jsonResponse({
+          success: true,
+          message: 'All database data has been purged. User accounts preserved.',
+        }, 200, origin);
+      }
+
       // 404 for unknown routes
       return jsonResponse({ error: 'Not found' }, 404, origin);
 

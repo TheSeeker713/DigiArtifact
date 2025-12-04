@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings, TIMEZONE_OPTIONS, TimeFormat } from '@/contexts/SettingsContext'
 import Cookies from 'js-cookie'
+import WalkthroughTutorial, { useTutorial } from '@/components/WalkthroughTutorial'
+import AdminDataManagement from '@/components/AdminDataManagement'
 
-type TabType = 'about' | 'help' | 'account' | 'notifications' | 'time-display'
+type TabType = 'about' | 'help' | 'account' | 'notifications' | 'time-display' | 'data-management'
 
 // Fortune Cookie Easter Egg Component
 const FORTUNES = [
@@ -110,6 +112,7 @@ function FortuneCookie() {
 export default function SettingsPage() {
   const { user } = useAuth()
   const { timezone, timeFormat, setTimezone, setTimeFormat, formatTime, formatDate } = useSettings()
+  const { showTutorial, startTutorial, closeTutorial, completeTutorial } = useTutorial()
   const [activeTab, setActiveTab] = useState<TabType>('account')
   const [currentPin, setCurrentPin] = useState('')
   const [newPin, setNewPin] = useState('')
@@ -118,6 +121,9 @@ export default function SettingsPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Check if current user is admin
+  const isAdmin = user?.role === 'admin'
 
   // Update current time every second for live preview
   useEffect(() => {
@@ -183,6 +189,8 @@ export default function SettingsPage() {
     { id: 'notifications' as TabType, label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
     { id: 'help' as TabType, label: 'Help', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'about' as TabType, label: 'About', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    // Admin-only tab
+    ...(isAdmin ? [{ id: 'data-management' as TabType, label: 'Data Management', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' }] : []),
   ]
 
   return (
@@ -384,74 +392,254 @@ export default function SettingsPage() {
           {/* Help Tab */}
           {activeTab === 'help' && (
             <div className="space-y-6">
+              {/* Tutorial Section */}
+              <div className="card bg-gradient-to-r from-relic-gold/10 to-baked-clay/10 border-relic-gold/30">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-relic-gold/20 rounded-lg">
+                    <svg className="w-8 h-8 text-relic-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-heading text-lg text-relic-gold mb-1">App Tutorial</h3>
+                    <p className="text-text-slate text-sm">
+                      New to the Workers Portal? Take a guided tour of all features.
+                    </p>
+                  </div>
+                  <button
+                    onClick={startTutorial}
+                    className="btn-rune flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Start Tutorial
+                  </button>
+                </div>
+              </div>
+
               <div className="card">
                 <h2 className="font-heading text-xl text-relic-gold mb-4">Frequently Asked Questions</h2>
                 
                 <div className="space-y-4">
-                  <details className="group">
-                    <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
-                      <span className="text-sand font-medium">How do I clock in?</span>
-                      <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </summary>
-                    <div className="p-4 text-text-slate text-sm">
-                      From the Dashboard, click the "Clock In" button. You can optionally select a project 
-                      before clocking in. Your time will start tracking immediately.
-                    </div>
-                  </details>
+                  {/* Getting Started */}
+                  <div className="border-b border-baked-clay/20 pb-4">
+                    <h3 className="text-sand font-mono text-sm mb-3 flex items-center gap-2">
+                      <span className="text-relic-gold">📚</span> Getting Started
+                    </h3>
+                    
+                    <details className="group">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">How do I clock in?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        From the Dashboard, click the "Clock In" button. You can optionally select a project 
+                        before clocking in. Your time will start tracking immediately.
+                      </div>
+                    </details>
 
-                  <details className="group">
-                    <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
-                      <span className="text-sand font-medium">How do I take a break?</span>
-                      <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </summary>
-                    <div className="p-4 text-text-slate text-sm">
-                      While clocked in, click the "Start Break" button. Your break time will be tracked 
-                      separately and subtracted from your total work hours. Click "End Break" when you're ready to continue.
-                    </div>
-                  </details>
+                    <details className="group mt-2">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">How do I take a break?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        While clocked in, click the "Start Break" button. Your break time will be tracked 
+                        separately and subtracted from your total work hours. Click "End Break" when you're ready to continue.
+                      </div>
+                    </details>
+                  </div>
 
-                  <details className="group">
-                    <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
-                      <span className="text-sand font-medium">Can I edit past time entries?</span>
-                      <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </summary>
-                    <div className="p-4 text-text-slate text-sm">
-                      Admins can edit any time entry from the Admin &gt; All Entries page. Regular users 
-                      can view their history but cannot edit past entries. Contact your admin if you need corrections.
-                    </div>
-                  </details>
+                  {/* Block Scheduling */}
+                  <div className="border-b border-baked-clay/20 pb-4">
+                    <h3 className="text-sand font-mono text-sm mb-3 flex items-center gap-2">
+                      <span className="text-relic-gold">🧱</span> Block-Based Scheduling
+                    </h3>
+                    
+                    <details className="group">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">What are schedule blocks?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        Blocks are time periods you plan for your day. Each block has a label (e.g., "Deep Work", "Break"), 
+                        duration, and category. You can create work blocks, break blocks, or custom categories to match 
+                        your workflow.
+                      </div>
+                    </details>
 
-                  <details className="group">
-                    <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
-                      <span className="text-sand font-medium">How do I change my PIN?</span>
-                      <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </summary>
-                    <div className="p-4 text-text-slate text-sm">
-                      Go to Settings &gt; Account and use the "Change PIN" form. You'll need to enter your 
-                      current PIN first, then your new PIN (4-6 digits) twice to confirm.
-                    </div>
-                  </details>
+                    <details className="group mt-2">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">How does dynamic scheduling work?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        When you complete or skip a block, the schedule automatically adjusts. Future blocks 
+                        shift to maintain your plan. The timeline shows "Now" indicator and updates in real-time 
+                        to keep you on track.
+                      </div>
+                    </details>
 
-                  <details className="group">
-                    <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
-                      <span className="text-sand font-medium">What if I forget my PIN?</span>
-                      <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </summary>
-                    <div className="p-4 text-text-slate text-sm">
-                      Contact your admin to have your PIN reset. They can set a new temporary PIN for you 
-                      from the Admin &gt; Users page, then you can change it to something personal.
-                    </div>
-                  </details>
+                    <details className="group mt-2">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">What happens to incomplete blocks?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        If you have incomplete blocks from yesterday, you'll see a Morning Check-In when you 
+                        start your day. You can choose which tasks to carry over to today's schedule, and 
+                        the rest will be archived.
+                      </div>
+                    </details>
+                  </div>
+
+                  {/* Gamification */}
+                  <div className="border-b border-baked-clay/20 pb-4">
+                    <h3 className="text-sand font-mono text-sm mb-3 flex items-center gap-2">
+                      <span className="text-relic-gold">⭐</span> XP & Gamification
+                    </h3>
+                    
+                    <details className="group">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">How do I earn XP?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        You earn XP for completing blocks (+10 XP), maintaining streaks (+5 XP per day), 
+                        adding notes (+2 XP), and completing Focus Timer sessions (+15 XP). Your XP accumulates 
+                        and levels you up over time!
+                      </div>
+                    </details>
+
+                    <details className="group mt-2">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">What are streaks?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        Streaks track consecutive days of activity. Clock in daily to maintain your streak. 
+                        Higher streaks earn multiplied XP rewards and unlock special achievements!
+                      </div>
+                    </details>
+                  </div>
+
+                  {/* Reports & Export */}
+                  <div className="border-b border-baked-clay/20 pb-4">
+                    <h3 className="text-sand font-mono text-sm mb-3 flex items-center gap-2">
+                      <span className="text-relic-gold">📊</span> Reports & Export
+                    </h3>
+                    
+                    <details className="group">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">How do I export my time data?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        Go to Reports, select your date range, and click "Export CSV" for spreadsheet data 
+                        or "Export PDF" for a beautifully formatted report with charts and graphs. PDFs include 
+                        visual analytics, time breakdowns, and summary statistics.
+                      </div>
+                    </details>
+
+                    <details className="group mt-2">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">What analytics are available?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        View daily/weekly/monthly trends, project breakdowns, work vs break ratios, 
+                        average session lengths, peak productivity hours, and more. Charts visualize 
+                        your patterns to help optimize your work habits.
+                      </div>
+                    </details>
+                  </div>
+
+                  {/* Focus Timer */}
+                  <div className="border-b border-baked-clay/20 pb-4">
+                    <h3 className="text-sand font-mono text-sm mb-3 flex items-center gap-2">
+                      <span className="text-relic-gold">🎯</span> Focus Timer
+                    </h3>
+                    
+                    <details className="group">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">How does the Focus Timer work?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        The Focus Timer uses Pomodoro technique - 25-minute focus sessions followed by 
+                        5-minute breaks. Complete 4 sessions for a longer break. You earn XP for completing 
+                        full sessions, encouraging deep work habits.
+                      </div>
+                    </details>
+                  </div>
+
+                  {/* Account */}
+                  <div>
+                    <h3 className="text-sand font-mono text-sm mb-3 flex items-center gap-2">
+                      <span className="text-relic-gold">🔐</span> Account & Security
+                    </h3>
+                    
+                    <details className="group">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">How do I change my PIN?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        Go to Settings → Account and use the "Change PIN" form. You'll need to enter your 
+                        current PIN first, then your new PIN (4-6 digits) twice to confirm.
+                      </div>
+                    </details>
+
+                    <details className="group mt-2">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">What if I forget my PIN?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        Contact your admin to have your PIN reset. They can set a new temporary PIN for you 
+                        from the Admin → Users page, then you can change it to something personal.
+                      </div>
+                    </details>
+
+                    <details className="group mt-2">
+                      <summary className="flex items-center justify-between p-4 bg-obsidian/50 rounded-lg cursor-pointer hover:bg-obsidian/70 transition-colors">
+                        <span className="text-sand font-medium">Can I edit past time entries?</span>
+                        <svg className="w-5 h-5 text-relic-gold group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="p-4 text-text-slate text-sm">
+                        Admins can edit any time entry from the Admin → All Entries page. Regular users 
+                        can view their history but cannot edit past entries. Contact your admin if you need corrections.
+                      </div>
+                    </details>
+                  </div>
                 </div>
               </div>
 
@@ -716,8 +904,22 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+
+          {/* Data Management Tab (Admin Only) */}
+          {activeTab === 'data-management' && (
+            <div className="card">
+              <AdminDataManagement />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Walkthrough Tutorial */}
+      <WalkthroughTutorial
+        isOpen={showTutorial}
+        onClose={closeTutorial}
+        onComplete={completeTutorial}
+      />
     </div>
   )
 }
