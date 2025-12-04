@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useGamification } from '@/contexts/GamificationContext'
 import { Chart, registerables } from 'chart.js'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, subMonths, addMonths } from 'date-fns'
 import Cookies from 'js-cookie'
+import { generatePDFReport, ReportData } from '@/utils/pdfExport'
 
 Chart.register(...registerables)
 
@@ -18,9 +20,11 @@ interface MonthlyStats {
 
 export default function ReportsPage() {
   const { user } = useAuth()
+  const { data: gamificationData } = useGamification()
   const [monthOffset, setMonthOffset] = useState(0)
   const [stats, setStats] = useState<MonthlyStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   
   const lineChartRef = useRef<HTMLCanvasElement>(null)
   const pieChartRef = useRef<HTMLCanvasElement>(null)
@@ -186,6 +190,49 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url)
   }
 
+  const exportToPDF = async () => {
+    if (!stats || !user) return
+    
+    setIsExporting(true)
+    
+    try {
+      // Prepare report data
+      const reportData: ReportData = {
+        month: format(currentMonth, 'MMMM yyyy'),
+        userName: user.name || user.email,
+        totalHours: stats.totalHours,
+        totalEntries: stats.totalEntries,
+        averagePerDay: stats.averagePerDay,
+        projectBreakdown: stats.projectBreakdown,
+        dailyHours: stats.dailyHours,
+        gamificationData: gamificationData ? {
+          level: gamificationData.level,
+          totalXP: gamificationData.totalXP,
+          levelTitle: gamificationData.levelTitle,
+        } : undefined,
+        streakData: gamificationData ? {
+          currentStreak: gamificationData.currentStreak,
+          longestStreak: gamificationData.achievements.find(a => a.id === 'streak_30')?.requirement || 0,
+          totalDaysWorked: stats.dailyHours.filter(d => d.hours > 0).length,
+        } : undefined,
+      }
+
+      // Get chart canvas elements
+      const chartElements = {
+        dailyChart: lineChartRef.current || undefined,
+        projectChart: pieChartRef.current || undefined,
+      }
+
+      // Generate and download PDF
+      await generatePDFReport(reportData, chartElements)
+    } catch (error) {
+      console.error('Failed to export PDF:', error)
+      alert('Failed to export PDF. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
@@ -196,12 +243,40 @@ export default function ReportsPage() {
             Monthly analytics and time breakdowns
           </p>
         </div>
-        <button onClick={exportToCSV} className="btn-hologram flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Export CSV
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={exportToCSV} 
+            disabled={!stats || isLoading}
+            className="btn-hologram flex items-center gap-2 disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            CSV
+          </button>
+          <button 
+            onClick={exportToPDF}
+            disabled={!stats || isLoading || isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+          >
+            {isExporting ? (
+              <>
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Generating...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 13h7a.5.5 0 010 1h-7a.5.5 0 010-1zm0 2h7a.5.5 0 010 1h-7a.5.5 0 010-1zm0 2h4a.5.5 0 010 1h-4a.5.5 0 010-1z"/>
+                </svg>
+                Export PDF
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Month Navigation */}
