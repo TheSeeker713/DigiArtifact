@@ -1081,6 +1081,9 @@ interface JournalEntry {
 ### Build Result
 ✅ All 16 routes compiled successfully (added `/dashboard/journal`)
 
+### Deployment Note
+After committing, rebuild with `npm run build` in workers folder to generate updated static files in `out/` for deployment.
+
 ---
 
 ## Credits
