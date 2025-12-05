@@ -1,6 +1,10 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+import Cookies from 'js-cookie'
+
+// API base URL
+const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
 // XP Configuration
 const XP_CONFIG = {
@@ -114,6 +118,19 @@ interface GamificationContextType {
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined)
 
+// Helper function to calculate level from XP
+function getLevelFromXP(xp: number) {
+  let currentLevel = LEVELS[0]
+  for (const level of LEVELS) {
+    if (xp >= level.xp) {
+      currentLevel = level
+    } else {
+      break
+    }
+  }
+  return currentLevel
+}
+
 const DEFAULT_DATA: GamificationData = {
   totalXP: 0,
   level: 1,
@@ -133,35 +150,61 @@ const DEFAULT_DATA: GamificationData = {
 export function GamificationProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<GamificationData>(DEFAULT_DATA)
   const [xpNotification, setXpNotification] = useState<{ amount: number; reason: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Load from localStorage
+  // Fetch gamification data from API
   useEffect(() => {
-    const saved = localStorage.getItem('workers_gamification')
-    if (saved) {
+    const fetchGamificationData = async () => {
+      const token = Cookies.get('workers_token')
+      if (!token) {
+        setIsLoading(false)
+        return
+      }
+
       try {
-        const parsed = JSON.parse(saved)
-        setData({ ...DEFAULT_DATA, ...parsed })
-      } catch {
-        setData(DEFAULT_DATA)
+        const res = await fetch(`${API_BASE}/gamification`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        if (res.ok) {
+          const apiData = await res.json()
+          // Map API data to our format
+          const level = getLevelFromXP(apiData.total_xp || 0)
+          const nextLevelData = LEVELS.find(l => l.xp > (apiData.total_xp || 0)) || LEVELS[LEVELS.length - 1]
+          
+          setData(prev => ({
+            ...prev,
+            totalXP: apiData.total_xp || 0,
+            level: level.level,
+            levelTitle: level.title,
+            levelColor: level.color,
+            currentLevelXP: (apiData.total_xp || 0) - level.xp,
+            nextLevelXP: nextLevelData.xp - level.xp,
+            currentStreak: apiData.current_streak || 0,
+            totalHoursWorked: apiData.total_hours_worked || 0,
+            totalSessions: apiData.total_sessions || 0,
+            lastUpdated: Date.now(),
+          }))
+        }
+      } catch (err) {
+        console.error('Failed to fetch gamification data:', err)
+      } finally {
+        setIsLoading(false)
       }
     }
+
+    fetchGamificationData()
   }, [])
 
-  // Save to localStorage
+  // Also keep localStorage as a cache
   useEffect(() => {
-    localStorage.setItem('workers_gamification', JSON.stringify(data))
-  }, [data])
+    if (!isLoading) {
+      localStorage.setItem('workers_gamification', JSON.stringify(data))
+    }
+  }, [data, isLoading])
 
   const getLevel = useCallback((xp: number) => {
-    let currentLevel = LEVELS[0]
-    for (const level of LEVELS) {
-      if (xp >= level.xp) {
-        currentLevel = level
-      } else {
-        break
-      }
-    }
-    return currentLevel
+    return getLevelFromXP(xp)
   }, [])
 
   const addXP = useCallback((amount: number, reason: string) => {

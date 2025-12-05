@@ -84,7 +84,7 @@ function WeeklyMilestoneModal({
         <div className="bg-relic-gold/10 border border-relic-gold/30 rounded-lg p-4 mb-6">
           <p className="text-relic-gold font-mono text-lg">+1000 XP</p>
           <p className="text-sand/60 text-sm mt-1">
-            You've achieved 6 full days of completion!
+            You've achieved 7 full days of completion!
           </p>
         </div>
         
@@ -330,9 +330,10 @@ export default function BlockTimeline({
   const [editingBlock, setEditingBlock] = useState<string | null>(null)
   const [showMorningCheckIn, setShowMorningCheckIn] = useState(false)
   
-  // Day streak tracking (simulated - would come from API)
-  const [streakDays, setStreakDays] = useState(5)
-  const STREAK_TARGET = 6
+  // Get real streak data from gamification context
+  const { data: gamificationData } = useGamification()
+  const streakDays = gamificationData.currentStreak
+  const STREAK_TARGET = 7 // Weekly goal
   
   // Show morning check-in if there are incomplete blocks
   useEffect(() => {
@@ -373,14 +374,12 @@ export default function BlockTimeline({
     const completedCount = workBlocks.filter(b => b.status === 'completed').length + 1
     
     if (completedCount === workBlocks.length) {
-      // Full day completed - check streak
-      const newStreak = streakDays + 1
-      setStreakDays(newStreak)
-      
-      if (newStreak === STREAK_TARGET) {
-        setCurrentMilestone('6-Day Champion')
+      // Full day completed - streak is tracked on the API side
+      // Show milestone modal if we just hit the target
+      if (streakDays + 1 === STREAK_TARGET) {
+        setCurrentMilestone('7-Day Champion')
         setShowMilestoneModal(true)
-        addXP(1000, 'Weekly Milestone: 6-Day Champion')
+        addXP(1000, 'Weekly Milestone: 7-Day Champion')
       }
     }
     
@@ -481,9 +480,9 @@ export default function BlockTimeline({
         
         {/* Milestone markers */}
         <div className="flex justify-between mt-2 text-xs text-sand/40">
-          {[1, 2, 3, 4, 5, 6].map(day => (
+          {[1, 2, 3, 4, 5, 6, 7].map(day => (
             <div key={day} className={`flex flex-col items-center ${day <= streakDays ? 'text-relic-gold' : ''}`}>
-              <span>{day === 6 ? '🏆' : day <= streakDays ? '✓' : '○'}</span>
+              <span>{day === 7 ? '🏆' : day <= streakDays ? '✓' : '○'}</span>
               <span>{day}</span>
             </div>
           ))}

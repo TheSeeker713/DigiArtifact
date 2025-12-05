@@ -60,13 +60,12 @@ export default function BlockSchedulePage() {
   // Carry-over from previous day (would come from API/localStorage)
   const [carryOver, setCarryOver] = useState<CarryOverInfo | null>(null)
   
-  // Daily stats
+  // Daily stats - streakDays comes from gamification context
   const [dailyStats, setDailyStats] = useState({
     targetMinutes: 480,
     completedMinutes: 0,
     blocksCompleted: 0,
     blocksTotal: 4,
-    streakDays: 5,
     xpEarnedToday: 0,
   })
   
@@ -278,7 +277,7 @@ export default function BlockSchedulePage() {
             <p className="text-xs text-sand/60">Blocks</p>
           </div>
           <div className="text-center p-3 bg-slate/30 rounded-lg">
-            <p className="text-2xl font-bold text-amber-400">{dailyStats.streakDays}</p>
+            <p className="text-2xl font-bold text-amber-400">{gamificationData.currentStreak}</p>
             <p className="text-xs text-sand/60">Day Streak</p>
           </div>
           <div className="text-center p-3 bg-slate/30 rounded-lg">
@@ -321,8 +320,8 @@ export default function BlockSchedulePage() {
             <div className="flex items-center gap-3">
               <span className="text-xl">🔥</span>
               <div>
-                <p className="font-semibold text-sand">6-Day Champion</p>
-                <p className="text-xs text-sand/50">{6 - dailyStats.streakDays} more days of full completion</p>
+                <p className="font-semibold text-sand">7-Day Champion</p>
+                <p className="text-xs text-sand/50">{Math.max(0, 7 - gamificationData.currentStreak)} more days of full completion</p>
               </div>
             </div>
             <span className="text-relic-gold font-mono">+1000 XP</span>
