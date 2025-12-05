@@ -18,8 +18,12 @@ import WalkthroughTutorial, { useTutorial } from '@/components/WalkthroughTutori
 
 // Inner component to use hooks inside providers
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { clockStatus } = useAuth()
-  const { showTutorial, closeTutorial, completeTutorial } = useTutorial(clockStatus)
+  const { clockStatus, weeklyHours, todayEntries } = useAuth()
+  const { showTutorial, closeTutorial, completeTutorial } = useTutorial({
+    clockStatus,
+    weeklyHours,
+    todayEntries,
+  })
 
   return (
     <>

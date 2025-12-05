@@ -409,8 +409,15 @@ export default function WalkthroughTutorial({ isOpen, onClose, onComplete }: Wal
   return createPortal(tutorialContent, document.body)
 }
 
+interface TutorialOptions {
+  clockStatus?: 'clocked-in' | 'clocked-out' | 'on-break'
+  weeklyHours?: number[]
+  todayEntries?: unknown[]
+}
+
 // Hook to manage tutorial state
-export function useTutorial(clockStatus?: 'clocked-in' | 'clocked-out' | 'on-break') {
+export function useTutorial(options: TutorialOptions = {}) {
+  const { clockStatus, weeklyHours = [], todayEntries = [] } = options
   const [showTutorial, setShowTutorial] = useState(false)
   const [hasCompletedTutorial, setHasCompletedTutorial] = useState(true)
 
@@ -420,17 +427,27 @@ export function useTutorial(clockStatus?: 'clocked-in' | 'clocked-out' | 'on-bre
       return
     }
 
-    // Check if this is the user's first visit
-    const completed = localStorage.getItem('workers_tutorial_completed')
-    if (!completed) {
-      // Delay showing tutorial to let the page load
-      const timer = setTimeout(() => {
-        setShowTutorial(true)
-        setHasCompletedTutorial(false)
-      }, 1500)
-      return () => clearTimeout(timer)
+    // Check if user has any work history (not a new user)
+    const hasWorkHistory = weeklyHours.some(h => h > 0) || todayEntries.length > 0
+    if (hasWorkHistory) {
+      // User has records - they've used the app before, mark as completed
+      localStorage.setItem('workers_tutorial_completed', 'true')
+      return
     }
-  }, [clockStatus])
+
+    // Check if tutorial was completed on this device
+    const completed = localStorage.getItem('workers_tutorial_completed')
+    if (completed) {
+      return
+    }
+
+    // New user with no history - show tutorial after delay
+    const timer = setTimeout(() => {
+      setShowTutorial(true)
+      setHasCompletedTutorial(false)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [clockStatus, weeklyHours, todayEntries])
 
   const startTutorial = useCallback(() => {
     setShowTutorial(true)
