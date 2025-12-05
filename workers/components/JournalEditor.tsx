@@ -245,13 +245,13 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-slate-700/50 [.light-mode_&]:hover:bg-slate-200 rounded-lg text-slate-400 [.light-mode_&]:text-slate-500 hover:text-white [.light-mode_&]:hover:text-slate-900 transition-colors"
+            className="p-2 hover:bg-slate/50 [.light-mode_&]:hover:bg-slate-200 rounded-lg text-slate-400 [.light-mode_&]:text-slate-500 hover:text-sand [.light-mode_&]:hover:text-slate-900 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h2 className="text-lg font-semibold text-white [.light-mode_&]:text-slate-900">
+          <h2 className="text-lg font-semibold text-sand [.light-mode_&]:text-slate-900">
             {entry ? 'Edit Entry' : 'New Entry'}
           </h2>
           {hasChanges && (
@@ -273,7 +273,7 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
               hasChanges && !isSaving
                 ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                : 'bg-slate-700 [.light-mode_&]:bg-slate-200 text-slate-500 [.light-mode_&]:text-slate-400 cursor-not-allowed'
+                : 'bg-slate/50 [.light-mode_&]:bg-slate-200 text-slate-500 [.light-mode_&]:text-slate-400 cursor-not-allowed'
             }`}
           >
             {isSaving ? (
@@ -301,16 +301,16 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Entry title (optional)"
-        className="w-full px-4 py-3 mb-4 bg-slate-700/30 [.light-mode_&]:bg-white border border-slate-600/30 [.light-mode_&]:border-slate-200 rounded-lg text-white [.light-mode_&]:text-slate-900 text-lg placeholder-slate-500 [.light-mode_&]:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+        className="w-full px-4 py-3 mb-4 bg-obsidian/50 [.light-mode_&]:bg-white border border-slate/50 [.light-mode_&]:border-slate-200 rounded-lg text-sand [.light-mode_&]:text-slate-900 text-lg placeholder-slate-500 [.light-mode_&]:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
       />
 
       {/* Formatting Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-700/30 [.light-mode_&]:bg-slate-50 border border-slate-600/30 [.light-mode_&]:border-slate-200 rounded-t-lg">
+      <div className="flex flex-wrap items-center gap-1 p-2 bg-slate/30 [.light-mode_&]:bg-slate-50 border border-slate/50 [.light-mode_&]:border-slate-200 rounded-t-lg">
         {formatButtons.map((btn, i) => (
           <button
             key={i}
             onClick={() => execCommand(btn.action)}
-            className="p-2 hover:bg-slate-600/50 [.light-mode_&]:hover:bg-slate-200 rounded text-slate-400 [.light-mode_&]:text-slate-500 hover:text-white [.light-mode_&]:hover:text-slate-900 transition-colors"
+            className="p-2 hover:bg-slate/50 [.light-mode_&]:hover:bg-slate-200 rounded text-slate-400 [.light-mode_&]:text-slate-500 hover:text-sand [.light-mode_&]:hover:text-slate-900 transition-colors"
             title={btn.tooltip}
           >
             {btn.icon}
@@ -323,14 +323,14 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
         ref={editorRef}
         contentEditable
         onInput={handleContentChange}
-        className="flex-1 min-h-[300px] p-4 bg-slate-700/20 [.light-mode_&]:bg-white border-x border-b border-slate-600/30 [.light-mode_&]:border-slate-200 rounded-b-lg text-white [.light-mode_&]:text-slate-900 focus:outline-none overflow-y-auto prose prose-invert [.light-mode_&]:prose-slate max-w-none
+        className="flex-1 min-h-[300px] p-4 bg-obsidian/30 [.light-mode_&]:bg-white border-x border-b border-slate/50 [.light-mode_&]:border-slate-200 rounded-b-lg text-sand [.light-mode_&]:text-slate-900 focus:outline-none overflow-y-auto prose prose-invert [.light-mode_&]:prose-slate max-w-none
           [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-amber-400 [.light-mode_&]:[&_h2]:text-amber-600 [&_h2]:mb-2
           [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-300 [.light-mode_&]:[&_blockquote]:text-slate-600
           [&_ul]:list-disc [&_ul]:ml-6
           [&_ol]:list-decimal [&_ol]:ml-6
           [&_li]:text-slate-300 [.light-mode_&]:[&_li]:text-slate-600
           [&_a]:text-amber-400 [.light-mode_&]:[&_a]:text-amber-600 [&_a]:underline
-          [&_pre]:bg-slate-800 [.light-mode_&]:[&_pre]:bg-slate-100 [&_pre]:p-3 [&_pre]:rounded [&_pre]:font-mono [&_pre]:text-sm"
+          [&_pre]:bg-slate/50 [.light-mode_&]:[&_pre]:bg-slate-100 [&_pre]:p-3 [&_pre]:rounded [&_pre]:font-mono [&_pre]:text-sm"
         data-placeholder="Start writing..."
       />
 
@@ -341,7 +341,7 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
           {tags.map((tag, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-slate-700/50 [.light-mode_&]:bg-slate-100 text-slate-300 [.light-mode_&]:text-slate-600 rounded-full text-sm"
+              className="inline-flex items-center gap-1 px-3 py-1 bg-slate/50 [.light-mode_&]:bg-slate-100 text-slate-300 [.light-mode_&]:text-slate-600 rounded-full text-sm"
             >
               #{tag}
               <button
@@ -361,7 +361,7 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
               placeholder="Add tag..."
-              className="w-24 px-2 py-1 bg-transparent border-b border-slate-600 [.light-mode_&]:border-slate-300 text-slate-300 [.light-mode_&]:text-slate-600 text-sm placeholder-slate-500 [.light-mode_&]:placeholder-slate-400 focus:outline-none focus:border-amber-500"
+              className="w-24 px-2 py-1 bg-transparent border-b border-slate/50 [.light-mode_&]:border-slate-300 text-slate-300 [.light-mode_&]:text-slate-600 text-sm placeholder-slate-500 [.light-mode_&]:placeholder-slate-400 focus:outline-none focus:border-amber-500"
             />
             <button
               onClick={handleAddTag}
