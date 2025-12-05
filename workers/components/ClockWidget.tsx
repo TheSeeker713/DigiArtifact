@@ -191,7 +191,7 @@ export default function ClockWidget() {
 
   return (
     <>
-      <div className={`card ${statusConfig.bgClass}`}>
+      <div className={`card ${statusConfig.bgClass}`} data-tutorial="clock-widget">
         {/* Status Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

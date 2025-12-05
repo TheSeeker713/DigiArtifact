@@ -49,7 +49,7 @@ export default function QuickStats() {
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div data-tutorial="quick-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat) => (
         <div key={stat.label} className="card text-center">
           <svg className={`w-6 h-6 mx-auto mb-2 ${stat.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

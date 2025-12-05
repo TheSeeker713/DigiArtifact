@@ -30,7 +30,7 @@ export default function GamificationWidget() {
 
   return (
     <>
-      <div className="card">
+      <div data-tutorial="gamification-widget" className="card">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-heading text-lg text-sand">Progress</h3>
