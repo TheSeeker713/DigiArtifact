@@ -1,35 +1,100 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useJournal } from '@/contexts/JournalContext'
 
 interface QuickNote {
   id: string
   text: string
   timestamp: number
   pinned: boolean
+  archivedToJournal: boolean // Track if already archived
 }
+
+const STORAGE_KEY = 'workers_quick_notes'
+const LAST_CLEAR_KEY = 'workers_quick_notes_last_clear'
 
 export default function QuickNotesWidget() {
   const [notes, setNotes] = useState<QuickNote[]>([])
   const [newNote, setNewNote] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
+  const { archiveNote } = useJournal()
+  const midnightCheckRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Load notes from localStorage
+  // Check if it's a new day and clear unpinned notes
+  const checkAndClearMidnight = () => {
+    const lastClear = localStorage.getItem(LAST_CLEAR_KEY)
+    const today = new Date().toDateString()
+    
+    if (lastClear !== today) {
+      // It's a new day - archive unpinned notes to journal before clearing
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        try {
+          const currentNotes: QuickNote[] = JSON.parse(saved)
+          
+          // Archive unpinned notes that haven't been archived yet
+          currentNotes.forEach(note => {
+            if (!note.pinned && !note.archivedToJournal) {
+              archiveNote(
+                note.text,
+                'quick_note',
+                note.id,
+                undefined,
+                [],
+                undefined
+              )
+            }
+          })
+          
+          // Keep only pinned notes
+          const pinnedNotes = currentNotes.filter(n => n.pinned)
+          setNotes(pinnedNotes)
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(pinnedNotes))
+        } catch {
+          setNotes([])
+        }
+      }
+      
+      // Update last clear date
+      localStorage.setItem(LAST_CLEAR_KEY, today)
+    }
+  }
+
+  // Load notes and check for midnight clear
   useEffect(() => {
-    const saved = localStorage.getItem('workers_quick_notes')
+    checkAndClearMidnight()
+    
+    const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       try {
         setNotes(JSON.parse(saved))
       } catch {
-        // Invalid data, reset
         setNotes([])
+      }
+    }
+
+    // Set up interval to check for midnight
+    const checkInterval = () => {
+      const now = new Date()
+      // Check every minute
+      midnightCheckRef.current = setTimeout(() => {
+        checkAndClearMidnight()
+        checkInterval()
+      }, 60000)
+    }
+    checkInterval()
+
+    return () => {
+      if (midnightCheckRef.current) {
+        clearTimeout(midnightCheckRef.current)
       }
     }
   }, [])
 
   // Save notes to localStorage
   useEffect(() => {
-    localStorage.setItem('workers_quick_notes', JSON.stringify(notes))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes))
   }, [notes])
 
   const addNote = () => {
@@ -40,7 +105,18 @@ export default function QuickNotesWidget() {
       text: newNote.trim(),
       timestamp: Date.now(),
       pinned: false,
+      archivedToJournal: true, // Archive immediately when created
     }
+    
+    // Archive to journal immediately
+    archiveNote(
+      note.text,
+      'quick_note',
+      note.id,
+      undefined,
+      [],
+      undefined
+    )
     
     setNotes(prev => [note, ...prev])
     setNewNote('')

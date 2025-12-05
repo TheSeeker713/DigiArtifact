@@ -961,6 +961,128 @@ A comprehensive time-block scheduling system designed for neurodivergent product
 
 ---
 
+## December 5, 2025 (Evening) - Journal System v1.1.0 📔
+
+**Session Focus**: Comprehensive Journal system for note archival and rich text editing  
+**Status**: 🟢 SHIPPED  
+**Version**: 1.1.0  
+**Files Changed**: 6 new files created, 5 files modified
+
+### Journal System ✅ SHIPPED
+
+A permanent archive system for all notes across the app, with WYSIWYG editing and PDF export.
+
+#### Core Components
+
+- **`workers/contexts/JournalContext.tsx`**: Central state management
+  - Entry storage with localStorage persistence
+  - Source types: `quick_note`, `journal_editor`, `clock_note`, `block_note`, `goal_note`, `project_note`
+  - Functions: `archiveNote`, `updateEntry`, `deleteEntry`, `exportToPDF`
+  - Search and filter by source/date range
+  - Helper functions for source labels and icons
+
+- **`workers/app/dashboard/journal/page.tsx`**: Journal page with tabs
+  - Library tab for viewing all entries
+  - Editor tab for creating/editing entries
+  - Delete confirmation modal with warning
+  - Entry count display
+  - New Entry button
+
+- **`workers/components/JournalLibrary.tsx`**: Note archive browser
+  - Search across title, content, and tags
+  - Filter by source type dropdown
+  - Sort by newest/oldest toggle
+  - Grid layout with note cards
+  - Preview text (150 chars, HTML stripped)
+  - Tags display (max 3 shown)
+  - Edit, Export PDF, Delete actions (hover reveal)
+  - Color-coded source badges with icons
+  - Formatted date/time display
+  - Empty state with guidance
+
+- **`workers/components/JournalEditor.tsx`**: WYSIWYG rich text editor
+  - ContentEditable-based editor
+  - Formatting toolbar: Bold, Italic, Underline, Strikethrough
+  - Structure: Headings, Blockquotes, Bullet/Numbered lists
+  - Insertions: Links, Code blocks
+  - Title input (optional)
+  - Tags management with add/remove
+  - Unsaved changes indicator
+  - Auto-save on navigation away (beforeunload)
+  - Last saved timestamp display
+  - Save button with loading state
+
+#### QuickNotes Integration
+
+- **`workers/components/QuickNotesWidget.tsx`**: Updated with Journal archival
+  - Every new note immediately archived to Journal
+  - Midnight auto-clear for unpinned notes
+  - Pinned notes persist across days
+  - Archives unpinned notes before clearing
+  - Uses `workers_quick_notes_last_clear` localStorage key
+  - Checks date on mount and periodically (60s interval)
+
+#### Navigation Updates
+
+- **`workers/components/Sidebar.tsx`**: Added Journal nav item with book icon
+- **`workers/components/MobileNav.tsx`**: Added Journal nav item for mobile
+
+#### Provider Integration
+
+- **`workers/app/dashboard/layout.tsx`**: Added JournalProvider wrapper
+  - Wraps inside GamificationProvider
+  - Before PWAProvider in hierarchy
+
+### New File Summary
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `workers/contexts/JournalContext.tsx` | Journal state management | ~220 |
+| `workers/app/dashboard/journal/page.tsx` | Journal page with Library/Editor tabs | ~175 |
+| `workers/components/JournalLibrary.tsx` | Note archive browser | ~240 |
+| `workers/components/JournalEditor.tsx` | WYSIWYG rich text editor | ~390 |
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `workers/components/QuickNotesWidget.tsx` | Added Journal archival, midnight clear |
+| `workers/components/Sidebar.tsx` | Added Journal nav item |
+| `workers/components/MobileNav.tsx` | Added Journal nav item |
+| `workers/app/dashboard/layout.tsx` | Added JournalProvider |
+| `workers/app/dashboard/settings/page.tsx` | Updated version to 1.1.0 |
+
+### Technical Highlights
+
+- **Dual Storage**: localStorage for Journal + QuickNotes integration
+- **Source Tracking**: Every entry tagged with origin (quick_note, journal_editor, etc.)
+- **Rich Text**: HTML content stored in `richContent`, plain text in `content`
+- **PDF Export**: Uses jsPDF (already installed) for single-entry export
+- **WYSIWYG**: Native `contentEditable` with `execCommand` API
+- **Auto-Clear**: Midnight detection clears temporary QuickNotes
+- **Archive First**: Notes archived before being cleared
+
+### Entry Interface
+
+```typescript
+interface JournalEntry {
+  id: string
+  title?: string
+  content: string          // Plain text
+  richContent?: string     // HTML rich text
+  source: JournalEntrySource
+  sourceId?: string        // Reference to original
+  createdAt: number
+  updatedAt: number
+  tags: string[]
+}
+```
+
+### Build Result
+✅ All 16 routes compiled successfully (added `/dashboard/journal`)
+
+---
+
 ## Credits
 
 **Development**: DigiArtifact and J.W.
@@ -979,4 +1101,4 @@ A comprehensive time-block scheduling system designed for neurodivergent product
 
 ---
 
-*Last Updated: December 6, 2025*
+*Last Updated: December 5, 2025*

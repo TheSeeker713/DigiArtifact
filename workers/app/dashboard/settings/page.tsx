@@ -348,7 +348,7 @@ export default function SettingsPage() {
                   <span className="font-heading text-obsidian font-bold text-3xl">D</span>
                 </div>
                 <h2 className="font-heading text-2xl text-relic-gold mb-2">DigiArtifact Workers Portal</h2>
-                <p className="text-text-slate font-mono text-sm">Version 1.0.0</p>
+                <p className="text-text-slate font-mono text-sm">Version 1.1.0</p>
               </div>
 
               <div className="space-y-6">

@@ -9,6 +9,7 @@ import { GamificationProvider } from '@/contexts/GamificationContext'
 import { PWAProvider } from '@/contexts/PWAContext'
 import { TutorialProvider } from '@/contexts/TutorialContext'
 import { DebugProvider } from '@/contexts/DebugContext'
+import { JournalProvider } from '@/contexts/JournalContext'
 import Sidebar from '@/components/Sidebar'
 import MobileNav from '@/components/MobileNav'
 import MobileQuickActions from '@/components/MobileQuickActions'
@@ -83,13 +84,15 @@ export default function DashboardLayout({
     <AuthProvider>
       <SettingsProvider>
         <GamificationProvider>
-          <PWAProvider>
-            <TutorialProvider>
-              <DebugProvider>
-                <DashboardContent>{children}</DashboardContent>
-              </DebugProvider>
-            </TutorialProvider>
-          </PWAProvider>
+          <JournalProvider>
+            <PWAProvider>
+              <TutorialProvider>
+                <DebugProvider>
+                  <DashboardContent>{children}</DashboardContent>
+                </DebugProvider>
+              </TutorialProvider>
+            </PWAProvider>
+          </JournalProvider>
         </GamificationProvider>
       </SettingsProvider>
     </AuthProvider>
