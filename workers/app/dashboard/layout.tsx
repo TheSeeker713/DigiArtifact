@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SettingsProvider } from '@/contexts/SettingsContext'
 import { GamificationProvider } from '@/contexts/GamificationContext'
 import { PWAProvider } from '@/contexts/PWAContext'
@@ -18,7 +18,8 @@ import WalkthroughTutorial, { useTutorial } from '@/components/WalkthroughTutori
 
 // Inner component to use hooks inside providers
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { showTutorial, closeTutorial, completeTutorial } = useTutorial()
+  const { clockStatus } = useAuth()
+  const { showTutorial, closeTutorial, completeTutorial } = useTutorial(clockStatus)
 
   return (
     <>

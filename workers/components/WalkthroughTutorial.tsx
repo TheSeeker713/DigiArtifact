@@ -410,11 +410,16 @@ export default function WalkthroughTutorial({ isOpen, onClose, onComplete }: Wal
 }
 
 // Hook to manage tutorial state
-export function useTutorial() {
+export function useTutorial(clockStatus?: 'clocked-in' | 'clocked-out' | 'on-break') {
   const [showTutorial, setShowTutorial] = useState(false)
   const [hasCompletedTutorial, setHasCompletedTutorial] = useState(true)
 
   useEffect(() => {
+    // Never auto-show tutorial if user is clocked in or on break
+    if (clockStatus === 'clocked-in' || clockStatus === 'on-break') {
+      return
+    }
+
     // Check if this is the user's first visit
     const completed = localStorage.getItem('workers_tutorial_completed')
     if (!completed) {
@@ -425,7 +430,7 @@ export function useTutorial() {
       }, 1500)
       return () => clearTimeout(timer)
     }
-  }, [])
+  }, [clockStatus])
 
   const startTutorial = useCallback(() => {
     setShowTutorial(true)
