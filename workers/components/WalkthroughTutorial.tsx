@@ -12,79 +12,47 @@ export interface TutorialStep {
   action?: string // Optional action hint
   icon?: string
   interactive?: boolean // If true, user can click the highlighted element
-  waitForAction?: string // Wait for this action before auto-advancing
 }
 
+// Simplified steps that only target elements that actually exist on the dashboard
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
-    title: 'Welcome to DigiArtifact Workers Portal! 👋',
-    description: 'This interactive tour will help you get started. You can click on highlighted elements to try them out - nothing will be saved during the tutorial!',
+    title: 'Welcome to Workers Portal! 👋',
+    description: 'This interactive tour shows you around. You can click highlighted elements to try them - nothing saves during the tutorial!',
     position: 'center',
     icon: '🏛️',
   },
   {
     id: 'clock-widget',
-    title: 'Clock In/Out Widget',
-    description: 'This is where you\'ll track your work time. Try clicking the Clock In button to see how it works!',
+    title: 'Clock In/Out',
+    description: 'Track your work time here. The Clock In button starts your shift, and you can take breaks or clock out when done.',
     target: '[data-tutorial="clock-widget"]',
-    position: 'right',
-    action: 'Click "Clock In" to try it out!',
+    position: 'bottom',
+    action: 'Try clicking Clock In!',
     icon: '⏱️',
     interactive: true,
   },
   {
     id: 'quick-stats',
-    title: 'Your Stats at a Glance',
-    description: 'See your today\'s hours, weekly totals, and more. These update in real-time as you work.',
+    title: 'Your Stats',
+    description: 'See today\'s hours, weekly totals, and daily average at a glance. Updates in real-time.',
     target: '[data-tutorial="quick-stats"]',
-    position: 'bottom',
+    position: 'top',
     icon: '📊',
-    interactive: true,
-  },
-  {
-    id: 'sidebar-blocks',
-    title: 'Block Scheduling',
-    description: 'Plan your day with time blocks! Click here to explore the scheduling feature.',
-    target: '[data-tutorial="blocks-nav"]',
-    position: 'right',
-    action: 'Click to explore blocks',
-    icon: '🧱',
-    interactive: true,
-  },
-  {
-    id: 'sidebar-reports',
-    title: 'Reports & Analytics',
-    description: 'View detailed reports and export your data. Click to check it out!',
-    target: '[data-tutorial="reports-nav"]',
-    position: 'right',
-    action: 'Click to view reports',
-    icon: '📈',
-    interactive: true,
-  },
-  {
-    id: 'sidebar-settings',
-    title: 'Settings & Preferences',
-    description: 'Customize your experience, set your schedule, and access this tutorial anytime from here.',
-    target: '[data-tutorial="settings-nav"]',
-    position: 'right',
-    action: 'Click to open settings',
-    icon: '⚙️',
-    interactive: true,
   },
   {
     id: 'gamification',
     title: 'Level Up & Earn XP',
-    description: 'Every action earns XP! Complete work sessions, maintain streaks, and unlock achievements.',
+    description: 'Every action earns XP! Complete sessions, maintain streaks, and unlock achievements.',
     target: '[data-tutorial="gamification-widget"]',
-    position: 'left',
+    position: 'top',
     icon: '⭐',
-    interactive: true,
   },
   {
     id: 'complete',
     title: 'You\'re Ready! 🎉',
-    description: 'That\'s the basics! Feel free to explore on your own. Remember, you can restart this tutorial anytime from Settings → Help.',
+    description: 'Explore the sidebar menu to find Block Scheduling, Reports, and Settings. Restart this tutorial anytime from Settings.',
     position: 'center',
     icon: '🚀',
   },
@@ -214,38 +182,38 @@ export default function WalkthroughTutorial({ isOpen, onClose, onComplete }: Wal
     onClose()
   }
 
-  // Handle clicking anywhere on the backdrop to advance (for non-interactive steps)
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    const step = TUTORIAL_STEPS[currentStep]
-    
-    // If clicking on the highlighted area and it's interactive, let the click through
-    if (highlightRect && step.interactive) {
-      const x = e.clientX
-      const y = e.clientY
-      const inHighlight = 
-        x >= highlightRect.left - 8 && 
-        x <= highlightRect.right + 8 &&
-        y >= highlightRect.top - 8 && 
-        y <= highlightRect.bottom + 8
-      
-      if (inHighlight) {
-        // Don't advance - let the user interact
-        return
-      }
-    }
-    
-    // For center/non-targeted steps, clicking backdrop advances
-    if (!highlightRect) {
-      handleNext()
-    }
-  }
-
   if (!mounted || !isOpen) return null
 
   const step = TUTORIAL_STEPS[currentStep]
   const isFirstStep = currentStep === 0
   const isLastStep = currentStep === TUTORIAL_STEPS.length - 1
   const progress = ((currentStep + 1) / TUTORIAL_STEPS.length) * 100
+
+  // Padding around highlighted element
+  const PAD = 12
+
+  // Calculate overlay rectangles (4 pieces around the cutout)
+  const getOverlayPieces = () => {
+    if (!highlightRect) return null
+
+    const left = Math.max(0, highlightRect.left - PAD)
+    const top = Math.max(0, highlightRect.top - PAD)
+    const right = Math.min(window.innerWidth, highlightRect.right + PAD)
+    const bottom = Math.min(window.innerHeight, highlightRect.bottom + PAD)
+
+    return {
+      // Top strip (full width, from top to cutout top)
+      top: { x: 0, y: 0, w: window.innerWidth, h: top },
+      // Bottom strip (full width, from cutout bottom to screen bottom)
+      bottom: { x: 0, y: bottom, w: window.innerWidth, h: window.innerHeight - bottom },
+      // Left strip (between top and bottom strips)
+      left: { x: 0, y: top, w: left, h: bottom - top },
+      // Right strip (between top and bottom strips)
+      right: { x: right, y: top, w: window.innerWidth - right, h: bottom - top },
+    }
+  }
+
+  const overlayPieces = getOverlayPieces()
 
   // Calculate tooltip style based on position
   const getTooltipStyle = (): React.CSSProperties => {
@@ -262,18 +230,21 @@ export default function WalkthroughTutorial({ isOpen, onClose, onComplete }: Wal
     const padding = 16
     const tooltipWidth = 360
 
-    switch (tooltipPosition) {
+    // Determine best position based on step preference or available space
+    const pos = step.position || tooltipPosition
+
+    switch (pos) {
       case 'top':
         return {
           position: 'fixed',
-          bottom: `${window.innerHeight - highlightRect.top + padding}px`,
+          bottom: `${window.innerHeight - highlightRect.top + padding + PAD}px`,
           left: `${Math.max(padding, Math.min(highlightRect.left + highlightRect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - padding))}px`,
           zIndex: 10002,
         }
       case 'bottom':
         return {
           position: 'fixed',
-          top: `${highlightRect.bottom + padding}px`,
+          top: `${highlightRect.bottom + padding + PAD}px`,
           left: `${Math.max(padding, Math.min(highlightRect.left + highlightRect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - padding))}px`,
           zIndex: 10002,
         }
@@ -281,14 +252,14 @@ export default function WalkthroughTutorial({ isOpen, onClose, onComplete }: Wal
         return {
           position: 'fixed',
           top: `${Math.max(padding, highlightRect.top)}px`,
-          right: `${window.innerWidth - highlightRect.left + padding}px`,
+          right: `${window.innerWidth - highlightRect.left + padding + PAD}px`,
           zIndex: 10002,
         }
       case 'right':
         return {
           position: 'fixed',
           top: `${Math.max(padding, highlightRect.top)}px`,
-          left: `${highlightRect.right + padding}px`,
+          left: `${highlightRect.right + padding + PAD}px`,
           zIndex: 10002,
         }
       default:
@@ -302,71 +273,54 @@ export default function WalkthroughTutorial({ isOpen, onClose, onComplete }: Wal
     }
   }
 
+  // Render overlay piece
+  const OverlayPiece = ({ x, y, w, h }: { x: number; y: number; w: number; h: number }) => {
+    if (w <= 0 || h <= 0) return null
+    return (
+      <div
+        className="fixed bg-obsidian/90"
+        style={{
+          left: x,
+          top: y,
+          width: w,
+          height: h,
+          zIndex: 10000,
+        }}
+      />
+    )
+  }
+
   const tutorialContent = (
     <>
-      {/* Backdrop - clickable but allows interaction with highlighted element */}
-      <div 
-        className="fixed inset-0 z-[10000]"
-        onClick={handleBackdropClick}
-        style={{ pointerEvents: 'auto' }}
-      >
-        {/* SVG mask to create the "spotlight" effect */}
-        <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
-          <defs>
-            <mask id="tutorial-mask">
-              <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              {highlightRect && (
-                <rect
-                  x={highlightRect.left - 8}
-                  y={highlightRect.top - 8}
-                  width={highlightRect.width + 16}
-                  height={highlightRect.height + 16}
-                  rx="8"
-                  fill="black"
-                />
-              )}
-            </mask>
-          </defs>
-          <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="rgba(10, 10, 10, 0.85)"
-            mask="url(#tutorial-mask)"
-          />
-        </svg>
+      {/* Overlay - 4 pieces around the cutout, or full screen if no target */}
+      {overlayPieces ? (
+        <>
+          <OverlayPiece {...overlayPieces.top} />
+          <OverlayPiece {...overlayPieces.bottom} />
+          <OverlayPiece {...overlayPieces.left} />
+          <OverlayPiece {...overlayPieces.right} />
+        </>
+      ) : (
+        <div
+          className="fixed inset-0 bg-obsidian/90 z-[10000]"
+          onClick={handleNext}
+        />
+      )}
 
-        {/* Highlight border around target element */}
-        {highlightRect && (
-          <div
-            className="absolute border-2 border-relic-gold rounded-lg animate-pulse pointer-events-none"
-            style={{
-              top: highlightRect.top - 8,
-              left: highlightRect.left - 8,
-              width: highlightRect.width + 16,
-              height: highlightRect.height + 16,
-              boxShadow: '0 0 20px rgba(204, 164, 59, 0.5)',
-              zIndex: 10001,
-            }}
-          />
-        )}
-
-        {/* Clickable overlay for highlighted element - allows clicks through */}
-        {highlightRect && step.interactive && (
-          <div
-            className="absolute cursor-pointer"
-            style={{
-              top: highlightRect.top - 8,
-              left: highlightRect.left - 8,
-              width: highlightRect.width + 16,
-              height: highlightRect.height + 16,
-              zIndex: 10001,
-              pointerEvents: 'none', // Let clicks go through to actual element
-            }}
-          />
-        )}
-      </div>
+      {/* Highlight border around target element */}
+      {highlightRect && (
+        <div
+          className="fixed border-2 border-relic-gold rounded-lg animate-pulse pointer-events-none"
+          style={{
+            top: highlightRect.top - PAD,
+            left: highlightRect.left - PAD,
+            width: highlightRect.width + PAD * 2,
+            height: highlightRect.height + PAD * 2,
+            boxShadow: '0 0 30px rgba(204, 164, 59, 0.6), inset 0 0 20px rgba(204, 164, 59, 0.1)',
+            zIndex: 10001,
+          }}
+        />
+      )}
 
       {/* Tooltip Card */}
       <div
