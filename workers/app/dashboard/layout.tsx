@@ -14,6 +14,7 @@ import MobileNav from '@/components/MobileNav'
 import MobileQuickActions from '@/components/MobileQuickActions'
 import InstallPrompt from '@/components/InstallPrompt'
 import DebugPanel from '@/components/DebugPanel'
+import StickyHeader from '@/components/StickyHeader'
 import WalkthroughTutorial, { useTutorial } from '@/components/WalkthroughTutorial'
 
 // Inner component to use hooks inside providers
@@ -33,11 +34,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <Sidebar />
         </div>
         
+        {/* Sticky Header with Level/XP, DateTime, Theme Toggle */}
+        <StickyHeader />
+        
         {/* Mobile Navigation */}
         <MobileNav />
         
-        {/* Main Content */}
-        <main className="lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-8 pb-24 lg:pb-8">
+        {/* Main Content - adjusted padding for sticky header */}
+        <main className="lg:ml-64 p-4 lg:p-8 pt-20 lg:pt-20 pb-24 lg:pb-8">
           {children}
         </main>
         
