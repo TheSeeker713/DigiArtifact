@@ -1,0 +1,96 @@
+REPORTS & EXPORTS
+=================
+
+Generate and download formatted reports of work data.
+
+Overview
+--------
+The Reports page provides monthly summaries with visual charts and export capabilities for record-keeping and billing.
+
+Monthly Report View
+-------------------
+
+NAVIGATION
+- Previous/Next month buttons
+- Month/Year display
+- Current month indicator
+
+SUMMARY CARDS
+- Total hours worked
+- Number of time entries
+- Average hours per day
+- Days worked
+
+DAILY HOURS CHART
+- Line chart visualization
+- Day-by-day breakdown
+- Trend identification
+- Hover for details
+
+PROJECT BREAKDOWN
+- Doughnut chart
+- Hours per project
+- Color-coded segments
+- Legend with percentages
+
+Export Options
+--------------
+
+CSV EXPORT
+- Raw data format
+- Date and hours columns
+- Importable to spreadsheets
+- Named: time-report-YYYY-MM.csv
+
+PDF EXPORT
+- Branded document
+- DigiArtifact header
+- User information
+- Summary statistics
+- Daily hours table
+- Project breakdown
+- Charts (as images)
+- Professional formatting
+
+PDF Report Contents
+-------------------
+1. Header with logo
+2. Report period
+3. User name and email
+4. Summary statistics:
+   - Total hours
+   - Total entries
+   - Average per day
+   - Gamification stats
+5. Daily breakdown table
+6. Project distribution
+7. Footer with generation date
+
+Data Sources
+------------
+API Endpoint: GET /api/stats/monthly
+Parameters: month (YYYY-MM format)
+
+Response includes:
+- totalHours: Decimal
+- totalEntries: Integer
+- averagePerDay: Decimal
+- projectBreakdown: Array of {name, hours, color}
+- dailyHours: Array of {date, hours}
+
+Use Cases
+---------
+- Client billing
+- Timesheet submission
+- Personal records
+- Tax documentation
+- Performance review
+- Project post-mortems
+
+Chart.js Integration
+--------------------
+- Line chart for daily hours
+- Doughnut chart for projects
+- Custom styling matching brand
+- Responsive sizing
+- Tooltip information

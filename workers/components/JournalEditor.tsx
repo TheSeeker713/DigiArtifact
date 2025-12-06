@@ -13,6 +13,10 @@ type FormatAction = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'heading
 export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
   const { archiveNote, updateEntry } = useJournal()
   const editorRef = useRef<HTMLDivElement>(null)
+  
+  // Local state to track the entry being edited (handles switching from new -> existing)
+  const [activeEntry, setActiveEntry] = useState<JournalEntry | null>(entry)
+  
   const [title, setTitle] = useState(entry?.title || '')
   const [content, setContent] = useState(entry?.richContent || entry?.content || '')
   const [tags, setTags] = useState<string[]>(entry?.tags || [])
@@ -20,19 +24,89 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Refs for cleanup save
+  const contentRef = useRef(content)
+  const titleRef = useRef(title)
+  const tagsRef = useRef(tags)
+  const hasChangesRef = useRef(hasChanges)
+  const activeEntryRef = useRef(activeEntry)
+
+  // Update refs
+  useEffect(() => {
+    contentRef.current = content
+    titleRef.current = title
+    tagsRef.current = tags
+    hasChangesRef.current = hasChanges
+    activeEntryRef.current = activeEntry
+  }, [content, title, tags, hasChanges, activeEntry])
+
+  // Save on unmount
+  useEffect(() => {
+    return () => {
+      if (hasChangesRef.current) {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = contentRef.current
+        const plainText = tempDiv.textContent || ''
+        
+        if (!plainText.trim() && !titleRef.current.trim()) return
+
+        const payload = {
+            title: titleRef.current.trim() || undefined,
+            content: plainText,
+            richContent: contentRef.current,
+            tags: tagsRef.current
+        }
+
+        if (activeEntryRef.current) {
+             updateEntry(activeEntryRef.current.id, payload).catch(console.error)
+        } else {
+             archiveNote(
+                payload.content,
+                'journal_editor',
+                undefined,
+                payload.title,
+                payload.tags,
+                payload.richContent
+             ).catch(console.error)
+        }
+      }
+    }
+  }, [])
 
   // Track changes
   useEffect(() => {
-    const originalContent = entry?.richContent || entry?.content || ''
-    const originalTitle = entry?.title || ''
-    const originalTags = entry?.tags || []
+    const originalContent = activeEntry?.richContent || activeEntry?.content || ''
+    const originalTitle = activeEntry?.title || ''
+    const originalTags = activeEntry?.tags || []
     
     const contentChanged = content !== originalContent
     const titleChanged = title !== originalTitle
     const tagsChanged = JSON.stringify(tags) !== JSON.stringify(originalTags)
     
     setHasChanges(contentChanged || titleChanged || tagsChanged)
-  }, [content, title, tags, entry])
+  }, [content, title, tags, activeEntry])
+
+  // Auto-save logic
+  useEffect(() => {
+    if (!hasChanges || isSaving) return
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      handleSave()
+    }, 3000) // Auto-save after 3 seconds
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
+    }
+  }, [content, title, tags, hasChanges, isSaving])
 
   // Auto-save on leaving
   useEffect(() => {
@@ -50,7 +124,7 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
 
   // Initialize editor content
   useEffect(() => {
-    if (editorRef.current && content) {
+    if (editorRef.current && content && !editorRef.current.innerHTML) {
       editorRef.current.innerHTML = content
     }
   }, [])
@@ -126,9 +200,9 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
     setIsSaving(true)
     
     try {
-      if (entry) {
+      if (activeEntry) {
         // Update existing entry
-        await updateEntry(entry.id, {
+        await updateEntry(activeEntry.id, {
           title: title.trim() || undefined,
           content: plainContent,
           richContent: htmlContent,
@@ -136,7 +210,7 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
         })
       } else {
         // Create new entry
-        await archiveNote(
+        const newEntry = await archiveNote(
           plainContent,
           'journal_editor',
           undefined,
@@ -144,6 +218,7 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
           tags,
           htmlContent
         )
+        setActiveEntry(newEntry)
       }
       setLastSaved(new Date())
       setHasChanges(false)
@@ -262,36 +337,22 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
         </div>
         
         <div className="flex items-center gap-3">
-          {lastSaved && (
+          {isSaving ? (
+            <span className="flex items-center gap-1 text-xs text-slate-500">
+              <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Saving...
+            </span>
+          ) : hasChanges ? (
+            <span className="text-xs text-amber-400 [.light-mode_&]:text-amber-600 bg-amber-500/20 [.light-mode_&]:bg-amber-100 px-2 py-0.5 rounded-full">
+              Unsaved changes
+            </span>
+          ) : lastSaved ? (
             <span className="text-xs text-slate-500">
               Saved {lastSaved.toLocaleTimeString()}
             </span>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !hasChanges}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              hasChanges && !isSaving
-                ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                : 'bg-slate/50 [.light-mode_&]:bg-slate-200 text-slate-500 [.light-mode_&]:text-slate-400 cursor-not-allowed'
-            }`}
-          >
-            {isSaving ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Saving...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Save
-              </>
-            )}
-          </button>
+          ) : null}
         </div>
       </div>
 

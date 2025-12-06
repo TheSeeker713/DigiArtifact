@@ -17,6 +17,76 @@ DigiArtifact encompasses multiple interconnected web projects:
 
 ## 2025 Development Timeline
 
+### December 2025
+
+#### Week of December 1-7
+
+**December 5, 2025** - Major Codebase Cleanup & Refactoring
+
+##### Obsolete Files Cleanup
+- Removed `test1.html` - obsolete test file
+- Removed `_next/` - build cache directory
+- Removed `workers/api/.wrangler/` - Wrangler build cache
+- Removed RSC payload files: `index.txt`, `gallery.txt`, `studio.txt`, `terminal.txt`, `vault.txt`
+- Removed artifact RSC payloads: `artifact/*.txt` (6 files)
+- Removed `assets/video/ffmpeg2pass-0.log` - encoding log file
+- Removed `assets/video/Driftwood Dreams_.mp4` - intermediate encoding file (985 MB freed)
+
+##### API Modular Refactoring
+- **Before**: `api/src/index.ts` - 1376 lines monolithic file
+- **After**: 13 modular files with clear separation of concerns:
+  - `index.ts` (~190 lines) - Main router with route registration
+  - `utils.ts` (~130 lines) - Shared utilities (JWT, CORS, auth)
+  - `routes/admin.ts` (~260 lines) - User management, export, purge
+  - `routes/auth.ts` (~35 lines) - Login endpoint
+  - `routes/clock.ts` (~140 lines) - Clock in/out, break start/end
+  - `routes/entries.ts` (~80 lines) - Time entries CRUD
+  - `routes/gamification.ts` (~170 lines) - XP & streak management
+  - `routes/journal.ts` (~140 lines) - Journal entries CRUD
+  - `routes/projects.ts` (~75 lines) - Project management
+  - `routes/schedule.ts` (~180 lines) - Block scheduling
+  - `routes/stats.ts` (~85 lines) - Weekly/monthly statistics
+  - `routes/user.ts` (~50 lines) - User profile & PIN change
+  - `routes/index.ts` (~15 lines) - Barrel export
+
+##### Settings Page Modular Refactoring
+- **Before**: `settings/page.tsx` - 1028 lines monolithic file
+- **After**: 7 modular files with tab components:
+  - `page.tsx` (~160 lines) - Main page with tab navigation
+  - `components/settings/AccountTab.tsx` (~160 lines) - Profile & PIN
+  - `components/settings/AboutTab.tsx` (~65 lines) - App info
+  - `components/settings/HelpTab.tsx` (~200 lines) - FAQ accordion
+  - `components/settings/TimeDisplayTab.tsx` (~200 lines) - Timezone & format
+  - `components/settings/DebugTab.tsx` (~75 lines) - Debug console
+  - `components/settings/FortuneCookie.tsx` (~100 lines) - Easter egg
+  - `components/settings/index.ts` - Barrel export
+
+##### Testing & Validation
+- ✅ Workers Next.js build compiled successfully
+- ✅ API TypeScript compilation passed with no errors
+- ✅ All 16 pages generated without issues
+
+##### Files Created:
+- `workers/api/src/utils.ts`
+- `workers/api/src/routes/*.ts` (11 route files + barrel export)
+- `workers/components/settings/*.tsx` (6 component files + barrel export)
+
+##### Files Deleted:
+- `test1.html`
+- `_next/` directory
+- `workers/api/.wrangler/` directory
+- 5 root `.txt` files
+- 6 artifact `.txt` files
+- `assets/video/ffmpeg2pass-0.log`
+- `assets/video/Driftwood Dreams_.mp4`
+
+##### Impact:
+- **Code maintainability**: Significantly improved with modular architecture
+- **Disk space**: ~1GB freed from intermediate/cache files
+- **Development velocity**: Easier to navigate, test, and modify individual routes
+
+---
+
 ### January 2025
 
 #### Week of January 27 - continued

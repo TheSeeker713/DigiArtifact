@@ -1,0 +1,50 @@
+DIGIARTIFACT WORKERS PORTAL
+============================
+
+Product Overview
+----------------
+The DigiArtifact Workers Portal is a comprehensive productivity and time management platform designed for remote teams and individual professionals. Built with modern web technologies, it offers seamless time tracking, insightful analytics, and powerful organizational tools.
+
+The platform combines the functionality of multiple productivity tools into a single, unified experience with a distinctive dark theme featuring gold accents inspired by archaeological artifacts.
+
+Target Audience
+---------------
+- Remote workers and distributed teams
+- Freelancers tracking billable hours
+- Small businesses managing employee time
+- Individuals seeking productivity improvement
+- Project managers monitoring team output
+
+Core Value Propositions
+-----------------------
+1. UNIFIED PRODUCTIVITY HUB
+   One platform for time tracking, goal setting, journaling, and analytics
+
+2. REAL-TIME SYNCHRONIZATION
+   Cloud-synced data accessible across all devices
+
+3. GAMIFICATION ELEMENTS
+   XP system, streaks, and achievements to motivate consistent work
+
+4. PRIVACY-FOCUSED
+   Option to store data in personal Google Drive instead of company servers
+
+5. BEAUTIFUL DESIGN
+   Modern dark theme with archaeological/artifact visual identity
+
+Technology Stack
+----------------
+- Frontend: Next.js 14, React 18, TypeScript
+- Styling: Tailwind CSS with custom design system
+- Backend: Cloudflare Workers (Edge computing)
+- Database: Cloudflare D1 (SQLite at the edge)
+- Authentication: Custom JWT-based system
+- Charts: Chart.js for analytics visualization
+- PDF Export: jsPDF for report generation
+
+Deployment
+----------
+- URL: https://workers.digiartifact.com
+- API: Cloudflare Workers global edge network
+- Database: Cloudflare D1 distributed globally
+- CDN: Cloudflare's global CDN for static assets

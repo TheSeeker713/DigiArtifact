@@ -1,0 +1,104 @@
+SETTINGS & ADMINISTRATION
+=========================
+
+Customize your experience and manage the platform.
+
+Settings Tabs
+-------------
+
+1. ACCOUNT
+   - View user profile (name, email, role)
+   - Change PIN (security)
+   - Session information
+   - Logout option
+
+2. MY SCHEDULE
+   - Define personal work schedule
+   - Set working days
+   - Set working hours
+   - Used for productivity calculations
+
+3. TIME & DISPLAY
+   - Timezone selection (50+ options)
+   - Time format (12h or 24h)
+   - Date format preferences
+   - Live preview of settings
+
+4. NOTIFICATIONS
+   - Break reminders
+   - Clock-in reminders
+   - Goal completion alerts
+   - Push notification settings
+
+5. HELP
+   - Interactive walkthrough tutorial
+   - FAQ section
+   - Contact support link
+   - Documentation links
+
+6. ABOUT
+   - Version information
+   - Credits
+   - Legal links
+   - Easter egg (Fortune Cookie)
+
+Admin-Only Tabs
+---------------
+
+7. USER MANAGEMENT
+   - View all users
+   - Create new users
+   - Edit user details
+   - Reset user PINs
+   - Activate/deactivate users
+   - Change user roles
+
+8. DATA MANAGEMENT
+   - View database statistics
+   - Export all data
+   - Data cleanup tools
+   - Danger zone (delete data)
+
+9. DEBUG PANEL
+   - API endpoint testing
+   - Database queries
+   - JWT inspection
+   - Error logs
+
+PIN Security
+------------
+- 4-6 digit PIN
+- Hashed with SHA-256
+- Required for login
+- Can be changed anytime
+- Admin can reset for users
+
+Timezone Support
+----------------
+- 50+ timezone options
+- Grouped by region
+- Auto-detect option
+- Applied to all timestamps
+- Stored per user
+
+Time Format Options
+-------------------
+- 12-hour (2:30 PM)
+- 24-hour (14:30)
+- Applied throughout app
+- Preview before saving
+
+Walkthrough Tutorial
+--------------------
+- 7-step interactive guide
+- Highlights key features
+- Can be replayed anytime
+- First-time user prompt
+
+Easter Egg: Fortune Cookie
+--------------------------
+- Hidden in About tab
+- Click cookie to "crack" it
+- Displays programming humor
+- 15 unique fortunes
+- Replayable

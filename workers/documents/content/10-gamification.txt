@@ -1,0 +1,100 @@
+GAMIFICATION SYSTEM
+===================
+
+XP, levels, streaks, and achievements to motivate consistent work.
+
+Overview
+--------
+The gamification layer adds motivation through game-like mechanics. Users earn experience points (XP), level up, maintain streaks, and unlock achievements.
+
+Experience Points (XP)
+----------------------
+Earned by:
+- Clocking in: +10 XP
+- Clocking out: +10 XP
+- Completing a work block: +25 XP
+- Completing all blocks in a day: +50 XP bonus
+- Achieving a goal: +100 XP
+- Maintaining a streak: +10 XP per day
+
+Level System
+------------
+- Level 1: 0 - 100 XP
+- Level 2: 101 - 250 XP
+- Level 3: 251 - 500 XP
+- (Exponential scaling continues)
+
+Level titles:
+- Lv 1-5: Novice
+- Lv 6-10: Apprentice
+- Lv 11-15: Journeyman
+- Lv 16-20: Expert
+- Lv 21+: Master
+
+Streak System
+-------------
+- Consecutive days with clock activity
+- Resets at midnight if no activity
+- Visual fire/flame icon
+- Record streak tracked
+- Streak protection (1 day grace period)
+
+Achievements
+------------
+WORK ACHIEVEMENTS
+- First Clock In
+- 10 Hours Worked
+- 100 Hours Worked
+- 1000 Hours Worked
+- Perfect Week (40 hours)
+
+STREAK ACHIEVEMENTS
+- 3-Day Streak
+- 7-Day Streak
+- 30-Day Streak
+- 100-Day Streak
+
+GOAL ACHIEVEMENTS
+- First Goal Set
+- First Goal Completed
+- 10 Goals Completed
+- Goal Perfectionist (5 in a row)
+
+EXPLORATION ACHIEVEMENTS
+- First Journal Entry
+- First Project Created
+- All Settings Explored
+- Fortune Cookie Found
+
+Leaderboard (Optional)
+----------------------
+- Weekly XP rankings
+- Optional participation
+- Team/company scope
+- Privacy controls
+
+Visual Elements
+---------------
+- XP progress bar
+- Level badge
+- Streak counter with flame
+- Achievement pop-ups
+- Confetti on level up
+
+Widget Display
+--------------
+- Current level
+- XP to next level
+- Current streak
+- Recent achievements
+- Weekly XP earned
+
+Data Storage
+------------
+gamification_data:
+  - user_id: Primary key
+  - total_xp: Integer
+  - current_streak: Integer
+  - longest_streak: Integer
+  - achievements: JSON array
+  - last_activity_date: Date

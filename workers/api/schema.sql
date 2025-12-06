@@ -77,3 +77,21 @@ INSERT OR IGNORE INTO projects (name, description, color) VALUES
 ('DigiArtifact Hub', 'Main company website and hub development', '#cca43b'),
 ('Secret Vault', 'Members-only content platform', '#00f0ff'),
 ('Client Work', 'External client projects', '#046c4e');
+
+-- Journal Entries table
+CREATE TABLE IF NOT EXISTS journal_entries (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  title TEXT,
+  content TEXT, -- Plain text
+  rich_content TEXT, -- HTML
+  source TEXT NOT NULL,
+  source_id TEXT,
+  tags TEXT, -- JSON array
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_journal_user_id ON journal_entries(user_id);
+CREATE INDEX IF NOT EXISTS idx_journal_created_at ON journal_entries(created_at);

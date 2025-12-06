@@ -22,9 +22,9 @@ export interface JournalEntry {
 interface JournalContextType {
   entries: JournalEntry[]
   isLoading: boolean
-  addEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'>) => JournalEntry
-  archiveNote: (content: string, source: JournalEntrySource, sourceId?: string, title?: string, tags?: string[], richContent?: string) => JournalEntry
-  updateEntry: (id: string, updates: Partial<Omit<JournalEntry, 'id' | 'createdAt'>>) => void
+  addEntry: (entry: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<JournalEntry>
+  archiveNote: (content: string, source: JournalEntrySource, sourceId?: string, title?: string, tags?: string[], richContent?: string) => Promise<JournalEntry>
+  updateEntry: (id: string, updates: Partial<Omit<JournalEntry, 'id' | 'createdAt'>>) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
   getEntriesBySource: (source: JournalEntrySource) => JournalEntry[]
   getEntriesByDateRange: (start: Date, end: Date) => JournalEntry[]
@@ -40,14 +40,22 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load entries from localStorage on mount
-  useEffect(() => {
+  const getToken = () => Cookies.get('workers_token')
+
+  const fetchEntries = useCallback(async () => {
+    const token = getToken()
+    if (!token) {
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        setEntries(parsed)
-      }
+      const res = await fetch(`${API_BASE}/journal`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error('Failed to fetch entries')
+      const data = await res.json()
+      setEntries(data.entries)
     } catch (err) {
       console.error('Failed to load journal entries:', err)
     } finally {
@@ -55,37 +63,44 @@ export function JournalProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Save entries to localStorage when they change
+  // Load entries on mount
   useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
-    }
-  }, [entries, isLoading])
+    fetchEntries()
+  }, [fetchEntries])
 
   // Add a new entry
-  const addEntry = useCallback((entryData: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'>): JournalEntry => {
-    const now = Date.now()
-    const newEntry: JournalEntry = {
-      ...entryData,
-      id: `journal_${now}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: now,
-      updatedAt: now,
-      tags: entryData.tags || [],
+  const addEntry = useCallback(async (entryData: Omit<JournalEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<JournalEntry> => {
+    const token = getToken()
+    if (!token) throw new Error('Not authenticated')
+
+    const res = await fetch(`${API_BASE}/journal`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(entryData)
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.error || 'Failed to save entry')
     }
-    
-    setEntries(prev => [newEntry, ...prev])
-    return newEntry
+
+    const data = await res.json()
+    setEntries(prev => [data.entry, ...prev])
+    return data.entry
   }, [])
 
   // Archive a note from another source (convenience method)
-  const archiveNote = useCallback((
+  const archiveNote = useCallback(async (
     content: string, 
     source: JournalEntrySource, 
     sourceId?: string, 
     title?: string, 
     tags?: string[], 
     richContent?: string
-  ): JournalEntry => {
+  ): Promise<JournalEntry> => {
     return addEntry({
       content,
       source,
@@ -97,16 +112,42 @@ export function JournalProvider({ children }: { children: ReactNode }) {
   }, [addEntry])
 
   // Update an existing entry
-  const updateEntry = useCallback((id: string, updates: Partial<Omit<JournalEntry, 'id' | 'createdAt'>>) => {
+  const updateEntry = useCallback(async (id: string, updates: Partial<Omit<JournalEntry, 'id' | 'createdAt'>>) => {
+    const token = getToken()
+    if (!token) throw new Error('Not authenticated')
+
+    const res = await fetch(`${API_BASE}/journal/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(updates)
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json()
+      throw new Error(errorData.error || 'Failed to update entry')
+    }
+
+    const data = await res.json()
     setEntries(prev => prev.map(entry => 
-      entry.id === id 
-        ? { ...entry, ...updates, updatedAt: Date.now() }
-        : entry
+      entry.id === id ? data.entry : entry
     ))
   }, [])
 
   // Delete an entry
   const deleteEntry = useCallback(async (id: string) => {
+    const token = getToken()
+    if (!token) throw new Error('Not authenticated')
+
+    const res = await fetch(`${API_BASE}/journal/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+
+    if (!res.ok) throw new Error('Failed to delete entry')
+
     setEntries(prev => prev.filter(entry => entry.id !== id))
   }, [])
 
