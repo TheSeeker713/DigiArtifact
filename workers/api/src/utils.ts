@@ -6,6 +6,12 @@ export interface Env {
   DB: D1Database;
   JWT_SECRET: string;
   CORS_ORIGIN: string;
+  // Google OAuth
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  API_BASE_URL: string;      // e.g., https://digiartifact-workers-api.digitalartifact11.workers.dev
+  FRONTEND_URL: string;      // e.g., https://workers.digiartifact.com
+  ALLOW_SIGNUPS: string;     // 'true' or 'false'
 }
 
 export interface User {

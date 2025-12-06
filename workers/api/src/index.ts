@@ -7,6 +7,7 @@
 
 import { Env, corsHeaders, jsonResponse, getUser } from './utils';
 import { handleAuthLogin } from './routes/auth';
+import { handleOAuthStart, handleOAuthCallback, handleVerifyGoogleToken } from './routes/oauth';
 import { 
   handleClockStatus, handleClockIn, handleClockOut, 
   handleBreakStart, handleBreakEnd 
@@ -50,8 +51,20 @@ export default {
       // PUBLIC ROUTES (no auth required)
       // ============================================
       
+      // Legacy PIN login (for transition period)
       if (path === '/api/auth/login' && method === 'POST') {
         return handleAuthLogin(request, env, origin);
+      }
+
+      // Google OAuth routes
+      if (path === '/api/auth/google' && method === 'GET') {
+        return handleOAuthStart(request, env, origin);
+      }
+      if (path === '/api/auth/google/callback' && method === 'GET') {
+        return handleOAuthCallback(request, env, origin);
+      }
+      if (path === '/api/auth/google/verify' && method === 'POST') {
+        return handleVerifyGoogleToken(request, env, origin);
       }
 
       // ============================================

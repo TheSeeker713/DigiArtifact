@@ -2,6 +2,7 @@
  * Route barrel export
  */
 export * from './auth';
+export * from './oauth';
 export * from './clock';
 export * from './entries';
 export * from './projects';
