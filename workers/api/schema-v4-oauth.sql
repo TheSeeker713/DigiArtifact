@@ -1,16 +1,12 @@
 -- DigiArtifact Workers Portal - Google OAuth Migration
 -- Run this to add Google OAuth support to existing database
 
--- Add Google OAuth columns to users table
-ALTER TABLE users ADD COLUMN google_id TEXT UNIQUE;
+-- Add Google OAuth columns to users table (without UNIQUE constraint initially)
+ALTER TABLE users ADD COLUMN google_id TEXT;
 ALTER TABLE users ADD COLUMN google_picture TEXT;
 
--- Make pin_hash optional (for transition period)
--- SQLite doesn't support ALTER COLUMN, so we'll handle this in application logic
--- Existing users keep their pin_hash, new Google users won't have one
-
--- Create index for Google ID lookups
-CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+-- Create index for Google ID lookups (unique index serves same purpose)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
 
 -- Note: To fully remove PIN support later, you would:
 -- 1. Export data
