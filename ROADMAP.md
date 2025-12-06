@@ -1,10 +1,21 @@
 # DigiArtifact Roadmap
 
-> Last Updated: December 5, 2025
+> Last Updated: December 6, 2025
 
 ## Vision
 
 DigiArtifact is a digital asset marketplace and creative studio, blending archaeological mystique with modern technology to deliver premium digital products and tools.
+
+---
+
+## 🔴 Immediate - In Progress
+
+### Google OAuth Migration (December 2025)
+- [ ] **Authentication Overhaul** - Replace PIN-based login with Google OAuth
+  - Remove PIN storage and verification from database
+  - Implement Google Sign-In for workers.digiartifact.com
+  - Update AuthContext to use OAuth tokens
+  - Maintain existing session management
 
 ---
 

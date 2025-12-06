@@ -4,7 +4,20 @@ DigiArtifact is the name of my company.
 
 ## Version
 
-**Current Version:** 1.0.x (Patch releases)
+**Current Version:** 1.1.0 (December 2025)
+
+## Tech Stack
+
+### Workers Portal
+- **Frontend:** Next.js 16.0.7, React 19.2.1, TypeScript, Tailwind CSS
+- **Backend:** Cloudflare Workers (Hono framework), D1 Database
+- **Build:** Turbopack (Next.js 16 default)
+- **Deployment:** Cloudflare Pages
+
+### Other Projects
+- **Main Landing:** Static HTML + Tailwind CDN
+- **DigiArtifact Hub:** Next.js + TypeScript
+- **Secret Vault:** Static HTML + custom CSS
 
 ## Project Structure
 
@@ -14,6 +27,19 @@ This repository contains multiple web projects:
 - **DigiArtifact Hub (`/digiartifact-hub/`)** - Next.js artifact marketplace
 - **Workers Portal (`/workers/`)** - Time tracking & productivity app
 - **Secret Vault (`/secretvault/`)** - Private content area
+
+## Recent Changes (December 2025)
+
+### Framework Upgrades
+- Next.js 14.2.33 → **16.0.7** (Turbopack now default bundler)
+- React 18.3.1 → **19.2.1**
+- React-DOM 18.3.1 → **19.2.1**
+
+### Codebase Cleanup
+- Removed obsolete files (test files, build caches, intermediates)
+- Refactored monolithic API (1376 lines → 13 modular route files)
+- Refactored Settings component (1028 lines → 7 tab modules)
+- ~1GB of disk space freed
 
 ## Backups
 
