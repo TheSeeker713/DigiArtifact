@@ -1,34 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Cookies from 'js-cookie'
-import Script from 'next/script'
 
-// API base URL
+// API base URL - use redirect-based OAuth flow (works in all browsers including embedded)
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
-
-// Google Client ID - this is public and safe to include in client code
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void
-          renderButton: (element: HTMLElement, options: any) => void
-          prompt: () => void
-        }
-      }
-    }
-  }
-}
 
 function LoginPageInner() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [googleLoaded, setGoogleLoaded] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -53,80 +34,16 @@ function LoginPageInner() {
     }
   }, [router])
 
-  // Handle Google Sign-In response
-  const handleGoogleResponse = useCallback(async (response: { credential: string }) => {
+  // Handle Google Sign-In via redirect flow
+  const handleGoogleSignIn = () => {
     setIsLoading(true)
-    setError('')
-
-    try {
-      // Send the credential to our backend for verification
-      const res = await fetch(`${API_BASE}/auth/google/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        if (res.status === 403) {
-          throw new Error(data.message || 'You are not authorized to access this portal.')
-        }
-        throw new Error(data.error || 'Authentication failed')
-      }
-
-      // Store token in cookie
-      Cookies.set('workers_token', data.token, { expires: 7 })
-      Cookies.set('workers_user', JSON.stringify(data.user), { expires: 7 })
-      
-      router.push('/dashboard')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [router])
-
-  // Initialize Google Sign-In when script loads
-  useEffect(() => {
-    if (!googleLoaded || !GOOGLE_CLIENT_ID) return
-
-    const initializeGoogle = () => {
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        })
-
-        const buttonContainer = document.getElementById('google-signin-button')
-        if (buttonContainer) {
-          window.google.accounts.id.renderButton(buttonContainer, {
-            theme: 'filled_black',
-            size: 'large',
-            width: 300,
-            text: 'signin_with',
-            shape: 'rectangular',
-            logo_alignment: 'left',
-          })
-        }
-      }
-    }
-
-    // Small delay to ensure DOM is ready
-    setTimeout(initializeGoogle, 100)
-  }, [googleLoaded, handleGoogleResponse])
+    // Redirect to our backend OAuth start endpoint
+    // This uses server-side redirect flow which works everywhere (no popup needed)
+    window.location.href = `${API_BASE}/auth/google/start`
+  }
 
   return (
     <>
-      {/* Google Identity Services Script */}
-      <Script
-        src="https://accounts.google.com/gsi/client"
-        onLoad={() => setGoogleLoaded(true)}
-        strategy="afterInteractive"
-      />
-
       <main className="min-h-screen flex flex-col items-center justify-center px-4">
         {/* Logo */}
         <div className="mb-8 text-center">
@@ -162,23 +79,20 @@ function LoginPageInner() {
             </div>
           ) : (
             <div className="flex flex-col items-center space-y-4">
-              {/* Google Sign-In Button */}
-              <div 
-                id="google-signin-button" 
-                className="min-h-[44px] flex items-center justify-center"
+              {/* Google Sign-In Button - Custom styled, uses redirect flow */}
+              <button
+                onClick={handleGoogleSignIn}
+                className="flex items-center justify-center gap-3 w-full max-w-[300px] px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-md shadow-md transition-all hover:shadow-lg border border-gray-200"
               >
-                {!googleLoaded && (
-                  <div className="animate-pulse bg-slate/30 rounded-md w-[300px] h-[44px]"></div>
-                )}
-              </div>
-
-              {!GOOGLE_CLIENT_ID && (
-                <div className="text-amber-400 text-sm text-center p-4 bg-amber-400/10 rounded-md">
-                  ⚠️ Google Sign-In not configured. 
-                  <br />
-                  <span className="text-xs text-sand/60">Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in environment</span>
-                </div>
-              )}
+                {/* Google Logo */}
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in with Google
+              </button>
             </div>
           )}
 

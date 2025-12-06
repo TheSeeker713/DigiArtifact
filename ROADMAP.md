@@ -8,14 +8,16 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
 
 ---
 
-## 🔴 Immediate - In Progress
+## ✅ Recently Completed
 
-### Google OAuth Migration (December 2025)
-- [ ] **Authentication Overhaul** - Replace PIN-based login with Google OAuth
-  - Remove PIN storage and verification from database
-  - Implement Google Sign-In for workers.digiartifact.com
-  - Update AuthContext to use OAuth tokens
-  - Maintain existing session management
+### Google OAuth Migration (December 6, 2025) ✅
+- [x] **Authentication Overhaul** - Replaced PIN-based login with Google OAuth
+  - Removed PIN storage and verification from database
+  - Implemented Google Sign-In with redirect flow (no popups)
+  - Created OAuth endpoints: `/api/auth/google/start`, `/callback`, `/verify`
+  - Added `google_id` and `google_picture` columns to users table
+  - Custom-styled Google Sign-In button
+  - Works in all browsers including embedded/Simple Browser
 
 ---
 

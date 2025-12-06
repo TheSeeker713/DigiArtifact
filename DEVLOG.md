@@ -21,6 +21,63 @@ DigiArtifact encompasses multiple interconnected web projects:
 
 #### Week of December 1-7
 
+**December 6, 2025** - Google OAuth Authentication Migration
+
+##### Authentication Overhaul
+- **Removed**: PIN-based authentication system entirely
+- **Added**: Google OAuth 2.0 Sign-In using redirect flow
+- Benefits:
+  - No more managing PIN storage/verification
+  - Industry-standard secure authentication
+  - Works in all browsers (no popup blockers)
+  - Professional user experience
+
+##### Backend Changes (Cloudflare Workers API)
+- Created `routes/oauth.ts` with three endpoints:
+  - `GET /api/auth/google/start` - Initiates OAuth redirect to Google
+  - `GET /api/auth/google/callback` - Handles Google's response, exchanges code for tokens
+  - `POST /api/auth/google/verify` - Verifies Google credential tokens
+- Database migration `schema-v4-oauth.sql`:
+  - Added `google_id` column to users table
+  - Added `google_picture` column for profile photos
+  - Created unique index on google_id for fast lookups
+- Updated `wrangler.toml` with OAuth configuration variables
+- Cloudflare secrets set: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+
+##### Frontend Changes (Next.js 16)
+- Refactored login page (`app/page.tsx`):
+  - Replaced Google Identity Services popup with redirect flow
+  - Custom-styled Google Sign-In button with official logo
+  - Removed GIS library dependency (no more popup blockers)
+- Updated callback page (`app/auth/callback/page.tsx`):
+  - Handles OAuth redirect with token in URL fragment
+  - Stores credentials in cookies and redirects to dashboard
+- Updated settings page (`components/settings/AccountTab.tsx`):
+  - Removed PIN change form
+  - Added Google account connection status display
+
+##### Files Created:
+- `workers/api/src/routes/oauth.ts`
+- `workers/api/schema-v4-oauth.sql`
+- `workers/app/auth/callback/page.tsx`
+- `workers/.env.local` (Google Client ID for frontend)
+- `workers/GOOGLE_OAUTH_SETUP.md` (setup documentation)
+
+##### Files Modified:
+- `workers/app/page.tsx` - New login UI with redirect OAuth
+- `workers/api/src/index.ts` - Added OAuth route imports
+- `workers/api/src/utils.ts` - OAuth environment variable types
+- `workers/api/wrangler.toml` - OAuth config vars
+- `workers/components/settings/AccountTab.tsx` - Google account info
+
+##### Impact:
+- **Security**: Leverages Google's secure OAuth infrastructure
+- **UX**: Seamless one-click sign-in experience
+- **Maintenance**: No PIN management overhead
+- **Compatibility**: Works in embedded browsers, VS Code Simple Browser, etc.
+
+---
+
 **December 5, 2025** - Next.js 16 & React 19 Upgrade
 
 ##### Framework Updates
