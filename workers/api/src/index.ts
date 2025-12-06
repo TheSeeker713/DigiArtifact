@@ -57,7 +57,7 @@ export default {
       }
 
       // Google OAuth routes
-      if (path === '/api/auth/google' && method === 'GET') {
+      if (path === '/api/auth/google/start' && method === 'GET') {
         return handleOAuthStart(request, env, origin);
       }
       if (path === '/api/auth/google/callback' && method === 'GET') {
