@@ -21,6 +21,28 @@ DigiArtifact encompasses multiple interconnected web projects:
 
 #### Week of December 1-7
 
+**December 5, 2025** - Next.js 16 & React 19 Upgrade
+
+##### Framework Updates
+- Upgraded Next.js: 14.2.33 → 16.0.7
+- Upgraded React: 18.3.1 → 19.2.1
+- Upgraded React-DOM: 18.3.1 → 19.2.1
+- Updated eslint-config-next to latest
+
+##### Build System Changes
+- **Turbopack** is now the default bundler (replaces Webpack)
+- tsconfig.json auto-updated: `jsx: react-jsx`, `target: ES2017`
+- Faster builds: 15 pages generate in ~1.3s
+
+##### Code Compatibility Fixes
+- Fixed `JournalEditor.tsx` - multi-line className strings caused Turbopack parsing error
+- Verified all 13 page files - already client components, no async params/searchParams changes needed
+- Verified all fetch() calls - all are client-side, browser handles caching (no Next.js cache changes needed)
+- Verified all hooks usage - all files with useState/useEffect/etc have 'use client' at line 1
+- Build passes with Turbopack, dev server works correctly
+
+---
+
 **December 5, 2025** - Major Codebase Cleanup & Refactoring
 
 ##### Obsolete Files Cleanup

@@ -384,14 +384,7 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
         ref={editorRef}
         contentEditable
         onInput={handleContentChange}
-        className="flex-1 min-h-[300px] p-4 bg-obsidian/30 [.light-mode_&]:bg-white border-x border-b border-slate/50 [.light-mode_&]:border-slate-200 rounded-b-lg text-sand [.light-mode_&]:text-slate-900 focus:outline-none overflow-y-auto prose prose-invert [.light-mode_&]:prose-slate max-w-none
-          [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-amber-400 [.light-mode_&]:[&_h2]:text-amber-600 [&_h2]:mb-2
-          [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-300 [.light-mode_&]:[&_blockquote]:text-slate-600
-          [&_ul]:list-disc [&_ul]:ml-6
-          [&_ol]:list-decimal [&_ol]:ml-6
-          [&_li]:text-slate-300 [.light-mode_&]:[&_li]:text-slate-600
-          [&_a]:text-amber-400 [.light-mode_&]:[&_a]:text-amber-600 [&_a]:underline
-          [&_pre]:bg-slate/50 [.light-mode_&]:[&_pre]:bg-slate-100 [&_pre]:p-3 [&_pre]:rounded [&_pre]:font-mono [&_pre]:text-sm"
+        className="flex-1 min-h-[300px] p-4 bg-obsidian/30 [.light-mode_&]:bg-white border-x border-b border-slate/50 [.light-mode_&]:border-slate-200 rounded-b-lg text-sand [.light-mode_&]:text-slate-900 focus:outline-none overflow-y-auto prose prose-invert [.light-mode_&]:prose-slate max-w-none [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-amber-400 [.light-mode_&]:[&_h2]:text-amber-600 [&_h2]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-300 [.light-mode_&]:[&_blockquote]:text-slate-600 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:text-slate-300 [.light-mode_&]:[&_li]:text-slate-600 [&_a]:text-amber-400 [.light-mode_&]:[&_a]:text-amber-600 [&_a]:underline [&_pre]:bg-slate/50 [.light-mode_&]:[&_pre]:bg-slate-100 [&_pre]:p-3 [&_pre]:rounded [&_pre]:font-mono [&_pre]:text-sm"
         data-placeholder="Start writing..."
       />
 
