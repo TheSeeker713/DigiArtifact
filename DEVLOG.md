@@ -65,6 +65,22 @@ DigiArtifact encompasses multiple interconnected web projects:
   - Ensures all achievement unlocks persist to database
   - Maintains optimistic UI update pattern
 
+##### DigiArtifact Main Site - Under Construction Page
+- **Problem**: Main site (www.digiartifact.com) had UI issues, rebrand planned
+- **Solution**: Created temporary under construction page
+  - Clean, animated design with archaeological theme
+  - Floating particle effects and glowing elements
+  - Gradient background with animated grid pattern
+  - Pulsing logo with gold gradient
+  - Links to Etsy shop and Workers Portal
+  - Status bar showing rebrand timeline (Q1 2025)
+  - Responsive design for mobile and desktop
+- **Implementation**:
+  - Renamed `index.html` → `index.old.html` (backup)
+  - Created new standalone `index.html` with embedded CSS/JS
+  - Maintains brand identity: gold accents, archaeological terminology
+  - Professional messaging about rebrand in progress
+
 ##### Admin Account Setup
 - Added admin user: `blenderlearning3@gmail.com` with `role='admin'`
 - Inserted directly into D1 database
