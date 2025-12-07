@@ -43,8 +43,8 @@ export async function handleOAuthStart(
   });
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-
-  return jsonResponse({ authUrl }, 200, origin);
+  // Redirect the browser directly to Google's OAuth consent screen
+  return Response.redirect(authUrl, 302);
 }
 
 /**
@@ -144,16 +144,8 @@ export async function handleOAuthCallback(
       role: user.role,
     }, env.JWT_SECRET);
 
-    // Redirect to frontend with token (use fragment for security)
-    const redirectUrl = new URL(`${env.FRONTEND_URL}/auth/callback`);
-    redirectUrl.hash = `token=${appToken}&user=${encodeURIComponent(JSON.stringify({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    }))}`;
-
-    return Response.redirect(redirectUrl.toString(), 302);
+    // Redirect to the dashboard after successful auth
+    return Response.redirect(`${env.FRONTEND_URL}/dashboard`, 302);
   } catch (error) {
     console.error('OAuth callback error:', error);
     return Response.redirect(`${env.FRONTEND_URL}?error=server_error`, 302);
