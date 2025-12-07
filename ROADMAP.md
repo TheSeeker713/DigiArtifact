@@ -10,14 +10,26 @@ DigiArtifact is a digital asset marketplace and creative studio, blending archae
 
 ## ✅ Recently Completed
 
-### Google OAuth Migration (December 6, 2025) ✅
+### Google OAuth & Authentication (December 6-7, 2025) ✅
 - [x] **Authentication Overhaul** - Replaced PIN-based login with Google OAuth
   - Removed PIN storage and verification from database
-  - Implemented Google Sign-In with redirect flow (no popups)
+  - Implemented Google Sign-In with server-side redirect flow (no popups)
   - Created OAuth endpoints: `/api/auth/google/start`, `/callback`, `/verify`
   - Added `google_id` and `google_picture` columns to users table
   - Custom-styled Google Sign-In button
   - Works in all browsers including embedded/Simple Browser
+- [x] **URL Token Handoff Pattern** - Solved cross-domain cookie blocking
+  - Backend redirects with JWT in URL query parameter
+  - Frontend detects and processes token from URL
+  - Cookies saved in same-domain context
+  - URL history cleaned after authentication
+  - Admin account created for `blenderlearning3@gmail.com`
+- [x] **API Router Refactoring** - Modularized architecture
+  - Registry pattern for route organization
+  - Separated middleware (CORS, error handling)
+  - Centralized type definitions
+  - Reduced main entry point from 200+ to 70 lines
+  - Improved maintainability and extensibility
 
 ---
 

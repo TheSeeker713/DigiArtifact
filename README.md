@@ -34,6 +34,18 @@ This repository contains multiple web projects:
 - Next.js 14.2.33 → **16.0.7** (Turbopack now default bundler)
 - React 18.3.1 → **19.2.1**
 - React-DOM 18.3.1 → **19.2.1**
+- Wrangler 3.x → **4.x** (latest Cloudflare CLI)
+
+### Architecture & Authentication
+- **Migrated to Google OAuth 2.0** - Secure server-side redirect flow (no popups)
+- **URL Token Handoff Pattern** - Solves cross-domain cookie blocking
+  - Backend returns `?token=jwt` in redirect
+  - Frontend decodes JWT and saves to cookies
+  - Clean URL history after auth
+- **Modularized API Router** - Registry pattern with public/protected routes
+  - `src/index.ts`: 200+ lines → 70 lines
+  - New folders: `middleware/`, `types/`, `registry/`
+  - Centralized type definitions and error handling
 
 ### Codebase Cleanup
 - Removed obsolete files (test files, build caches, intermediates)

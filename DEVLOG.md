@@ -21,6 +21,37 @@ DigiArtifact encompasses multiple interconnected web projects:
 
 #### Week of December 1-7
 
+**December 7, 2025** - URL Token Handoff & API Refactoring Complete
+
+##### URL Token Handoff Pattern Implementation
+- **Problem**: Cross-domain Set-Cookie headers blocked by browsers (SameSite policy)
+- **Solution**: Implement URL token handoff pattern
+  - Backend: Redirect to `?token=JWT` instead of setting cookies
+  - Frontend: Detect token in URL via useEffect
+  - Decode JWT and extract user info
+  - Save token + user to cookies (now in same-domain)
+  - Clean URL using `window.history.replaceState()`
+- **Benefits**: Works across all domains, no popup blockers, seamless UX
+
+##### API Router Refactoring (Registry Pattern)
+- Extracted middleware to separate files:
+  - `middleware/cors.ts` - CORS headers generation
+  - `middleware/errorHandler.ts` - Centralized error handling
+- Created route registry system:
+  - `registry/publicRoutes.ts` - Routes without authentication
+  - `registry/protectedRoutes.ts` - Routes requiring valid JWT
+- Centralized type definitions:
+  - `types/env.ts` - Env, User, RouteContext interfaces
+  - `utils/responses.ts` - Shared response utilities
+- Result: Main `index.ts` reduced from 200+ lines to 70 lines
+- All 13 existing route handlers remain unchanged
+- Maintains 100% backward compatibility
+
+##### Admin Account Setup
+- Added admin user: `blenderlearning3@gmail.com` with `role='admin'`
+- Inserted directly into D1 database
+- User can now sign in via Google OAuth and access admin features
+
 **December 6, 2025** - Google OAuth Authentication Migration
 
 ##### Authentication Overhaul

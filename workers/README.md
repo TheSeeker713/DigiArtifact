@@ -18,16 +18,29 @@ A full-featured time tracking and project management system for DigiArtifact tea
 - **Next.js 16** - React framework with App Router & Turbopack
 - **React 19** - Latest React with concurrent features
 - **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
+- **Tailwind CSS** - Utility-first styling with custom colors (obsidian, gold, emerald)
 - **Chart.js** - Data visualization
 - **date-fns** - Date manipulation
+- **js-cookie** - Client-side cookie management
 
-### Backend
+### Backend API
 - **Cloudflare Workers** - Serverless edge API
 - **Cloudflare D1** - SQLite database
-- **Hono** - Lightweight web framework
-- **Google OAuth 2.0** - Secure authentication
-- **JWT** - Token-based session management
+- **TypeScript** - Full type safety
+- **Google OAuth 2.0** - Server-side redirect flow
+- **JWT** - Token-based session management (7-day expiration)
+- **Registry Router Pattern** - Modular public/protected route handling
+- **Centralized Middleware** - CORS, error handling, auth checks
+
+### Authentication Flow
+1. User clicks "SIGN IN"
+2. Frontend redirects to `/api/auth/google/start`
+3. Backend redirects to Google consent screen
+4. Google redirects to `/api/auth/google/callback` with code
+5. Backend exchanges code for tokens, creates JWT
+6. Backend redirects to `https://workers.digiartifact.com/dashboard?token=JWT`
+7. Frontend decodes JWT from URL, saves to cookies, cleans URL history
+8. User authenticated and dashboard loads
 
 ## 📊 Database Schema (D1)
 
