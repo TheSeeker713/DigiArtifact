@@ -144,24 +144,12 @@ export async function handleOAuthCallback(
       role: user.role,
     }, env.JWT_SECRET);
 
-    // Set auth token cookie for 7 days with cross-site compatibility
-    const cookie = [
-      `auth_token=${appToken}`,
-      'Path=/',
-      'HttpOnly',
-      'Secure',
-      'SameSite=None',
-      'Max-Age=604800',
-    ].join('; ');
+    // Redirect to frontend dashboard with token in URL
+    // Frontend will handle cookie setting to avoid cross-domain blocking
+    const dashboardUrl = new URL(`${env.FRONTEND_URL}/dashboard`);
+    dashboardUrl.searchParams.set('token', appToken);
 
-    // Redirect to the dashboard after successful auth
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: `${env.FRONTEND_URL}/dashboard`,
-        'Set-Cookie': cookie,
-      },
-    });
+    return Response.redirect(dashboardUrl.toString(), 302);
   } catch (error) {
     console.error('OAuth callback error:', error);
     return Response.redirect(`${env.FRONTEND_URL}?error=server_error`, 302);

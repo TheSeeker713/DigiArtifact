@@ -83,6 +83,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
+  // Handle OAuth callback token handoff from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+
+    if (token) {
+      try {
+        // Decode the JWT to extract user info (without verification, since we trust our server)
+        const tokenParts = token.split('.')
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]))
+          const user: User = {
+            id: payload.userId,
+            email: payload.email,
+            name: payload.email.split('@')[0], // Extract name from email if not available
+            role: payload.role,
+          }
+
+          // Save token and user to cookies
+          Cookies.set('workers_token', token, { expires: 7 })
+          Cookies.set('workers_user', JSON.stringify(user), { expires: 7 })
+
+          // Update state
+          setUser(user)
+
+          // Clean up URL - remove the token parameter
+          window.history.replaceState({}, document.title, window.location.pathname)
+
+          // Fetch current status
+          refreshData()
+        }
+      } catch (error) {
+        console.error('Failed to process OAuth token:', error)
+      }
+    }
+  }, [])
+
   const getAuthHeaders = () => {
     const token = Cookies.get('workers_token')
     return {
