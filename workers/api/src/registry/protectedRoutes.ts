@@ -18,6 +18,7 @@ import {
   handleGetGamification,
   handleAwardXP,
   handleUpdateStreak,
+  handleUnlockAchievement,
 } from '../routes/gamification';
 import {
   handleGetBlocks,
@@ -115,6 +116,9 @@ export async function handleProtectedRoutes(
   }
   if (path === '/api/gamification/streak' && method === 'POST') {
     return handleUpdateStreak(request, env, user, origin);
+  }
+  if (path === '/api/gamification/achievement/unlock' && method === 'POST') {
+    return handleUnlockAchievement(request, env, user, origin);
   }
 
   // --- SCHEDULE ROUTES ---

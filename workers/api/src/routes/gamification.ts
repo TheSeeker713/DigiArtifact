@@ -185,3 +185,73 @@ export async function handleUpdateStreak(
     longest_streak: newLongestStreak,
   }, 200, origin);
 }
+
+export async function handleUnlockAchievement(
+  request: Request,
+  env: Env,
+  user: User,
+  origin: string
+): Promise<Response> {
+  const { achievementId } = await request.json() as { achievementId: string };
+
+  if (!achievementId) {
+    return jsonResponse({ error: 'Achievement ID required' }, 400, origin);
+  }
+
+  // Fetch current user_gamification row
+  const gamification = await env.DB.prepare(`
+    SELECT id, achievements
+    FROM user_gamification
+    WHERE user_id = ?
+  `).bind(user.id).first<{
+    id: number;
+    achievements: string;
+  }>();
+
+  if (!gamification) {
+    return jsonResponse({ error: 'Gamification record not found' }, 404, origin);
+  }
+
+  // Parse achievements JSON column
+  let achievements: any[];
+  try {
+    achievements = JSON.parse(gamification.achievements || '[]');
+  } catch (error) {
+    achievements = [];
+  }
+
+  // Find matching achievement and unlock it
+  let achievementFound = false;
+  let unlockedAchievement: any = null;
+
+  const updatedAchievements = achievements.map(achievement => {
+    if (achievement.id === achievementId) {
+      achievementFound = true;
+      unlockedAchievement = {
+        ...achievement,
+        unlocked: true,
+        unlockedAt: Date.now(),
+      };
+      return unlockedAchievement;
+    }
+    return achievement;
+  });
+
+  if (!achievementFound) {
+    return jsonResponse({ error: 'Achievement not found' }, 404, origin);
+  }
+
+  // Save updated achievements array back to database
+  await env.DB.prepare(`
+    UPDATE user_gamification
+    SET achievements = ?,
+        updated_at = datetime('now')
+    WHERE user_id = ?
+  `).bind(JSON.stringify(updatedAchievements), user.id).run();
+
+  return jsonResponse({
+    success: true,
+    achievement: unlockedAchievement,
+    message: `Achievement "${unlockedAchievement.name}" unlocked!`,
+  }, 200, origin);
+}

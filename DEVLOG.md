@@ -62,6 +62,21 @@ DigiArtifact encompasses multiple interconnected web projects:
 - **Flow**: User earns XP → UI updates instantly → Server persists in background
 - **Benefits**: Fast user experience + reliable data persistence
 
+##### Achievement Unlock Endpoint
+- **Created**: `handleUnlockAchievement()` in `routes/gamification.ts`
+- **Endpoint**: `POST /api/gamification/achievement/unlock`
+- **Request Body**: `{ achievementId: string }`
+- **Implementation**:
+  1. Fetches user's gamification row from database
+  2. Parses achievements JSON column
+  3. Finds matching achievement by ID
+  4. Sets `unlocked: true` and `unlockedAt: Date.now()`
+  5. Saves updated achievements array back to database
+  6. Returns updated achievement data
+- **Response**: `{ success: true, achievement: {...}, message: "Achievement unlocked!" }`
+- **Use Case**: Frontend can unlock achievements when conditions are met
+- **Added**: Route registration in `registry/protectedRoutes.ts`
+
 **December 6, 2025** - Google OAuth Authentication Migration
 
 ##### Authentication Overhaul
