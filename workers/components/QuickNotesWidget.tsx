@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useJournal } from '@/contexts/JournalContext'
+import { useGamification } from '@/contexts/GamificationContext'
 
 interface QuickNote {
   id: string
@@ -19,6 +20,7 @@ export default function QuickNotesWidget() {
   const [newNote, setNewNote] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
   const { archiveNote } = useJournal()
+  const { addXP } = useGamification()
   const midnightCheckRef = useRef<NodeJS.Timeout | null>(null)
 
   // Check if it's a new day and clear unpinned notes
@@ -117,6 +119,8 @@ export default function QuickNotesWidget() {
       [],
       undefined
     )
+    
+    addXP(5, 'Quick Note')
     
     setNotes(prev => [note, ...prev])
     setNewNote('')
