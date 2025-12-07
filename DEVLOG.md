@@ -47,6 +47,24 @@ DigiArtifact encompasses multiple interconnected web projects:
 - All 13 existing route handlers remain unchanged
 - Maintains 100% backward compatibility
 
+##### Gamification System Server Persistence
+- **XP Persistence**:
+  - Updated `GamificationContext.tsx` `addXP()` function
+  - Optimistic UI update (immediate feedback)
+  - Async POST to `/api/gamification/xp` with payload `{ amount, reason }`
+  - Error handling with console logging
+- **Achievement Unlock Endpoint**:
+  - Created `handleUnlockAchievement()` in `routes/gamification.ts`
+  - POST `/api/gamification/achievement/unlock`
+  - Parses achievements JSON column, sets `unlocked=true` and `unlockedAt=Date.now()`
+  - Returns updated achievement with success message
+- **Achievement Unlock Client Integration**:
+  - Updated `checkAchievements()` function in `GamificationContext.tsx`
+  - When `shouldUnlock` is true, immediately calls unlock endpoint
+  - Async POST to `/api/gamification/achievement/unlock` with `{ achievementId }`
+  - Ensures all achievement unlocks persist to database
+  - Maintains optimistic UI update pattern
+
 ##### Admin Account Setup
 - Added admin user: `blenderlearning3@gmail.com` with `role='admin'`
 - Inserted directly into D1 database

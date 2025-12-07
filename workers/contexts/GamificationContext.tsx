@@ -288,6 +288,32 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         }
         
         if (shouldUnlock) {
+          // Persist unlock to server
+          const persistUnlock = async () => {
+            try {
+              const token = Cookies.get('workers_token')
+              if (!token) return
+
+              const response = await fetch(`${API_BASE}/gamification/achievement/unlock`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ achievementId: achievement.id }),
+              })
+
+              if (!response.ok) {
+                const errorData = await response.json()
+                console.error('Failed to persist achievement unlock:', errorData)
+              }
+            } catch (error) {
+              console.error('Error persisting achievement unlock:', error)
+            }
+          }
+
+          persistUnlock()
+
           return {
             ...achievement,
             unlocked: true,
