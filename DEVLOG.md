@@ -52,6 +52,16 @@ DigiArtifact encompasses multiple interconnected web projects:
 - Inserted directly into D1 database
 - User can now sign in via Google OAuth and access admin features
 
+##### Gamification XP Persistence
+- **Updated**: `GamificationContext.addXP()` to persist XP awards to server
+- **Implementation**: Optimistic UI update + async server sync
+  - Immediate UI feedback (setData)
+  - Non-blocking POST to `/api/gamification/xp`
+  - Error logging if persistence fails
+  - Maintains snappy UX while ensuring data integrity
+- **Flow**: User earns XP → UI updates instantly → Server persists in background
+- **Benefits**: Fast user experience + reliable data persistence
+
 **December 6, 2025** - Google OAuth Authentication Migration
 
 ##### Authentication Overhaul

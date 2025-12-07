@@ -208,6 +208,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addXP = useCallback((amount: number, reason: string) => {
+    // Optimistic UI update - immediate feedback
     setData(prev => {
       const newTotalXP = prev.totalXP + amount
       const newLevel = getLevel(newTotalXP)
@@ -228,6 +229,32 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
     // Show notification
     setXpNotification({ amount, reason })
     setTimeout(() => setXpNotification(null), 3000)
+
+    // Persist to server (async, non-blocking)
+    const persistXP = async () => {
+      try {
+        const token = Cookies.get('workers_token')
+        if (!token) return
+
+        const response = await fetch(`${API_BASE}/gamification/xp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amount, reason }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error('Failed to persist XP to server:', errorData)
+        }
+      } catch (error) {
+        console.error('Error persisting XP to server:', error)
+      }
+    }
+
+    persistXP()
   }, [getLevel])
 
   const checkAchievements = useCallback(() => {
