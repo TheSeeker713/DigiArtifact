@@ -3,8 +3,12 @@
  */
 
 import { Env, RouteContext } from '../types/env';
-import { handleAuthLogin } from '../routes/auth';
-import { handleOAuthStart, handleOAuthCallback, handleVerifyGoogleToken } from '../routes/oauth';
+import { jsonResponse } from '../utils/responses';
+import {
+  handleOAuthStart,
+  handleOAuthCallback,
+  handleVerifyGoogleToken,
+} from '../routes/oauth';
 
 /**
  * Try to match and handle public routes
@@ -18,10 +22,10 @@ export async function handlePublicRoutes(
   const { url, method, origin } = context;
   const path = url.pathname;
 
-  // Legacy PIN login
-  if (path === '/api/auth/login' && method === 'POST') {
-    return handleAuthLogin(request, env, origin);
-  }
+  // =========================================================
+  // GOOGLE OAUTH ROUTES ONLY
+  // PIN Login has been deprecated and removed.
+  // =========================================================
 
   // Google OAuth: Start
   if (path === '/api/auth/google/start' && method === 'GET') {
@@ -33,10 +37,10 @@ export async function handlePublicRoutes(
     return handleOAuthCallback(request, env, origin);
   }
 
-  // Google OAuth: Verify Token
+  // Google OAuth: Verify Token (for frontend session checks)
   if (path === '/api/auth/google/verify' && method === 'POST') {
     return handleVerifyGoogleToken(request, env, origin);
   }
 
-  return null; // No public route matched
+  return null; // No match
 }
