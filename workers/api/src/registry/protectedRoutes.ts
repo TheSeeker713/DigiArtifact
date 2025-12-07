@@ -117,6 +117,9 @@ export async function handleProtectedRoutes(
   if (path === '/api/gamification/streak' && method === 'POST') {
     return handleUpdateStreak(request, env, user, origin);
   }
+  if (path === '/api/gamification/achievement' && method === 'POST') {
+    return handleUnlockAchievement(request, env, user, origin);
+  }
   if (path === '/api/gamification/achievement/unlock' && method === 'POST') {
     return handleUnlockAchievement(request, env, user, origin);
   }

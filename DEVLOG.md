@@ -64,6 +64,11 @@ DigiArtifact encompasses multiple interconnected web projects:
   - Async POST to `/api/gamification/achievement/unlock` with `{ achievementId }`
   - Ensures all achievement unlocks persist to database
   - Maintains optimistic UI update pattern
+- **Achievement Unlock Route Addition**:
+  - Added alternate route `/api/gamification/achievement` (POST) in `protectedRoutes.ts`
+  - Both `/api/gamification/achievement` and `/api/gamification/achievement/unlock` now supported
+  - Routes to same `handleUnlockAchievement()` function
+  - Provides flexibility for frontend implementation
 
 ##### DigiArtifact Main Site - Under Construction Page
 - **Problem**: Main site (www.digiartifact.com) had UI issues, rebrand planned
