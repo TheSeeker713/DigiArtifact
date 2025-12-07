@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useGamification } from '@/contexts/GamificationContext'
 
 type TimerMode = 'focus' | 'short-break' | 'long-break'
 
@@ -37,6 +38,7 @@ const PRESET_DURATIONS = [
 const STORAGE_KEY = 'workers_focus_timer_state'
 
 export default function FocusTimer() {
+  const { addXP } = useGamification()
   const [mode, setMode] = useState<TimerMode>('focus')
   const [timeRemaining, setTimeRemaining] = useState(DEFAULT_CONFIG.focus)
   const [isRunning, setIsRunning] = useState(false)
@@ -133,6 +135,9 @@ export default function FocusTimer() {
 
     // Auto-switch modes
     if (mode === 'focus') {
+      // Award XP for completing a focus session
+      addXP(30, 'Focus Session Complete')
+      
       const newSessionCount = completedSessions + 1
       setCompletedSessions(newSessionCount)
       
@@ -147,7 +152,7 @@ export default function FocusTimer() {
       setMode('focus')
       setTimeRemaining(customFocusTime)
     }
-  }, [mode, completedSessions, config, customFocusTime])
+  }, [mode, completedSessions, config, customFocusTime, addXP])
 
   const toggleTimer = () => {
     if (!isRunning && timeRemaining === 0) {

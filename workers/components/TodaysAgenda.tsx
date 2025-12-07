@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useGamification } from '@/contexts/GamificationContext'
 
 interface AgendaItem {
   id: string
@@ -17,6 +18,7 @@ interface AgendaItem {
 export default function TodaysAgenda() {
   const { clockStatus, todayEntries, projects } = useAuth()
   const { formatTime, formatDate } = useSettings()
+  const { addXP } = useGamification()
   const [tasks, setTasks] = useState<AgendaItem[]>([])
   const [newTask, setNewTask] = useState('')
   const [showAddTask, setShowAddTask] = useState(false)
@@ -74,9 +76,17 @@ export default function TodaysAgenda() {
   }
 
   const toggleTask = (id: string) => {
-    setTasks(prev => prev.map(t => 
-      t.id === id ? { ...t, completed: !t.completed } : t
-    ))
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        const newCompleted = !t.completed
+        // Award XP only when completing (not unchecking)
+        if (newCompleted && !t.completed) {
+          addXP(15, 'Task Completed')
+        }
+        return { ...t, completed: newCompleted }
+      }
+      return t
+    }))
   }
 
   const deleteTask = (id: string) => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { JournalEntry, JournalEntrySource, useJournal } from '@/contexts/JournalContext'
+import { useGamification } from '@/contexts/GamificationContext'
 
 interface JournalEditorProps {
   entry: JournalEntry | null
@@ -12,6 +13,7 @@ type FormatAction = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'heading
 
 export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
   const { archiveNote, updateEntry } = useJournal()
+  const { addXP } = useGamification()
   const editorRef = useRef<HTMLDivElement>(null)
   
   // Local state to track the entry being edited (handles switching from new -> existing)
@@ -222,6 +224,9 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
       }
       setLastSaved(new Date())
       setHasChanges(false)
+      
+      // Award XP for saving journal entry
+      addXP(20, 'Journal Entry Saved')
     } catch (error) {
       console.error('Failed to save journal entry:', error)
     } finally {

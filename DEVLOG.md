@@ -1,6 +1,43 @@
-# DigiArtifact Development Log
+# DigiArtifact Development Log - Master Index
 
 > A chronological record of development progress across the DigiArtifact ecosystem.
+>
+> **📁 For detailed monthly logs, see: `/documents/devlogs/`**
+
+---
+
+## Quick Navigation
+
+### 📚 Monthly Development Logs
+- **[November 2025](documents/devlogs/DEVLOG_2025_November.md)** - Project initialization, Workers Portal foundation
+- **[December 2025](documents/devlogs/DEVLOG_2025_December.md)** - Major features, OAuth, Gamification, Block scheduling
+- **[January 2025](documents/devlogs/DEVLOG_2025_January.md)** - Settings, Onboarding, Admin features
+- **[Master Index](documents/devlogs/README.md)** - Complete overview and statistics
+
+### 📖 Project Documentation
+- **[Root README](documents/project-docs/ROOT_README.md)** - Main project overview
+- **[Roadmap](documents/project-docs/ROADMAP.md)** - Feature roadmap and priorities
+- **[Workers README](documents/project-docs/workers/)** - Workers Portal documentation
+- **[Tech Stack](documents/project-docs/WORKERS_TECH_STACK.md)** - Technology stack overview
+
+---
+
+## Latest Updates (December 7, 2025)
+
+### Gamification Integration Across All Components
+✅ **COMPLETE** - Multi-component gamification wiring for maximum engagement
+
+| Component | XP Reward | Trigger |
+|-----------|-----------|---------|
+| FocusTimer | 30 XP | Focus session completes (not breaks) |
+| BodyDoublingTimer | 30 XP | Session timer hits zero |
+| BlockTimeline | Dynamic + 1000 XP | Block completion + 7-day milestone |
+| TodaysAgenda | 15 XP | Task marked complete |
+| JournalEditor | 20 XP | Entry successfully saved |
+| QuickNotesWidget | 5 XP | Quick note created |
+| ClockWidget | 10/20 XP | Clock in / Clock out |
+
+**Total Daily XP Potential**: 120+ XP with consistent usage
 
 ---
 
@@ -15,7 +52,7 @@ DigiArtifact encompasses multiple interconnected web projects:
 
 ---
 
-## 2025 Development Timeline
+## 2025 Development Timeline (Archive)
 
 ### December 2025
 

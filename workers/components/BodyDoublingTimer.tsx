@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useGamification } from '@/contexts/GamificationContext'
 
 interface BodyDoublingSession {
   id: string
@@ -33,6 +34,7 @@ const VIRTUAL_PARTNERS = [
 ]
 
 export default function BodyDoublingTimer() {
+  const { addXP } = useGamification()
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [selectedDuration, setSelectedDuration] = useState(SESSION_PRESETS[1].duration)
   const [timeRemaining, setTimeRemaining] = useState(selectedDuration)
@@ -133,6 +135,9 @@ export default function BodyDoublingTimer() {
         completed: true,
       }
       setSessionHistory(prev => [completedSession, ...prev.slice(0, 19)]) // Keep last 20
+      
+      // Award XP for completing the session
+      addXP(30, 'Body Doubling Session')
     }
     
     setCurrentSession(null)
@@ -145,7 +150,7 @@ export default function BodyDoublingTimer() {
         icon: '/favicon.ico'
       })
     }
-  }, [currentSession])
+  }, [currentSession, addXP])
 
   const cancelSession = () => {
     setIsSessionActive(false)
