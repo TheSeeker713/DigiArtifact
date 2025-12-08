@@ -67,11 +67,22 @@
 
 ---
 
-**November 28-30, 2025** - SecretVault Development
+**November 24-25, 2025** - SecretVault Development
+
+**Project inception timestamp:** 2025-11-24 20:57:10 MT (UTC-7) — first SecretVault commit `bcb54bd`
+
+- Renamed folder to `secretvault` for Cloudflare compatibility
 - Created SecretVault landing page with dark fantasy theme
 - Implemented responsive grid layout for digital assets
 - Added ambient background animations
 - Established consistent color palette across projects
+
+##### Commits (with timestamps)
+- `bcb54bd` (2025-11-24 20:57:10 MT, UTC-7) - fix: rename Secret Vault folder to secretvault for Cloudflare
+- `a99bc5e` (2025-11-25 15:51:56 MT, UTC-7) - Connect Mailchimp signup form to SecretVault landing page
+- `598182f` (2025-11-25 19:16:21 MT, UTC-7) - Fix Workers portal functionality, expand Settings, add Spooky landing page
+- `b888808` (2025-11-25 19:18:59 MT, UTC-7) - Add Spooky expansion banner to SecretVault homepage
+- `674d029` (2025-11-25 19:39:03 MT, UTC-7) - Add Link in Bio page at /links
 
 ---
 
