@@ -75,6 +75,7 @@
 ### December 8 — Code standards & documentation
 - **Updated copilot-instructions.md**: Revised entire document to reflect current DigiArtifact architecture (removed all ChronicleOS references). _(Root, documentation)_
 - **Added code standards**: Documented 500 LoC maximum file size limit with refactoring requirements and splitting strategies. _(Root, documentation)_
+- **Time not logged** — Fixed gamification XP persistence with D1-compatible UPSERT and default Level 1 fallback for new users. _(Workers, pending)_
 
 ---
 

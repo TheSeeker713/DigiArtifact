@@ -17,12 +17,7 @@ export async function handleGetGamification(
   `).bind(user.id).first();
 
   if (!gamification) {
-    // Create default gamification record
-    await env.DB.prepare(`
-      INSERT INTO user_gamification (user_id, total_xp, level, current_streak, achievements)
-      VALUES (?, 0, 1, 0, '[]')
-    `).bind(user.id).run();
-    
+    // Return a sane default so the frontend can initialize without a persisted row
     return jsonResponse({
       total_xp: 0,
       level: 1,
@@ -32,6 +27,7 @@ export async function handleGetGamification(
       total_sessions: 0,
       focus_sessions: 0,
       achievements: [],
+      last_activity_date: null,
     }, 200, origin);
   }
 
@@ -58,7 +54,7 @@ export async function handleAwardXP(
   }
 
   // Get current gamification data
-  let gamification = await env.DB.prepare(`
+  const gamification = await env.DB.prepare(`
     SELECT id, total_xp, level, current_streak, longest_streak,
            total_work_minutes, total_sessions, focus_sessions
     FROM user_gamification
@@ -74,42 +70,27 @@ export async function handleAwardXP(
     focus_sessions: number;
   }>();
 
-  if (!gamification) {
-    // Create initial record
-    const result = await env.DB.prepare(`
-      INSERT INTO user_gamification (user_id, total_xp, level, current_streak, achievements, last_activity_date)
-      VALUES (?, ?, 1, 1, '[]', date('now'))
-      RETURNING *
-    `).bind(user.id, amount).first();
-    
-    // Log the XP transaction
-    await env.DB.prepare(`
-      INSERT INTO xp_transactions (user_id, amount, reason, action_type)
-      VALUES (?, ?, ?, ?)
-    `).bind(user.id, amount, reason, action_type || 'general').run();
-
-    return jsonResponse({ 
-      success: true, 
-      total_xp: amount, 
-      level: 1,
-      xp_gained: amount,
-    }, 200, origin);
-  }
-
   // Calculate new level based on XP
-  const newTotalXP = gamification.total_xp + amount;
+  const baseXP = gamification?.total_xp ?? 0;
+  const baseLevel = gamification?.level ?? 1;
+  const newTotalXP = baseXP + amount;
   const newLevel = calculateLevel(newTotalXP);
-  const leveledUp = newLevel > gamification.level;
+  const leveledUp = newLevel > baseLevel;
+  const currentStreak = gamification?.current_streak ?? 0;
+  const longestStreak = gamification?.longest_streak ?? 0;
 
-  // Update gamification data
+  // Upsert to ensure new users persist immediately
   await env.DB.prepare(`
-    UPDATE user_gamification
-    SET total_xp = ?,
-        level = ?,
-        last_activity_date = date('now'),
-        updated_at = datetime('now')
-    WHERE user_id = ?
-  `).bind(newTotalXP, newLevel, user.id).run();
+    INSERT INTO user_gamification (user_id, total_xp, level, current_streak, longest_streak, last_activity_date, updated_at)
+    VALUES (?, ?, ?, ?, ?, date('now'), CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id) DO UPDATE SET
+      total_xp = excluded.total_xp,
+      level = excluded.level,
+      current_streak = excluded.current_streak,
+      longest_streak = excluded.longest_streak,
+      last_activity_date = excluded.last_activity_date,
+      updated_at = CURRENT_TIMESTAMP
+  `).bind(user.id, newTotalXP, newLevel, currentStreak, longestStreak).run();
 
   // Log the XP transaction
   await env.DB.prepare(`
