@@ -6,12 +6,12 @@
 
 ## Overview
 
-DigiArtifact encompasses multiple interconnected web projects:
+DigiArtifact spans multiple interconnected properties:
 
-- **Main Landing Site** (`/index.html`) - Company presence with archaeological theme
-- **SecretVault** (`/secretvault/`) - Digital asset marketplace
-- **DigiArtifact Hub** (`/digiartifact-hub/`) - Next.js artifact gallery
-- **Workers Portal** (`/workers/`) - Time tracking & employee management system
+- **Main Landing Site** (`/index.html`) – Company presence with archaeological theme
+- **SecretVault** (`/secretvault/`) – Digital asset marketplace
+- **DigiArtifact Hub** (`/digiartifact-hub/`) – Next.js artifact gallery
+- **Workers Portal** (`/workers/`) – Time tracking, scheduling, analytics, and gamification
 
 ---
 
@@ -19,51 +19,48 @@ DigiArtifact encompasses multiple interconnected web projects:
 
 ### 2025 Timeline
 
-- **[November 2025](DEVLOG_2025_November.md)** - Project initialization, Workers Portal foundation, Backend API setup
-- **[December 2025](DEVLOG_2025_December.md)** - Major feature implementation, OAuth migration, Block scheduling, Gamification expansion
-- **[January 2025](DEVLOG_2025_January.md)** - Settings enhancements, Onboarding system, Admin features
+- **[November 2025](DEVLOG_2025_November.md)** – Root site refresh, SecretVault launch, Workers inception (exact timestamps captured)
+- **[December 2025](DEVLOG_2025_December.md)** – Feature avalanche (Workers), OAuth migration, gamification persistence, glass overlays, and root polish
+- **[December 2025 Tutorial Sprint](DEVLOG_2025_December_Tutorial.md)** – Interactive tutorial/help system, admin data tools, and settings enhancements
 
 ---
 
 ## Quick Reference
 
-### Latest Updates (December 7, 2025)
-- Multi-component gamification wiring across all productivity features
-- FocusTimer: 30 XP on focus session complete
-- BodyDoublingTimer: 30 XP on session completion
-- TodaysAgenda: 15 XP on task completion (with toggle protection)
-- JournalEditor: 20 XP on entry save
-- ClockWidget: 10 XP clock in, 20 XP clock out
-- QuickNotesWidget: 5 XP per note
-- BlockTimeline: Dynamic XP per block + 1000 XP for 7-day milestone
+### Latest Updates (December 8, 2025)
+- Workers: OAuth migration finished (redirect flow, cookie handoff), PIN removed
+- Workers: Gamification persisted server-side; achievement unlock endpoints live
+- Workers: Shattered glass overlay on dashboard widgets; XP hooks across widgets
+- Root: Glass texture overlay on artifact cards; Under Construction page added
+- Workers: Interactive tutorial hardened (click-through overlay, new-user gating)
 
 ### Major Systems Implemented
-1. **Block-Based Scheduling** - Dynamic time blocks with automatic time-shifting
-2. **Gamification System** - 10-level progression with 17 achievements
-3. **Journal System** - Rich text editor with permanent note archival
-4. **Google OAuth** - Secure authentication without PIN management
-5. **Mobile PWA** - Offline support with background sync
-6. **Analytics Dashboard** - Comprehensive work pattern analysis
-7. **Goals & Targets** - Goal tracking with streak integration
+1. **Block-Based Scheduling** – Dynamic blocks with auto time-shift and carry-over
+2. **Gamification System** – 10-level progression, achievements, XP persistence (server + client)
+3. **Journal System** – Rich text editor with archival and PDF export
+4. **Google OAuth** – Redirect flow, cookie handoff, PIN fully removed
+5. **Mobile PWA** – Offline support, background sync, install prompt
+6. **Analytics Dashboard** – Real data, PDF/CSV export, insights
+7. **Goals & Targets** – Goal CRUD with streak integration
 
 ---
 
 ## Project Statistics
 
-### Lines of Code (as of Dec 5, 2025)
-- **Workers Portal**: ~15,000 lines (components, hooks, contexts)
-- **API Backend**: ~1,200 lines (modular route handlers)
-- **Documentation**: ~1,300 lines (across monthly logs)
+### Scope (as of Dec 8, 2025)
+- **Workers Frontend**: ~16k LoC (components, hooks, contexts, pages)
+- **API Backend**: ~1.4k LoC (modular routes + utils)
+- **Documentation**: ~1.6k LoC (devlogs + guides)
 
-### Components Created
-- 30+ React components
-- 8+ Custom hooks
-- 4 Context providers
-- 16 Dashboard pages
-- 2 Mobile-optimized interfaces
+### Components & Pages
+- 35+ React components
+- 10+ custom hooks
+- 5+ context providers
+- 18+ dashboard/utility pages
+- PWA + OAuth flows included
 
 ### Database Schema Versions
-- v1: Initial (users, projects, time_entries, breaks)
+- v1: Core (users, projects, time_entries, breaks)
 - v2: Extended (employee_settings, scheduled_shifts, notes, reports)
 - v3: Blocks (schedule_blocks, block_rewards, milestones)
 - v4: OAuth (google_id, google_picture)
@@ -73,46 +70,45 @@ DigiArtifact encompasses multiple interconnected web projects:
 ## Technical Decisions
 
 ### Framework Choices
-- **Frontend**: Next.js 16 + React 19 (latest as of Dec 5, 2025)
+- **Frontend**: Next.js 16 + React 19 (Turbopack)
 - **Styling**: Tailwind CSS with custom archaeological theme
 - **Backend**: Cloudflare Workers + D1 SQLite
-- **Bundler**: Turbopack (default with Next.js 16)
+- **Bundler**: Turbopack (Next.js 16 default)
 - **Database**: Cloudflare D1 (serverless SQLite)
-- **Authentication**: Google OAuth 2.0
+- **Authentication**: Google OAuth 2.0 (redirect flow)
 
 ### Architectural Patterns
 - Context API for global state (Auth, Gamification, Settings, Journal, PWA)
 - Component composition for modularity
-- LocalStorage + API sync for data persistence
-- Middleware pattern for API route organization
+- LocalStorage + API sync for persistence
+- Registry + middleware pattern for API routing
 
 ---
 
 ## Performance & Metrics
 
-### Build Performance
-- **Dev Build**: ~1.3s for 15 pages
-- **Production Build**: Optimized with Turbopack
-- **Bundle Size Target**: <100KB gzipped initial JS
+### Build Performance (Next.js 16 + Turbopack)
+- **Dev Build**: ~1.3s for ~15 pages
+- **Prod Build**: Turbopack-optimized; bundle target <100KB gzipped initial JS
 
-### Data Compression
+### Data & Storage
 - Video compression: 4.35GB → 589MB (86% reduction)
-- Disk space freed: ~1GB (build caches, intermediate files)
+- Disk space freed: ~1GB (cache and intermediate cleanup)
 
 ---
 
 ## Known Issues & Roadmap
 
 ### Current Status
-- ✅ Immediate Priority Features: ALL COMPLETE
-- ✅ High Priority Features: ALL COMPLETE
+- ✅ Immediate Priority: Complete
+- ✅ High Priority: Complete
 - 🟡 Medium Priority: In progress (Q2 2026 target)
 - 🟢 Lower Priority: Planned (Q3 2026+)
 
 ### Next Steps
 1. Medium Priority features (Templates, Transition Alerts, Focus Mode)
 2. Platform expansion (iOS/Android apps)
-3. AI integration for smart recommendations
+3. AI-driven smart recommendations
 4. Advanced analytics and reporting
 
 ---
@@ -125,4 +121,4 @@ DigiArtifact encompasses multiple interconnected web projects:
 
 ---
 
-*Last Updated: December 7, 2025*
+*Last Updated: December 8, 2025*
