@@ -1,95 +1,35 @@
 # DigiArtifact Development Log - November 2025
 
-> Monthly development log for November 2025
+> Full November timeline across the original DigiArtifact site, SecretVault, and Workers. Times are Mountain Time (UTC-7), 12-hour format.
 
 ---
 
 ## November 2025
 
+### Week of November 18-24
+
+- **Nov 22, 2025 (8:01 AM)** — Backed up the legacy static site and deployed the Next.js build artifacts to the root so the old experience stayed preserved. _(Commit `41aa322`)_
+- **Nov 22, 2025 (3:57 PM)** — Made DigiArtifact Hub fully responsive across mobile, tablet, and desktop. _(Commit `1dafe0d`)_
+- **Nov 22, 2025 (4:07 PM)** — Added product detail pages for all artifacts to improve discoverability. _(Commit `d8d42b9`)_
+- **Nov 24, 2025 (7:58 PM)** — Added the SecretVault landing page with cinematic video backgrounds and removed the chronicleos submodule from the root. _(Commit `4240e41`)_
+- **Nov 24, 2025 (8:57 PM)** — SecretVault inception: renamed the folder to `secretvault` for Cloudflare compatibility and stood up the dark-fantasy landing page with ambient motion. _(Commit `bcb54bd`)_
+
 ### Week of November 25-30
 
-**Original DigiArtifact Site (static)** — exact commit timestamps
-- `41aa322` (2025-11-22 08:01:52 MT, UTC-7) — Backed up legacy site and deployed Next.js build artifacts to root
-- `1dafe0d` (2025-11-22 15:57:58 MT, UTC-7) — Made DigiArtifact Hub fully responsive for mobile, tablet, and desktop
-- `d8d42b9` (2025-11-22 16:07:58 MT, UTC-7) — Added product detail pages for all artifacts
-- `4240e41` (2025-11-24 19:58:58 MT, UTC-7) — Added Secret Vault landing page, video backgrounds, removed chronicleos submodule
-- `3652b56` (2025-11-25 12:04:21 MT, UTC-7) — Rebuilt static export with video assets to sync root deployment
+#### SecretVault rollout
+- **Nov 25, 2025 (3:51 PM)** — Wired the Mailchimp signup form into the SecretVault landing page to capture leads. _(Commit `a99bc5e`)_
+- **Nov 25, 2025 (7:18 PM)** — Added a Spooky expansion banner to the SecretVault homepage. _(Commit `b888808`)_
+- **Nov 25, 2025 (7:39 PM)** — Published the Link-in-Bio page at `/links` for social discovery. _(Commit `674d029`)_
 
-**Project inception timestamp:** 2025-11-25 11:23:07 MT (UTC-7) — first commit `5391b4e`
+#### Workers platform launch (project inception)
+- **Nov 25, 2025 (11:23 AM)** — First Workers commit laid down the time-tracking architecture and portal shell. _(Commit `5391b4e`)_
+- **Nov 25, 2025 (2:59 PM)** — Shipped the full Workers Portal: Next.js frontend + Cloudflare Worker API, end-to-end time tracking, PIN auth, and core contexts (Auth, Settings, Gamification). _(Commit `1e06ef7`)_
+- **Nov 25, 2025 (3:15 PM)** — Connected the frontend to the deployed Worker API so live data flowed through the dashboard. _(Commit `ffcac47`)_
+- **Nov 25, 2025 (3:19 PM)** — Added PIN change/reset UX and matching API endpoints. _(Commit `cc7912e`)_
+- **Nov 25, 2025 (7:16 PM)** — Hardening pass: fixed portal functionality, expanded Settings, and added the Spooky landing page. _(Commit `598182f`)_
 
-**November 25, 2025** - Workers Portal & Backend API Launch 🚀
-
-**MASSIVE INITIAL DEPLOYMENT**: Complete workers portal system deployed with full stack
-
-##### Frontend (Next.js 14)
-- Initialized Next.js 14 project with App Router architecture
-- Set up Tailwind CSS with custom dark theme configuration (obsidian, relic-gold, sand, emerald)
-- Created core context system:
-  - `AuthContext` - User authentication and session management
-  - `SettingsContext` - User preferences (timezone, time format)
-  - `GamificationContext` - XP and progression system foundation
-- Built main dashboard layout with:
-  - Sidebar navigation with menu sections
-  - Main content area with widget grid
-  - Responsive mobile sidebar
-- Implemented authentication flow with PIN-based login
-- Created initial dashboard widgets (placeholders)
-
-##### Backend (Cloudflare Workers + D1)
-- Set up Cloudflare Workers project with TypeScript
-- Designed and deployed database schema for D1 (SQLite):
-  - `users` table - User profiles, PIN hashes, settings
-  - `time_entries` table - Clock in/out records with breaks
-  - `projects` table - Project definitions with color coding
-  - `user_projects` table - Project assignments
-- Implemented core API endpoints:
-  - Authentication: PIN login/logout
-  - Clock: `POST /api/clock/in`, `POST /api/clock/out`, `POST /api/break/start`, `POST /api/break/end`
-  - Time entries: Get today's entries, get week summary
-  - User settings: Timezone configuration
-- Set up CORS configuration for cross-origin requests
-- Implemented JWT-based session management
-
-##### Features Shipped
-1. **Time Tracking**: Clock in/out with break support
-2. **PIN Authentication**: Secure employee login
-3. **Settings Management**: Timezone and display preferences
-4. **Project Management**: Multi-project support with visual differentiation
-5. **Analytics Foundation**: Weekly and monthly time summaries
-
-##### Files Created
-- `workers/` - Full Next.js 14 frontend
-- `workers/app/` - App Router pages
-- `workers/components/` - React components
-- `workers/contexts/` - State management
-- `workers/api/` - Cloudflare Workers backend
-- `workers/api/src/index.ts` - Main API router
-
-##### Commits (with timestamps)
-- `5391b4e` (2025-11-25 11:23:07 MT, UTC-7) - feat: add workers portal placeholder with time tracking system architecture
-- `1e06ef7` (2025-11-25 14:59:40 MT, UTC-7) - Add Workers Portal - full time tracking system with Next.js frontend and Cloudflare Worker API
-- `ffcac47` (2025-11-25 15:15:16 MT, UTC-7) - Connect frontend to deployed Worker API
-- `cc7912e` (2025-11-25 15:19:38 MT, UTC-7) - Add PIN change/reset functionality - Settings page and API endpoints
-- `598182f` (2025-11-25 19:16:21 MT, UTC-7) - Fix Workers portal functionality, expand Settings, add Spooky landing page
-
----
-
-**November 24-25, 2025** - SecretVault Development
-
-**Project inception timestamp:** 2025-11-24 20:57:10 MT (UTC-7) — first SecretVault commit `bcb54bd`
-
-- Renamed folder to `secretvault` for Cloudflare compatibility
-- Created SecretVault landing page with dark fantasy theme
-- Implemented responsive grid layout for digital assets
-- Added ambient background animations
-- Established consistent color palette across projects
-
-##### Commits (with timestamps)
-- `bcb54bd` (2025-11-24 20:57:10 MT, UTC-7) - fix: rename Secret Vault folder to secretvault for Cloudflare
-- `a99bc5e` (2025-11-25 15:51:56 MT, UTC-7) - Connect Mailchimp signup form to SecretVault landing page
-- `598182f` (2025-11-25 19:16:21 MT, UTC-7) - Fix Workers portal functionality, expand Settings, add Spooky landing page
-- `b888808` (2025-11-25 19:18:59 MT, UTC-7) - Add Spooky expansion banner to SecretVault homepage
-- `674d029` (2025-11-25 19:39:03 MT, UTC-7) - Add Link in Bio page at /links
+#### Static site refresh
+- **Nov 25, 2025 (12:04 PM)** — Rebuilt the static export with video assets to keep the root deployment in sync. _(Commit `3652b56`)_
 
 ---
 
