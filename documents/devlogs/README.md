@@ -117,7 +117,7 @@ DigiArtifact spans multiple interconnected properties:
 
 **Development**: DigiArtifact and J.W.  
 **Design**: DigiArtifact  
-**AI Assistant**: Claude AI (Development Partner)
+**AI Assistant**: Github Copilot (Development Partner)
 
 ---
 

@@ -2,42 +2,65 @@
 
 ## Architecture Overview
 
-This repository contains **two distinct web projects** representing DigiArtifact's company presence:
+This repository contains **three distinct web projects** representing DigiArtifact's digital ecosystem:
 
 1. **Root Landing (`/index.html`)** - Standalone HTML site with embedded CSS/JS using Tailwind CDN
-2. **ChronicleOS Scaffold (`/chronicleos/`)** - Vite + React + Tailwind development environment
+2. **DigiArtifact Hub (`/digiartifact-hub/`)** - Next.js + React + TypeScript application for artifact gallery and exploration
+3. **Workers Portal (`/workers/`)** - Next.js + Cloudflare Workers backend for team time tracking and task management
 
-Both projects share the **archaeological/digital exploration theme** but use different tech stacks.
+All projects share the **archaeological/digital exploration theme** for consistent brand identity.
 
 ## Project Structure Patterns
 
-### Root Project (Company Site)
+### Root Project (Company Landing Site)
 - **Single-file architecture**: All CSS embedded in `<style>` blocks within `index.html`
 - **CDN dependencies**: Tailwind CSS, GSAP animations loaded via CDN
-- **Custom color system**: `--bg-primary`, `--accent-gold`, `--accent-teal` CSS variables
-- **Archaeological theming**: Services called "expeditions", process steps as "archaeological method"
+- **Custom color system**: CSS variables for primary colors
+- **Archaeological theming**: Services called "expeditions", discovery-focused messaging
 
-### ChronicleOS Scaffold (React App)
-- **Component-based**: All UI components in `src/components/` following pattern `ComponentName.jsx`
-- **Custom Tailwind config**: Extended colors (`parchment`, `obsidian`, `gold`, `emerald`, `sapphire`, `ruby`)
-- **Typography**: Uses `font-display` (Cinzel) for headings, `font-serif` (Merriweather) for body
-- **Error boundaries**: App component includes try-catch with fallback UI
+### DigiArtifact Hub (Next.js Application)
+- **Framework**: Next.js 14.2+ with TypeScript
+- **Component-based**: React functional components in `components/` directory
+- **State management**: Context API for global state (AudioContext)
+- **Custom Tailwind config**: Extended color palette with obsidian, gold, and emerald tones
+- **Data structure**: Artifact metadata in `data/artifacts.ts`
+- **Responsive design**: Mobile-first approach with Tailwind breakpoints
+- **Asset handling**: Images and audio in `public/` subdirectories
+
+### Workers Portal (Next.js + Cloudflare Workers)
+- **Framework**: Next.js 16+ with TypeScript and Cloudflare Workers
+- **Backend**: Wrangler CLI for API development and deployment
+- **Database**: D1 SQLite database for persistent data storage
+- **Components**: Specialized components for time tracking, analytics, and admin panels
+- **Features**: User authentication, dashboard analytics, journal system, gamification
 
 ## Development Workflow
 
-### ChronicleOS Development
+### DigiArtifact Hub
 ```bash
-cd chronicleos
+cd digiartifact-hub
 npm install
-npm run dev     # Development server
+npm run dev     # Development server (localhost:3000)
 npm run build   # Production build
-npm run preview # Preview production build
+npm run lint    # Run ESLint
+```
+
+### Workers Portal
+```bash
+cd workers
+npm install
+npm run dev        # Development server
+npm run api:dev    # Local API development
+npm run build      # Production build
+npm run db:migrate # Run database migrations
 ```
 
 ### Key Configuration Files
-- **`tailwind.config.js`**: Custom color palette and font definitions
-- **`vite.config.js`**: Custom build plugin copies `CNAME` for GitHub Pages deployment
-- **`postcss.config.cjs`**: Tailwind CSS processing
+- **`tailwind.config.ts`**: Custom color palette and theme definitions
+- **`next.config.js`**: Next.js build configuration
+- **`postcss.config.js`**: PostCSS/Tailwind processing
+- **`tsconfig.json`**: TypeScript compiler options
+- **`wrangler.toml`** (Workers only): Cloudflare Workers configuration
 
 ## Component Patterns
 
@@ -77,14 +100,17 @@ export default function ComponentName() {
 
 ## Build & Deployment
 
-### GitHub Pages Configuration
-- **Root site**: Deploys directly from root `index.html`
-- **ChronicleOS**: Vite build outputs to `dist/` with CNAME file auto-copy
-- **Base URL**: Configured for absolute paths (`base: '/'`)
+### Deployment Strategy
+- **Root site**: Deploys directly from root `index.html` to GitHub Pages
+- **DigiArtifact Hub**: Next.js build optimized for static hosting or Vercel deployment
+- **Workers Portal**: Deployed via Wrangler to Cloudflare Workers and D1 database
+- **CNAME files**: Each project includes CNAME for custom domain configuration
 
 ### Asset Management
-- **Images**: Stored in `assets/images/` with both `.jpg` and `.webp` variants
-- **Optimization**: Vite automatically handles asset hashing in production
+- **Root project**: Images in `assets/images/` with CDN optimization
+- **Next.js projects**: Static assets in `public/` directories, optimized by Next.js
+- **Format support**: JPG, WebP, PNG with responsive image handling
+- **Audio assets**: Music and sound effects stored in `assets/music/` and `assets/video/`
 
 ## Brand Identity Guidelines
 
@@ -112,3 +138,19 @@ export default function ComponentName() {
 2. Maintain contrast ratios for accessibility
 3. Use consistent opacity variants (`/10`, `/20`, `/50`)
 4. Test in both light and dark contexts
+
+## File Size Guidelines
+
+### Code Document Limits
+- **Maximum file size**: Each document must be **500 lines of code or less**
+- **Refactoring requirement**: If a file exceeds 500 LoC during development, break it down into multiple files without breaking the app
+- **Splitting strategy**:
+  - Extract related functionality into separate modules/files
+  - Ensure imports are properly maintained across files
+  - Maintain the same public API to avoid breaking existing imports
+  - Test functionality after splitting to confirm app integrity
+- **Common refactoring patterns**:
+  - Extract utility functions into `utils/` subdirectories
+  - Separate component logic from UI in React components
+  - Split configuration files by concern (colors, typography, spacing)
+  - Create separate files for constants and enums

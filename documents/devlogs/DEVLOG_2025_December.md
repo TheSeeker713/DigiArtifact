@@ -72,6 +72,10 @@
 - **7:02 PM** — Glass texture overlay on artifact cards (50% opacity). _(Root, `57bda56`)_
 - **7:32 PM** — Shattered glass overlay on Workers dashboard widgets (mix-blend-screen). _(Workers, `ac44768`)_
 
+### December 8 — Code standards & documentation
+- **Updated copilot-instructions.md**: Revised entire document to reflect current DigiArtifact architecture (removed all ChronicleOS references). _(Root, documentation)_
+- **Added code standards**: Documented 500 LoC maximum file size limit with refactoring requirements and splitting strategies. _(Root, documentation)_
+
 ---
 
 *Last Updated: December 8, 2025*
