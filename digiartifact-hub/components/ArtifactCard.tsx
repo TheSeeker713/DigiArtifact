@@ -58,6 +58,15 @@ export default function ArtifactCard({
             fill
             className="object-cover transition-transform group-hover:scale-110"
           />
+          <div 
+            className="absolute inset-0 opacity-50"
+            style={{
+              backgroundImage: 'url(/glass_tiled.webp)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              pointerEvents: 'none'
+            }}
+          />
           <div className="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <ZoomIn className="w-12 h-12 text-hologram-cyan" />
           </div>
@@ -84,6 +93,15 @@ export default function ArtifactCard({
             alt={title}
             fill
             className="object-cover"
+          />
+          <div 
+            className="absolute inset-0 opacity-50"
+            style={{
+              backgroundImage: 'url(/glass_tiled.webp)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              pointerEvents: 'none'
+            }}
           />
           <button
             onClick={handlePlayAudio}
@@ -117,6 +135,15 @@ export default function ArtifactCard({
           alt={title}
           fill
           className="object-cover"
+        />
+        <div 
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: 'url(/glass_tiled.webp)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            pointerEvents: 'none'
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-transparent">
           <div className="absolute bottom-4 left-4 right-4">

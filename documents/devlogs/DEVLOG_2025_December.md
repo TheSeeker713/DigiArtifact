@@ -428,4 +428,3 @@
 
 ---
 
-*Last Updated: December 7, 2025*
