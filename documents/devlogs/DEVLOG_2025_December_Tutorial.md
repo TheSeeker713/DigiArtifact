@@ -1,14 +1,14 @@
-# DigiArtifact Development Log - January 2025
+# DigiArtifact Development Log - December 2025
 
-> Monthly development log for January 2025
+> Development log for the December 2025 tutorial/help sprint
 
 ---
 
-## January 2025
+## December 2025
 
-### Week of January 27 - continued
+### Week of December 1-7
 
-**January 28, 2025** - Settings Enhancement & Onboarding System
+**December 5, 2025** - Settings Enhancement & Onboarding System
 
 ##### Walkthrough Tutorial System
 - Created `WalkthroughTutorial.tsx` component with 13 interactive steps
@@ -64,4 +64,11 @@
 
 ---
 
-*Last Updated: January 28, 2025*
+##### Commits (Dec 5, 2025)
+- `c9999aa` - Interactive tutorial with click-through overlay and data-tutorial attributes
+- `0da6006` - Tutorial now uses 4-piece overlay for true click-through
+- `db45363` - Prevent tutorial from showing when user is clocked in
+- `e9cb6a9` - Tutorial only shows for truly new users
+- `190f4b6` - Remove placeholder streak data, use real API data
+
+*Last Updated: December 5, 2025*
