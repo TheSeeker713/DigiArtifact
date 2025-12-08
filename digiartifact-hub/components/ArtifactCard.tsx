@@ -59,15 +59,16 @@ export default function ArtifactCard({
             className="object-cover transition-transform group-hover:scale-110"
           />
           <div 
-            className="absolute inset-0 opacity-50"
+            className="absolute inset-0 opacity-50 z-10"
             style={{
               backgroundImage: 'url(/glass_tiled.webp)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              mixBlendMode: 'overlay'
             }}
           />
-          <div className="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+          <div className="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20">
             <ZoomIn className="w-12 h-12 text-hologram-cyan" />
           </div>
         </div>
@@ -95,17 +96,18 @@ export default function ArtifactCard({
             className="object-cover"
           />
           <div 
-            className="absolute inset-0 opacity-50"
+            className="absolute inset-0 opacity-50 z-10"
             style={{
               backgroundImage: 'url(/glass_tiled.webp)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              mixBlendMode: 'overlay'
             }}
           />
           <button
             onClick={handlePlayAudio}
-            className="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+            className="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20"
           >
             <Play className="w-16 h-16 text-hologram-cyan" fill="currentColor" />
           </button>
@@ -137,15 +139,16 @@ export default function ArtifactCard({
           className="object-cover"
         />
         <div 
-          className="absolute inset-0 opacity-50"
+          className="absolute inset-0 opacity-50 z-10"
           style={{
             backgroundImage: 'url(/glass_tiled.webp)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            mixBlendMode: 'overlay'
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-transparent">
+        <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-transparent z-20">
           <div className="absolute bottom-4 left-4 right-4">
             <h3 className="font-heading text-xl text-sand mb-2">{title}</h3>
             <div className="flex items-center justify-between">
