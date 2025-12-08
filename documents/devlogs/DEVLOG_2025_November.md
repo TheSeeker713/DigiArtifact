@@ -8,6 +8,13 @@
 
 ### Week of November 25-30
 
+**Original DigiArtifact Site (static)** — exact commit timestamps
+- `41aa322` (2025-11-22 08:01:52 MT, UTC-7) — Backed up legacy site and deployed Next.js build artifacts to root
+- `1dafe0d` (2025-11-22 15:57:58 MT, UTC-7) — Made DigiArtifact Hub fully responsive for mobile, tablet, and desktop
+- `d8d42b9` (2025-11-22 16:07:58 MT, UTC-7) — Added product detail pages for all artifacts
+- `4240e41` (2025-11-24 19:58:58 MT, UTC-7) — Added Secret Vault landing page, video backgrounds, removed chronicleos submodule
+- `3652b56` (2025-11-25 12:04:21 MT, UTC-7) — Rebuilt static export with video assets to sync root deployment
+
 **Project inception timestamp:** 2025-11-25 11:23:07 MT (UTC-7) — first commit `5391b4e`
 
 **November 25, 2025** - Workers Portal & Backend API Launch 🚀
