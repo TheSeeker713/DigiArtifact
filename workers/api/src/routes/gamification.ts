@@ -53,44 +53,25 @@ export async function handleAwardXP(
     return jsonResponse({ error: 'Valid XP amount required' }, 400, origin);
   }
 
-  // Get current gamification data
-  const gamification = await env.DB.prepare(`
-    SELECT id, total_xp, level, current_streak, longest_streak,
-           total_work_minutes, total_sessions, focus_sessions
-    FROM user_gamification
-    WHERE user_id = ?
-  `).bind(user.id).first<{
-    id: number;
+  // Atomic UPSERT: Insert new row or add to existing XP total
+  const result = await env.DB.prepare(`
+    INSERT INTO user_gamification (user_id, total_xp, current_streak, updated_at)
+    VALUES (?, ?, 0, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id) DO UPDATE SET
+      total_xp = total_xp + excluded.total_xp,
+      updated_at = CURRENT_TIMESTAMP
+    RETURNING total_xp, current_streak
+  `).bind(user.id, amount).first<{
     total_xp: number;
-    level: number;
     current_streak: number;
-    longest_streak: number;
-    total_work_minutes: number;
-    total_sessions: number;
-    focus_sessions: number;
   }>();
 
-  // Calculate new level based on XP
-  const baseXP = gamification?.total_xp ?? 0;
-  const baseLevel = gamification?.level ?? 1;
-  const newTotalXP = baseXP + amount;
-  const newLevel = calculateLevel(newTotalXP);
-  const leveledUp = newLevel > baseLevel;
-  const currentStreak = gamification?.current_streak ?? 0;
-  const longestStreak = gamification?.longest_streak ?? 0;
+  if (!result) {
+    return jsonResponse({ error: 'Failed to award XP' }, 500, origin);
+  }
 
-  // Upsert to ensure new users persist immediately
-  await env.DB.prepare(`
-    INSERT INTO user_gamification (user_id, total_xp, level, current_streak, longest_streak, last_activity_date, updated_at)
-    VALUES (?, ?, ?, ?, ?, date('now'), CURRENT_TIMESTAMP)
-    ON CONFLICT(user_id) DO UPDATE SET
-      total_xp = excluded.total_xp,
-      level = excluded.level,
-      current_streak = excluded.current_streak,
-      longest_streak = excluded.longest_streak,
-      last_activity_date = excluded.last_activity_date,
-      updated_at = CURRENT_TIMESTAMP
-  `).bind(user.id, newTotalXP, newLevel, currentStreak, longestStreak).run();
+  // Calculate level from returned total_xp (Level = floor(xp / 100) + 1)
+  const newLevel = Math.floor(result.total_xp / 100) + 1;
 
   // Log the XP transaction
   await env.DB.prepare(`
@@ -100,10 +81,10 @@ export async function handleAwardXP(
 
   return jsonResponse({
     success: true,
-    total_xp: newTotalXP,
+    total_xp: result.total_xp,
     level: newLevel,
     xp_gained: amount,
-    leveled_up: leveledUp,
+    leveled_up: false,
   }, 200, origin);
 }
 
