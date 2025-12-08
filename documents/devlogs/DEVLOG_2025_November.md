@@ -8,6 +8,8 @@
 
 ### Week of November 25-30
 
+**Project inception timestamp:** 2025-11-25 11:23:07 MT (UTC-7) — first commit `5391b4e`
+
 **November 25, 2025** - Workers Portal & Backend API Launch 🚀
 
 **MASSIVE INITIAL DEPLOYMENT**: Complete workers portal system deployed with full stack
@@ -56,12 +58,12 @@
 - `workers/api/` - Cloudflare Workers backend
 - `workers/api/src/index.ts` - Main API router
 
-##### Commits
-- `5391b4e` - feat: add workers portal placeholder with time tracking system architecture
-- `1e06ef7` - Add Workers Portal - full time tracking system with Next.js frontend and Cloudflare Worker API
-- `ffcac47` - Connect frontend to deployed Worker API
-- `cc7912e` - Add PIN change/reset functionality - Settings page and API endpoints
-- `598182f` - Fix Workers portal functionality, expand Settings, add Spooky landing page
+##### Commits (with timestamps)
+- `5391b4e` (2025-11-25 11:23:07 MT, UTC-7) - feat: add workers portal placeholder with time tracking system architecture
+- `1e06ef7` (2025-11-25 14:59:40 MT, UTC-7) - Add Workers Portal - full time tracking system with Next.js frontend and Cloudflare Worker API
+- `ffcac47` (2025-11-25 15:15:16 MT, UTC-7) - Connect frontend to deployed Worker API
+- `cc7912e` (2025-11-25 15:19:38 MT, UTC-7) - Add PIN change/reset functionality - Settings page and API endpoints
+- `598182f` (2025-11-25 19:16:21 MT, UTC-7) - Fix Workers portal functionality, expand Settings, add Spooky landing page
 
 ---
 
@@ -73,4 +75,4 @@
 
 ---
 
-*Last Updated: December 7, 2025*
+*Last Updated: December 8, 2025*
