@@ -168,7 +168,9 @@ export default function QuickNotesWidget() {
   }
 
   return (
-    <div className="card">
+    <div className="card relative">
+      {/* Glass Overlay */}
+      <div className="absolute inset-0 z-10 pointer-events-none opacity-40 mix-blend-screen bg-repeat" style={{ backgroundImage: 'url(/glass_tiled.webp)' }} />
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-heading text-lg text-sand">Quick Notes</h3>
         <span className="text-text-slate text-xs font-mono">{notes.length} notes</span>

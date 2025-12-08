@@ -132,7 +132,9 @@ export default function StreakCounter() {
   const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
   return (
-    <div className="card">
+    <div className="card relative">
+      {/* Glass Overlay */}
+      <div className="absolute inset-0 z-10 pointer-events-none opacity-40 mix-blend-screen bg-repeat" style={{ backgroundImage: 'url(/glass_tiled.webp)' }} />
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-heading text-lg text-sand">Work Streak</h3>
         <button
