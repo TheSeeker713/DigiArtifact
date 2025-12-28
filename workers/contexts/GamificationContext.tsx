@@ -163,7 +163,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
 
         if (res.ok) {
           const apiData = await res.json()
-          console.log('Fetched gamification data:', apiData) // Debug log
+          console.log('Fetched gamification data from API:', apiData) // Debug log
           
           // Map API data to our format
           const totalXP = Math.min(apiData.total_xp || 0, MAX_LEVEL_XP);
@@ -176,28 +176,42 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             ? (apiData.total_work_minutes / 60).toFixed(1) 
             : 0;
           
-          setData(prev => ({
-            ...prev,
-            totalXP,
-            level: level.level,
-            levelTitle: level.title,
-            levelColor: level.color,
-            currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - level.xp : totalXP - level.xp,
-            nextLevelXP: nextLevelData ? nextLevelData.xp - level.xp : 0,
-            currentStreak: apiData.current_streak || 0,
-            totalHoursWorked: parseFloat(totalHoursWorked as string) || 0,
-            totalSessions: apiData.total_sessions || 0,
-            focusSessions: apiData.focus_sessions || 0,
-            lastUpdated: Date.now(),
-          }))
-          
-          console.log('Updated gamification state:', {
-            totalXP,
-            level: level.level,
-            levelTitle: level.title,
-            currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - level.xp : totalXP - level.xp,
-            nextLevelXP: nextLevelData ? nextLevelData.xp - level.xp : 0,
-          }) // Debug log
+          // CRITICAL FIX: Only update if we don't have more recent local data
+          // This prevents overwriting optimistic updates
+          setData(prev => {
+            // If we have a more recent update (within last 2 seconds), don't overwrite
+            // This allows optimistic updates to persist
+            const timeSinceLastUpdate = Date.now() - prev.lastUpdated;
+            if (timeSinceLastUpdate < 2000 && prev.totalXP > totalXP) {
+              console.log('Skipping API update - more recent local data exists', {
+                localXP: prev.totalXP,
+                apiXP: totalXP,
+                timeSinceUpdate: timeSinceLastUpdate,
+              });
+              return prev;
+            }
+            
+            console.log('Updating from API data:', {
+              totalXP,
+              level: level.level,
+              levelTitle: level.title,
+            });
+            
+            return {
+              ...prev,
+              totalXP,
+              level: level.level,
+              levelTitle: level.title,
+              levelColor: level.color,
+              currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - level.xp : totalXP - level.xp,
+              nextLevelXP: nextLevelData ? nextLevelData.xp - level.xp : 0,
+              currentStreak: apiData.current_streak || 0,
+              totalHoursWorked: parseFloat(totalHoursWorked as string) || 0,
+              totalSessions: apiData.total_sessions || 0,
+              focusSessions: apiData.focus_sessions || 0,
+              lastUpdated: Date.now(),
+            }
+          })
         } else {
           const errorText = await res.text()
           console.error('Failed to fetch gamification data:', res.status, res.statusText, errorText)
@@ -316,9 +330,11 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ amount: validatedAmount, reason }),
         })
 
+        // CRITICAL FIX: Read response body only once
+        const responseData = await response.json();
+
         if (!response.ok) {
-          const errorData = await response.json()
-          console.error('Failed to persist XP to server:', errorData);
+          console.error('Failed to persist XP to server:', responseData);
           
           // ROLLBACK: Restore previous state on error
           if (previousState) {
@@ -328,12 +344,17 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         } else {
           // Success - sync with server response to ensure consistency
           try {
-            const responseData = await response.json();
             if (responseData.total_xp !== undefined) {
               const serverXP = responseData.total_xp;
               const serverLevel = getLevel(serverXP);
               const nextLevelData = getNextLevelData(serverXP);
               const isMaxLevel = serverLevel.level >= MAX_LEVEL;
+              
+              console.log('XP persisted successfully, syncing with server:', {
+                serverXP,
+                serverLevel: serverLevel.level,
+                leveledUp: responseData.leveled_up,
+              });
               
               setData(prev => ({
                 ...prev,
@@ -345,6 +366,15 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
                 nextLevelXP: nextLevelData ? nextLevelData.xp - serverLevel.xp : 0,
                 lastUpdated: Date.now(),
               }));
+              
+              // Handle level up from server response if it happened
+              if (responseData.leveled_up && responseData.level) {
+                const levelDef = LEVEL_DEFINITIONS.find(l => l.level === responseData.level);
+                if (levelDef) {
+                  setLevelUpData({ level: levelDef });
+                  playSound('level-up', { volume: 0.8 });
+                }
+              }
             }
           } catch (syncError) {
             console.error('Failed to sync server response:', syncError);

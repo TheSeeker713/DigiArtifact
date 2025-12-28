@@ -6,7 +6,6 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { useGamification } from '@/contexts/GamificationContext'
 import { useClockStatus, useClockIn, useClockOut, useBreakStart, useBreakEnd, type ClockStatus } from '@/hooks/useTimeEntries'
 import { useProjects } from '@/hooks/useProjects'
-import { useAwardXP } from '@/hooks/useGamificationData'
 
 // Mood/Energy options
 const MOOD_OPTIONS = [
@@ -46,7 +45,7 @@ export default function ClockWidget() {
   const clockOutMutation = useClockOut()
   const breakStartMutation = useBreakStart()
   const breakEndMutation = useBreakEnd()
-  const awardXPMutation = useAwardXP()
+  // Removed awardXPMutation - using addXP from context instead to avoid duplicate API calls
   
   const clockStatus = clockData?.status || 'clocked-out'
   const currentEntry = clockData?.currentEntry || null
@@ -101,7 +100,7 @@ export default function ClockWidget() {
     setError('')
     try {
       await clockInMutation.mutateAsync(selectedProject)
-      awardXPMutation.mutate({ amount: 10, reason: 'Clock In' })
+      // Only use addXP - it handles both optimistic update and API persistence
       addXP(10, 'Clock In')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clock in')
@@ -121,7 +120,7 @@ export default function ClockWidget() {
       // Combine notes with mood/energy/tags data
       const enhancedNotes = buildEnhancedNotes()
       await clockOutMutation.mutateAsync(enhancedNotes)
-      awardXPMutation.mutate({ amount: 20, reason: 'Clock Out' })
+      // Only use addXP - it handles both optimistic update and API persistence
       addXP(20, 'Clock Out')
       setNotes('')
       setInlineNotes('')
