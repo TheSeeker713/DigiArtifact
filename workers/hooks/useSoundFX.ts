@@ -21,7 +21,7 @@ type SoundType = 'xp-gain' | 'level-up' | 'achievement'
 
 // Sound definitions - using Web Audio API for programmatic generation
 // This avoids loading external files and keeps bundle size small
-const SOUND_DEFINITIONS: Record<SoundType, () => AudioBuffer> = {
+const SOUND_DEFINITIONS: Record<SoundType, () => AudioBuffer | null> = {
   'xp-gain': () => generateXPChime(),
   'level-up': () => generateLevelUpFanfare(),
   'achievement': () => generateAchievementUnlock(),
@@ -30,9 +30,22 @@ const SOUND_DEFINITIONS: Record<SoundType, () => AudioBuffer> = {
 // Audio context singleton (created once, reused)
 let audioContext: AudioContext | null = null
 
-function getAudioContext(): AudioContext {
+function getAudioContext(): AudioContext | null {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') return null
+  
+  // Check if Web Audio API is supported
+  if (!window.AudioContext && !(window as any).webkitAudioContext) {
+    return null
+  }
+  
   if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    try {
+      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    } catch (error) {
+      console.warn('Failed to create AudioContext:', error)
+      return null
+    }
   }
   return audioContext
 }
@@ -40,8 +53,9 @@ function getAudioContext(): AudioContext {
 /**
  * Generate a pleasant chime sound for XP gain
  */
-function generateXPChime(): AudioBuffer {
+function generateXPChime(): AudioBuffer | null {
   const ctx = getAudioContext()
+  if (!ctx) return null
   const sampleRate = ctx.sampleRate
   const duration = 0.15 // 150ms
   const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate)
@@ -65,8 +79,9 @@ function generateXPChime(): AudioBuffer {
 /**
  * Generate an epic fanfare for level up
  */
-function generateLevelUpFanfare(): AudioBuffer {
+function generateLevelUpFanfare(): AudioBuffer | null {
   const ctx = getAudioContext()
+  if (!ctx) return null
   const sampleRate = ctx.sampleRate
   const duration = 0.8 // 800ms
   const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate)
@@ -101,8 +116,9 @@ function generateLevelUpFanfare(): AudioBuffer {
 /**
  * Generate a satisfying unlock sound for achievements
  */
-function generateAchievementUnlock(): AudioBuffer {
+function generateAchievementUnlock(): AudioBuffer | null {
   const ctx = getAudioContext()
+  if (!ctx) return null
   const sampleRate = ctx.sampleRate
   const duration = 0.4 // 400ms
   const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate)
@@ -148,7 +164,9 @@ export function useSoundFX() {
     Object.keys(SOUND_DEFINITIONS).forEach((key) => {
       try {
         const buffer = SOUND_DEFINITIONS[key as SoundType]()
-        buffersRef.current.set(key as SoundType, buffer)
+        if (buffer) {
+          buffersRef.current.set(key as SoundType, buffer)
+        }
       } catch (error) {
         console.warn(`Failed to preload sound ${key}:`, error)
       }
@@ -172,8 +190,10 @@ export function useSoundFX() {
       if (!buffer) {
         // Generate on-demand if not preloaded
         const newBuffer = SOUND_DEFINITIONS[type]()
-        buffersRef.current.set(type, newBuffer)
-        playBuffer(newBuffer, options)
+        if (newBuffer) {
+          buffersRef.current.set(type, newBuffer)
+          playBuffer(newBuffer, options)
+        }
       } else {
         playBuffer(buffer, options)
       }
@@ -188,6 +208,7 @@ export function useSoundFX() {
   const playBuffer = useCallback((buffer: AudioBuffer, options: SoundOptions = {}) => {
     try {
       const ctx = getAudioContext()
+      if (!ctx) return // Early return if AudioContext is not available
       
       // Resume context if suspended (browser autoplay policy)
       if (ctx.state === 'suspended') {

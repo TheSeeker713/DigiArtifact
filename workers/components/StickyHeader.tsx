@@ -43,8 +43,11 @@ export default function StickyHeader() {
 
   // Calculate XP progress percentage
   const xpProgress = gamificationData.nextLevelXP > 0 
-    ? (gamificationData.currentLevelXP / gamificationData.nextLevelXP) * 100 
+    ? Math.min((gamificationData.currentLevelXP / gamificationData.nextLevelXP) * 100, 100)
     : 100
+  
+  // Ensure progress is at least 0 and safe for display
+  const safeProgress = Math.max(0, Math.min(100, xpProgress))
 
   // Format date for display
   const formattedDate = currentTime.toLocaleDateString('en-US', {
@@ -92,11 +95,14 @@ export default function StickyHeader() {
               <div
                 className="h-full transition-all duration-500 relative"
                 style={{ 
-                  width: `${xpProgress}%`,
+                  width: `${safeProgress}%`,
                   background: `linear-gradient(90deg, ${gamificationData.levelColor}, ${gamificationData.levelColor}dd)`,
+                  minWidth: safeProgress > 0 ? '2px' : '0px',
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                {safeProgress > 0 && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                )}
               </div>
             </div>
           </div>

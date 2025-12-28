@@ -77,7 +77,13 @@
 - **Added code standards**: Documented 500 LoC maximum file size limit with refactoring requirements and splitting strategies. _(Root, documentation)_
 - **Time not logged** — Fixed gamification XP persistence: refactored `handleAwardXP` with atomic UPSERT INSERT + RETURNING, eliminates race conditions on first XP award. _(Workers, `handleAwardXP` refactor)_
 
+### December 9 — Gamification system audit, fixes & evolution
+- **Phase 1: Audit** — Comprehensive audit of XP calculation, leveling system, and user stats. Identified race conditions, missing error recovery, and max level handling issues.
+- **Phase 2: The Fix** — Fixed critical race condition in backend XP award (atomic level calculation), added error recovery/rollback mechanism to frontend, implemented max level handling with XP capping, added strict TypeScript validation for XP amounts, unified level calculation logic, and fixed nextLevelXP calculation for max level users.
+- **Phase 3: The Roadmap** — Implemented Level Up overlay with shattered glass/glitch animations using framer-motion, created lightweight `useSoundFX` hook for programmatic sound generation (XP gain, level up, achievement unlock), integrated visual and audio feedback into gamification context, and added framer-motion dependency.
+- **Bug Fixes** — Fixed field name mismatch (`total_work_minutes` → `total_hours_worked` conversion), added missing `focusSessions` field mapping, fixed progress bar edge cases (0% display issues), and added comprehensive debug logging for data flow diagnosis.
+
 ---
 
-*Last Updated: December 8, 2025*
+*Last Updated: December 9, 2025*
 

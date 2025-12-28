@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react'
 import Cookies from 'js-cookie'
 import { LevelDefinition, LEVEL_DEFINITIONS, XP_CONFIG as SHARED_XP_CONFIG, MAX_LEVEL, MAX_LEVEL_XP } from '@shared/constants'
+import { useSoundFX } from '@/hooks/useSoundFX'
+import LevelUpOverlay from '@/components/LevelUpOverlay'
 
 // API base URL
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
@@ -138,6 +140,12 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   
   // Track previous state for rollback on error
   const previousStateRef = useRef<GamificationData | null>(null)
+  
+  // Level up overlay state
+  const [levelUpData, setLevelUpData] = useState<{ level: LevelDefinition } | null>(null)
+  
+  // Sound effects
+  const { playSound } = useSoundFX()
 
   // Fetch gamification data from API
   useEffect(() => {
@@ -155,11 +163,18 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
 
         if (res.ok) {
           const apiData = await res.json()
+          console.log('Fetched gamification data:', apiData) // Debug log
+          
           // Map API data to our format
           const totalXP = Math.min(apiData.total_xp || 0, MAX_LEVEL_XP);
           const level = getLevelFromXP(totalXP);
           const nextLevelData = getNextLevelData(totalXP);
           const isMaxLevel = level.level >= MAX_LEVEL;
+          
+          // Convert total_work_minutes to hours (backend returns minutes)
+          const totalHoursWorked = apiData.total_work_minutes 
+            ? (apiData.total_work_minutes / 60).toFixed(1) 
+            : 0;
           
           setData(prev => ({
             ...prev,
@@ -170,13 +185,27 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - level.xp : totalXP - level.xp,
             nextLevelXP: nextLevelData ? nextLevelData.xp - level.xp : 0,
             currentStreak: apiData.current_streak || 0,
-            totalHoursWorked: apiData.total_hours_worked || 0,
+            totalHoursWorked: parseFloat(totalHoursWorked as string) || 0,
             totalSessions: apiData.total_sessions || 0,
+            focusSessions: apiData.focus_sessions || 0,
             lastUpdated: Date.now(),
           }))
+          
+          console.log('Updated gamification state:', {
+            totalXP,
+            level: level.level,
+            levelTitle: level.title,
+            currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - level.xp : totalXP - level.xp,
+            nextLevelXP: nextLevelData ? nextLevelData.xp - level.xp : 0,
+          }) // Debug log
+        } else {
+          const errorText = await res.text()
+          console.error('Failed to fetch gamification data:', res.status, res.statusText, errorText)
+          // Even on error, set loading to false so UI can render
         }
       } catch (err) {
         console.error('Failed to fetch gamification data:', err)
+        // Even on error, set loading to false so UI can render with default data
       } finally {
         setIsLoading(false)
       }
@@ -184,6 +213,19 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
 
     fetchGamificationData()
   }, [])
+  
+  // Debug: Log when data changes
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('GamificationContext data updated:', {
+        totalXP: data.totalXP,
+        level: data.level,
+        levelTitle: data.levelTitle,
+        currentLevelXP: data.currentLevelXP,
+        nextLevelXP: data.nextLevelXP,
+      })
+    }
+  }, [data, isLoading])
 
   // Also keep localStorage as a cache
   useEffect(() => {
@@ -212,9 +254,13 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       previousState = prev; // Capture for rollback
       previousStateRef.current = prev;
       
+      const oldLevel = prev.level;
       const newTotalXP = Math.min(prev.totalXP + validatedAmount, MAX_LEVEL_XP); // Cap at max
       const newLevel = getLevel(newTotalXP);
       const nextLevelData = getNextLevelData(newTotalXP);
+      
+      // Check if leveled up
+      const leveledUp = newLevel.level > oldLevel;
       
       // Calculate progress to next level (or show max level indicator)
       const isMaxLevel = newLevel.level >= MAX_LEVEL;
@@ -222,6 +268,15 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       const nextLevelXP = nextLevelData 
         ? nextLevelData.xp - newLevel.xp 
         : 0; // At max level, no next level
+      
+      // Trigger level up overlay and sound
+      if (leveledUp) {
+        setLevelUpData({ level: newLevel });
+        playSound('level-up', { volume: 0.8 });
+      } else {
+        // Play XP gain sound for regular XP
+        playSound('xp-gain', { volume: 0.5 });
+      }
       
       return {
         ...prev,
@@ -308,9 +363,10 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
     }
 
     persistXP()
-  }, [getLevel])
+  }, [getLevel, playSound])
 
   const checkAchievements = useCallback(() => {
+    // Note: playSound is used inside setData callback, so it's captured from closure
     setData(prev => {
       const updatedAchievements = prev.achievements.map(achievement => {
         if (achievement.unlocked) return achievement
@@ -389,10 +445,21 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       })
       
       if (bonusXP > 0) {
+        const oldLevel = prev.level;
         const newTotalXP = Math.min(prev.totalXP + bonusXP, MAX_LEVEL_XP)
         const newLevel = getLevel(newTotalXP)
         const nextLevelData = getNextLevelData(newTotalXP)
         const isMaxLevel = newLevel.level >= MAX_LEVEL
+        const leveledUp = newLevel.level > oldLevel;
+        
+        // Play achievement unlock sound
+        playSound('achievement', { volume: 0.7 });
+        
+        // Check for level up from achievement XP
+        if (leveledUp) {
+          setLevelUpData({ level: newLevel });
+          playSound('level-up', { volume: 0.8 });
+        }
         
         return {
           ...prev,
@@ -408,7 +475,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       
       return { ...prev, achievements: updatedAchievements }
     })
-  }, [getLevel])
+  }, [getLevel, playSound])
 
   const refreshChallenges = useCallback(() => {
     const now = Date.now()
@@ -471,6 +538,14 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
+      )}
+      {/* Level Up Overlay */}
+      {levelUpData && (
+        <LevelUpOverlay
+          isVisible={!!levelUpData}
+          newLevel={levelUpData.level}
+          onClose={() => setLevelUpData(null)}
+        />
       )}
     </GamificationContext.Provider>
   )

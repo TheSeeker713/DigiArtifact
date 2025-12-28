@@ -1,17 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGamification, Achievement } from '@/contexts/GamificationContext'
 
 export default function GamificationWidget() {
   const { data, checkAchievements } = useGamification()
   const [showAchievements, setShowAchievements] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  
+  // Debug: Log data to help diagnose issues
+  useEffect(() => {
+    console.log('GamificationWidget data:', {
+      totalXP: data.totalXP,
+      level: data.level,
+      levelTitle: data.levelTitle,
+      currentLevelXP: data.currentLevelXP,
+      nextLevelXP: data.nextLevelXP,
+      currentStreak: data.currentStreak,
+      totalHoursWorked: data.totalHoursWorked,
+    })
+  }, [data])
 
   // Calculate XP progress percentage
   const xpProgress = data.nextLevelXP > 0 
-    ? (data.currentLevelXP / data.nextLevelXP) * 100 
+    ? Math.min((data.currentLevelXP / data.nextLevelXP) * 100, 100)
     : 100
+  
+  // Ensure progress is at least 0
+  const safeProgress = Math.max(0, Math.min(100, xpProgress))
 
   const unlockedCount = data.achievements.filter(a => a.unlocked).length
   const totalAchievements = data.achievements.length
@@ -69,13 +85,14 @@ export default function GamificationWidget() {
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ 
-                  width: `${xpProgress}%`,
+                  width: `${safeProgress}%`,
                   backgroundColor: data.levelColor,
+                  minWidth: safeProgress > 0 ? '2px' : '0px',
                 }}
               />
             </div>
             <p className="text-text-slate/60 text-xs font-mono mt-1">
-              {data.currentLevelXP} / {data.nextLevelXP} XP to next level
+              {data.currentLevelXP} / {data.nextLevelXP || 'MAX'} XP {data.nextLevelXP > 0 ? 'to next level' : '(Max Level)'}
             </p>
           </div>
         </div>
@@ -87,7 +104,7 @@ export default function GamificationWidget() {
             <p className="text-text-slate text-xs font-mono">Day Streak</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-obsidian/30 border border-baked-clay/20">
-            <p className="text-green-400 font-heading text-xl">{data.totalHoursWorked.toFixed(0)}</p>
+            <p className="text-green-400 font-heading text-xl">{data.totalHoursWorked.toFixed(1)}</p>
             <p className="text-text-slate text-xs font-mono">Hours</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-obsidian/30 border border-baked-clay/20">
