@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate PWA Icons</title>
+</head>
+<body>
+  <h1>PWA Icon Generator</h1>
+  <p>Open browser console and run: generateIcons()</p>
+  <script>
+    async function generateIcons() {
+      const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      for (const size of sizes) {
+        canvas.width = size;
+        canvas.height = size;
+        
+        // Background: Gold (#cca43b)
+        ctx.fillStyle = '#cca43b';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Text: "W" in dark
+        ctx.fillStyle = '#0a0a0a';
+        ctx.font = `bold ${size / 3}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('W', size / 2, size / 2);
+        
+        // Convert to blob and download
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `icon-${size}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      }
+      
+      console.log('Icons generated! Check downloads.');
+    }
+    
+    // Auto-run if in browser
+    if (typeof window !== 'undefined') {
+      window.generateIcons = generateIcons;
+    }
+  </script>
+</body>
+</html>
+

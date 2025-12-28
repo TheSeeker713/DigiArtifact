@@ -27,9 +27,25 @@ const SYNC_ENDPOINTS = [
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
+      // Cache assets individually to handle missing files gracefully
+      const cachePromises = STATIC_ASSETS.map(async (url) => {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            await cache.put(url, response);
+            console.log('[SW] Cached:', url);
+          } else {
+            console.warn('[SW] Failed to cache (non-200):', url, response.status);
+          }
+        } catch (error) {
+          console.warn('[SW] Failed to cache (error):', url, error.message);
+          // Don't throw - continue caching other assets
+        }
+      });
+      await Promise.allSettled(cachePromises);
+      console.log('[SW] Static asset caching complete');
     })
   );
   // Activate immediately

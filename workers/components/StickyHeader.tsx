@@ -7,25 +7,34 @@ import { useSettings } from '@/contexts/SettingsContext'
 export default function StickyHeader() {
   const { data: gamificationData } = useGamification()
   const { formatTime, formatDate, timezone, timeFormat } = useSettings()
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
 
-  // Load theme from localStorage
+  // Mark component as mounted to prevent hydration errors
   useEffect(() => {
+    setIsMounted(true)
+    setCurrentTime(new Date())
+  }, [])
+
+  // Load theme from localStorage (only after mount)
+  useEffect(() => {
+    if (!isMounted) return
     const savedTheme = localStorage.getItem('workers_theme')
     if (savedTheme === 'light') {
       setIsDarkMode(false)
       document.documentElement.classList.add('light-mode')
     }
-  }, [])
+  }, [isMounted])
 
-  // Update time every second
+  // Update time every second (only after mount)
   useEffect(() => {
+    if (!isMounted) return
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
     return () => clearInterval(timer)
-  }, [])
+  }, [isMounted])
 
   // Toggle theme
   const toggleTheme = () => {
@@ -49,21 +58,21 @@ export default function StickyHeader() {
   // Ensure progress is at least 0 and safe for display
   const safeProgress = Math.max(0, Math.min(100, xpProgress))
 
-  // Format date for display
-  const formattedDate = currentTime.toLocaleDateString('en-US', {
+  // Format date for display (only after mount to prevent hydration errors)
+  const formattedDate = currentTime ? currentTime.toLocaleDateString('en-US', {
     timeZone: timezone,
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  })
+  }) : ''
 
-  const formattedTime = currentTime.toLocaleTimeString('en-US', {
+  const formattedTime = currentTime ? currentTime.toLocaleTimeString('en-US', {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
     second: '2-digit',
     hour12: timeFormat === '12',
-  })
+  }) : ''
 
   return (
     <header className="sticky-header">
