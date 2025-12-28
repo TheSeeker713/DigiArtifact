@@ -163,3 +163,96 @@ Decouple AuthContext and solve "Context Hell" by implementing TanStack Query for
 - Implement query prefetching for common navigation patterns
 - Add query persistence for offline support
 
+---
+
+## Phase 3: Logic Extraction & Reliability
+**Date:** 2025-12-28
+**Status:** ✅ Completed
+
+### Objective
+Clean up massive components and fix data synchronization logic by extracting business logic into reusable hooks and externalizing configuration.
+
+### Changes Implemented
+
+#### 1. JournalEditor Refactoring
+- **Created `workers/hooks/useJournalAutoSave.ts`**
+  - Extracted auto-save logic with debouncing (3 second delay)
+  - Handles change tracking and cleanup on unmount
+  - Manages save state (isSaving, hasChanges, lastSaved)
+  - Integrates with JournalContext and GamificationContext for XP rewards
+
+- **Created `workers/hooks/useEditorCommands.tsx`**
+  - Extracted all rich-text formatting commands (bold, italic, underline, etc.)
+  - Manages format button definitions with icons and tooltips
+  - Provides `execCommand` function for executing formatting actions
+  - Simplifies main component to focus on layout and rendering
+
+- **Refactored `workers/components/JournalEditor.tsx`**
+  - Removed ~200 lines of auto-save and command logic
+  - Now uses `useJournalAutoSave` and `useEditorCommands` hooks
+  - Component focuses purely on UI layout and user interactions
+  - Maintained all existing functionality
+
+#### 2. Sync Logic Improvements
+- **Created `workers/hooks/useSyncQueue.ts`**
+  - Robust queue system for background API synchronization
+  - Ensures data is written to LocalStorage immediately (non-blocking)
+  - API sync happens in background without blocking UI
+  - Implements retry logic with exponential backoff (max 3 retries)
+  - Singleton pattern for queue management
+
+- **Refactored `workers/hooks/useDynamicSchedule.ts`**
+  - Replaced custom `setTimeout` debounce logic with sync queue
+  - LocalStorage writes happen immediately
+  - API sync queued in background via `syncQueue.enqueue()`
+  - Improved reliability and user experience
+
+#### 3. Dynamic Configuration
+- **Created `workers/api/src/routes/config.ts`**
+  - New API route handler `handleGetConfig()`
+  - Returns `XP_CONFIG` (XP rewards configuration)
+  - Returns `defaultTemplate` (block schedule template from database)
+  - Falls back to hardcoded template if database doesn't have one
+  - Public route (no authentication required)
+
+- **Updated `workers/api/src/router.ts`**
+  - Registered `GET /api/config` as public route
+  - Placed before authentication middleware
+
+- **Updated `workers/hooks/useDynamicSchedule.ts`**
+  - Fetches template from `/api/config` endpoint on mount
+  - Falls back to `FALLBACK_TEMPLATE` if API fetch fails
+  - Template can still be overridden via options prop
+  - Externalizes business logic from frontend to backend
+
+### Benefits
+- **Separation of Concerns**: Business logic extracted from UI components
+- **Reusability**: Hooks can be used in other components
+- **Reliability**: Queue system ensures data persistence even with network issues
+- **Maintainability**: Smaller, focused components are easier to understand and modify
+- **Configuration Management**: Business rules (XP config, templates) now managed server-side
+- **Type Safety**: All hooks fully typed with TypeScript
+
+### Verification
+- ✅ Build passes (`npm run build`)
+- ✅ TypeScript compilation successful
+- ✅ JournalEditor auto-save works correctly
+- ✅ Sync queue handles background API calls
+- ✅ Config endpoint returns expected data structure
+- ✅ useDynamicSchedule fetches template from API
+
+### Files Changed
+- Created: `workers/hooks/useJournalAutoSave.ts`
+- Created: `workers/hooks/useEditorCommands.tsx`
+- Created: `workers/hooks/useSyncQueue.ts`
+- Created: `workers/api/src/routes/config.ts`
+- Modified: `workers/components/JournalEditor.tsx`
+- Modified: `workers/hooks/useDynamicSchedule.ts`
+- Modified: `workers/api/src/router.ts`
+
+### Next Steps (Future Phases)
+- Extract more business logic from large components
+- Implement service worker for offline sync
+- Add configuration management UI for admins
+- Optimize sync queue for better performance
+
