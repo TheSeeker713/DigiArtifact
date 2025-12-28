@@ -143,15 +143,27 @@ export async function getUser(request: Request, env: Env): Promise<User | null> 
   return result[0] || null;
 }
 
+/**
+ * Calculate user level from total XP
+ * @param totalXP - Total experience points (must be >= 0)
+ * @returns Level number (1-10, capped at 10 for max level)
+ */
 export function calculateLevel(totalXP: number): number {
+  // Ensure non-negative
+  const xp = Math.max(0, Math.floor(totalXP));
+  
+  // Find the highest level threshold the user has reached
   let level = 1;
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (totalXP >= LEVEL_THRESHOLDS[i]) {
+    if (xp >= LEVEL_THRESHOLDS[i]) {
       level = i + 1;
       break;
     }
   }
-  return level;
+  
+  // Cap at max level (10)
+  const MAX_LEVEL = LEVEL_THRESHOLDS.length;
+  return Math.min(level, MAX_LEVEL);
 }
 
 // Storage limits

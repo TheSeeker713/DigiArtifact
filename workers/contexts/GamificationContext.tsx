@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react'
 import Cookies from 'js-cookie'
-import { LevelDefinition, LEVEL_DEFINITIONS, XP_CONFIG as SHARED_XP_CONFIG } from '@shared/constants'
+import { LevelDefinition, LEVEL_DEFINITIONS, XP_CONFIG as SHARED_XP_CONFIG, MAX_LEVEL, MAX_LEVEL_XP } from '@shared/constants'
 
 // API base URL
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
@@ -94,15 +94,25 @@ const GamificationContext = createContext<GamificationContextType | undefined>(u
 
 // Helper function to calculate level from XP using shared LEVEL_DEFINITIONS
 function getLevelFromXP(xp: number): LevelDefinition {
+  // Ensure non-negative integer
+  const validXP = Math.max(0, Math.floor(xp));
+  
   let currentLevel = LEVEL_DEFINITIONS[0]
   for (const level of LEVEL_DEFINITIONS) {
-    if (xp >= level.xp) {
+    if (validXP >= level.xp) {
       currentLevel = level
     } else {
       break
     }
   }
   return currentLevel
+}
+
+// Helper to get next level data (handles max level)
+function getNextLevelData(currentXP: number): LevelDefinition | null {
+  const validXP = Math.max(0, Math.floor(currentXP));
+  const nextLevel = LEVEL_DEFINITIONS.find(l => l.xp > validXP);
+  return nextLevel || null; // null if at max level
 }
 
 const DEFAULT_DATA: GamificationData = {
@@ -125,6 +135,9 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<GamificationData>(DEFAULT_DATA)
   const [xpNotification, setXpNotification] = useState<{ amount: number; reason: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Track previous state for rollback on error
+  const previousStateRef = useRef<GamificationData | null>(null)
 
   // Fetch gamification data from API
   useEffect(() => {
@@ -143,17 +156,19 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         if (res.ok) {
           const apiData = await res.json()
           // Map API data to our format
-          const level = getLevelFromXP(apiData.total_xp || 0)
-          const nextLevelData = LEVEL_DEFINITIONS.find(l => l.xp > (apiData.total_xp || 0)) || LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1]
+          const totalXP = Math.min(apiData.total_xp || 0, MAX_LEVEL_XP);
+          const level = getLevelFromXP(totalXP);
+          const nextLevelData = getNextLevelData(totalXP);
+          const isMaxLevel = level.level >= MAX_LEVEL;
           
           setData(prev => ({
             ...prev,
-            totalXP: apiData.total_xp || 0,
+            totalXP,
             level: level.level,
             levelTitle: level.title,
             levelColor: level.color,
-            currentLevelXP: (apiData.total_xp || 0) - level.xp,
-            nextLevelXP: nextLevelData.xp - level.xp,
+            currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - level.xp : totalXP - level.xp,
+            nextLevelXP: nextLevelData ? nextLevelData.xp - level.xp : 0,
             currentStreak: apiData.current_streak || 0,
             totalHoursWorked: apiData.total_hours_worked || 0,
             totalSessions: apiData.total_sessions || 0,
@@ -182,11 +197,31 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addXP = useCallback((amount: number, reason: string) => {
+    // STRICT VALIDATION: Must be positive integer
+    const validatedAmount = Math.floor(amount);
+    if (validatedAmount <= 0 || !Number.isFinite(amount)) {
+      console.error('Invalid XP amount:', amount);
+      return;
+    }
+
+    // Store previous state for rollback
+    let previousState: GamificationData | null = null;
+    
     // Optimistic UI update - immediate feedback
     setData(prev => {
-      const newTotalXP = prev.totalXP + amount
-      const newLevel = getLevel(newTotalXP)
-      const nextLevelData = LEVEL_DEFINITIONS.find(l => l.xp > newTotalXP) || LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1]
+      previousState = prev; // Capture for rollback
+      previousStateRef.current = prev;
+      
+      const newTotalXP = Math.min(prev.totalXP + validatedAmount, MAX_LEVEL_XP); // Cap at max
+      const newLevel = getLevel(newTotalXP);
+      const nextLevelData = getNextLevelData(newTotalXP);
+      
+      // Calculate progress to next level (or show max level indicator)
+      const isMaxLevel = newLevel.level >= MAX_LEVEL;
+      const currentLevelXP = isMaxLevel ? MAX_LEVEL_XP - newLevel.xp : newTotalXP - newLevel.xp;
+      const nextLevelXP = nextLevelData 
+        ? nextLevelData.xp - newLevel.xp 
+        : 0; // At max level, no next level
       
       return {
         ...prev,
@@ -194,21 +229,28 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         level: newLevel.level,
         levelTitle: newLevel.title,
         levelColor: newLevel.color,
-        currentLevelXP: newTotalXP - newLevel.xp,
-        nextLevelXP: nextLevelData.xp - newLevel.xp,
+        currentLevelXP,
+        nextLevelXP,
         lastUpdated: Date.now(),
       }
     })
     
     // Show notification
-    setXpNotification({ amount, reason })
+    setXpNotification({ amount: validatedAmount, reason })
     setTimeout(() => setXpNotification(null), 3000)
 
-    // Persist to server (async, non-blocking)
+    // Persist to server (async, non-blocking) with error recovery
     const persistXP = async () => {
       try {
         const token = Cookies.get('workers_token')
-        if (!token) return
+        if (!token) {
+          // No token - rollback optimistic update
+          if (previousState) {
+            setData(previousState);
+            console.warn('No auth token, rolled back XP update');
+          }
+          return;
+        }
 
         const response = await fetch(`${API_BASE}/gamification/xp`, {
           method: 'POST',
@@ -216,15 +258,52 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ amount, reason }),
+          body: JSON.stringify({ amount: validatedAmount, reason }),
         })
 
         if (!response.ok) {
           const errorData = await response.json()
-          console.error('Failed to persist XP to server:', errorData)
+          console.error('Failed to persist XP to server:', errorData);
+          
+          // ROLLBACK: Restore previous state on error
+          if (previousState) {
+            setData(previousState);
+            console.warn('XP update failed, rolled back optimistic update');
+          }
+        } else {
+          // Success - sync with server response to ensure consistency
+          try {
+            const responseData = await response.json();
+            if (responseData.total_xp !== undefined) {
+              const serverXP = responseData.total_xp;
+              const serverLevel = getLevel(serverXP);
+              const nextLevelData = getNextLevelData(serverXP);
+              const isMaxLevel = serverLevel.level >= MAX_LEVEL;
+              
+              setData(prev => ({
+                ...prev,
+                totalXP: Math.min(serverXP, MAX_LEVEL_XP),
+                level: serverLevel.level,
+                levelTitle: serverLevel.title,
+                levelColor: serverLevel.color,
+                currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - serverLevel.xp : serverXP - serverLevel.xp,
+                nextLevelXP: nextLevelData ? nextLevelData.xp - serverLevel.xp : 0,
+                lastUpdated: Date.now(),
+              }));
+            }
+          } catch (syncError) {
+            console.error('Failed to sync server response:', syncError);
+            // Don't rollback if sync fails - server already has the XP
+          }
         }
       } catch (error) {
-        console.error('Error persisting XP to server:', error)
+        console.error('Error persisting XP to server:', error);
+        
+        // ROLLBACK: Network error - restore previous state
+        if (previousState) {
+          setData(previousState);
+          console.warn('Network error, rolled back XP update');
+        }
       }
     }
 
@@ -310,9 +389,10 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       })
       
       if (bonusXP > 0) {
-        const newTotalXP = prev.totalXP + bonusXP
+        const newTotalXP = Math.min(prev.totalXP + bonusXP, MAX_LEVEL_XP)
         const newLevel = getLevel(newTotalXP)
-        const nextLevelData = LEVEL_DEFINITIONS.find(l => l.xp > newTotalXP) || LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1]
+        const nextLevelData = getNextLevelData(newTotalXP)
+        const isMaxLevel = newLevel.level >= MAX_LEVEL
         
         return {
           ...prev,
@@ -321,8 +401,8 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
           level: newLevel.level,
           levelTitle: newLevel.title,
           levelColor: newLevel.color,
-          currentLevelXP: newTotalXP - newLevel.xp,
-          nextLevelXP: nextLevelData.xp - newLevel.xp,
+          currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - newLevel.xp : newTotalXP - newLevel.xp,
+          nextLevelXP: nextLevelData ? nextLevelData.xp - newLevel.xp : 0,
         }
       }
       

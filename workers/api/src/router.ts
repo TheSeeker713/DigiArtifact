@@ -23,6 +23,7 @@ import {
   handleBreakEnd,
 } from './routes/clock';
 import { handleGetEntries, handleDeleteEntry, handleUpdateEntry } from './routes/entries';
+import { handleGetConfig } from './routes/config';
 
 // Create Hono app with typed context
 type HonoContext = {
@@ -72,6 +73,11 @@ app.onError((err, c) => {
 // ========================================
 // PUBLIC ROUTES (no authentication)
 // ========================================
+
+// Config route (public - no auth required)
+app.get('/api/config', async (c) => {
+  return handleGetConfig(c.env, c.env.CORS_ORIGIN);
+});
 
 // Google OAuth routes
 app.get('/api/auth/google/start', async (c) => {

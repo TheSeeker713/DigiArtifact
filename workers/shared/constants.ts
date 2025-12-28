@@ -25,6 +25,10 @@ export const LEVEL_DEFINITIONS: LevelDefinition[] = [
 // Derived array for simple backend math (e.g., [0, 100, 300...])
 export const LEVEL_THRESHOLDS = LEVEL_DEFINITIONS.map(l => l.xp);
 
+// Max level constant
+export const MAX_LEVEL = LEVEL_DEFINITIONS.length;
+export const MAX_LEVEL_XP = LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1].xp;
+
 // ==========================================
 // XP REWARDS
 // ==========================================

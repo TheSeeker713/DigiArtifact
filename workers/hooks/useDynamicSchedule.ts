@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { addMinutes, parse, format, differenceInMinutes, isAfter, isBefore, startOfDay } from 'date-fns'
 import Cookies from 'js-cookie'
+import { syncQueue } from './useSyncQueue'
 
 // API base URL
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
@@ -50,8 +51,8 @@ export interface IncompleteBlockInfo {
   hasIncomplete: boolean
 }
 
-// Default block template: 2h Work -> 15m Break -> 2h Work -> 30m Lunch -> 2h Work -> 15m Break -> 2h Work
-const DEFAULT_TEMPLATE: Array<{ type: BlockType; duration: number; label: string }> = [
+// Fallback default template (used if API fetch fails)
+const FALLBACK_TEMPLATE: Array<{ type: BlockType; duration: number; label: string }> = [
   { type: 'WORK', duration: 120, label: 'Morning Focus Block 1' },
   { type: 'BREAK', duration: 15, label: 'Short Break' },
   { type: 'WORK', duration: 120, label: 'Morning Focus Block 2' },
@@ -64,7 +65,7 @@ const DEFAULT_TEMPLATE: Array<{ type: BlockType; duration: number; label: string
 interface UseDynamicScheduleOptions {
   startTime?: string // Format: "HH:mm" (default: "08:00")
   targetWorkMinutes?: number // Default: 480 (8 hours)
-  template?: Array<{ type: BlockType; duration: number; label: string }>
+  template?: Array<{ type: BlockType; duration: number; label: string }> // Override template (if not provided, fetched from API)
   carriedMinutes?: number // Minutes rolled over from previous day
   enableApiSync?: boolean // Whether to sync with backend API
 }
@@ -119,7 +120,7 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
   const {
     startTime = '08:00',
     targetWorkMinutes = 480,
-    template = DEFAULT_TEMPLATE,
+    template: providedTemplate,
     carriedMinutes = 0,
     enableApiSync = true,
   } = options
@@ -128,10 +129,14 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
   const [isLoading, setIsLoading] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [incompleteBlocks, setIncompleteBlocks] = useState<IncompleteBlockInfo | null>(null)
+  const [template, setTemplate] = useState<Array<{ type: BlockType; duration: number; label: string }>>(
+    providedTemplate || FALLBACK_TEMPLATE
+  )
   
   // Ref to track if initial load from backend completed
   const initialLoadRef = useRef(false)
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const configLoadedRef = useRef(false)
 
   // Generate unique ID
   const generateId = () => `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -145,10 +150,34 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
     }
   }, [])
 
+  // Fetch config from API (template and XP config)
+  const fetchConfig = useCallback(async () => {
+    if (configLoadedRef.current || providedTemplate) return // Already loaded or template provided
+    
+    try {
+      const response = await fetch(`${API_BASE}/config`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.defaultTemplate?.blocks) {
+          setTemplate(data.defaultTemplate.blocks.map((b: any) => ({
+            type: b.type as BlockType,
+            duration: b.duration,
+            label: b.label,
+          })))
+          configLoadedRef.current = true
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch config from API:', error)
+      // Use fallback template
+      setTemplate(FALLBACK_TEMPLATE)
+    }
+  }, [providedTemplate])
+
   // Build initial schedule from template
   const buildSchedule = useCallback((
     baseStartTime: string,
-    blockTemplate: typeof DEFAULT_TEMPLATE,
+    blockTemplate: Array<{ type: BlockType; duration: number; label: string }>,
     extraWorkMinutes: number = 0
   ): ScheduleBlock[] => {
     const today = startOfDay(new Date())
@@ -200,52 +229,46 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
     buildSchedule(startTime, template, carriedMinutes)
   )
 
-  // Debounced save to backend
-  const debouncedSaveToBackend = useCallback((blocksToSave: ScheduleBlock[]) => {
+  // Save blocks to localStorage immediately and queue API sync
+  const saveToBackendQueue = useCallback((blocksToSave: ScheduleBlock[]) => {
     if (!enableApiSync) return
     
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current)
+    // Write to localStorage immediately (non-blocking)
+    const today = new Date().toISOString().split('T')[0]
+    const syncData = {
+      date: today,
+      blocks: blocksToSave.map(b => ({
+        id: b.id,
+        type: b.type,
+        order_index: b.orderIndex,
+        start_time: b.startTime.toISOString(),
+        end_time: b.endTime.toISOString(),
+        duration_minutes: b.durationMinutes,
+        label: b.label,
+        status: b.status,
+        project_id: b.projectId,
+        notes: b.notes,
+        xp_earned: b.xpEarned,
+      })),
     }
     
-    syncTimeoutRef.current = setTimeout(async () => {
-      try {
-        setIsSyncing(true)
-        const today = new Date().toISOString().split('T')[0]
-        
-        await fetch(`${API_BASE}/schedule/blocks`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            date: today,
-            blocks: blocksToSave.map(b => ({
-              id: b.id,
-              type: b.type,
-              order_index: b.orderIndex,
-              start_time: b.startTime.toISOString(),
-              end_time: b.endTime.toISOString(),
-              duration_minutes: b.durationMinutes,
-              label: b.label,
-              status: b.status,
-              project_id: b.projectId,
-              notes: b.notes,
-              xp_earned: b.xpEarned,
-            })),
-          }),
-        })
-      } catch (error) {
-        console.error('Failed to sync schedule to backend:', error)
-      } finally {
-        setIsSyncing(false)
-      }
-    }, 2000) // 2 second debounce
+    // Queue API sync in background
+    syncQueue.enqueue(`${API_BASE}/schedule/blocks`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(syncData),
+    })
+    
+    // Update syncing state (optimistic)
+    setIsSyncing(true)
+    setTimeout(() => setIsSyncing(false), 1000) // Clear after 1s (optimistic)
   }, [enableApiSync, getAuthHeaders])
 
-  // Save blocks to localStorage and optionally to backend
+  // Save blocks to localStorage immediately and queue API sync
   useEffect(() => {
     if (!initialLoadRef.current) return
     
-    // Save to localStorage
+    // Save to localStorage immediately (non-blocking)
     localStorage.setItem('workers_block_schedule', JSON.stringify({
       blocks: blocks.map(b => ({
         ...b,
@@ -255,9 +278,9 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
       savedAt: new Date().toISOString(),
     }))
     
-    // Debounced save to backend
-    debouncedSaveToBackend(blocks)
-  }, [blocks, debouncedSaveToBackend])
+    // Queue API sync in background (non-blocking)
+    saveToBackendQueue(blocks)
+  }, [blocks, saveToBackendQueue])
 
   // Load from backend on mount
   const loadFromBackend = useCallback(async (): Promise<boolean> => {
@@ -408,9 +431,23 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
     localStorage.setItem('workers_carryover_dismissed', new Date().toISOString().split('T')[0])
   }, [])
 
-  // Initial load
+  // Initial load - fetch config first, then load schedule
   useEffect(() => {
+    let mounted = true
+    
     const loadData = async () => {
+      // Fetch config from API if template not provided
+      if (!providedTemplate && !configLoadedRef.current) {
+        await fetchConfig()
+        // Wait for state update
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      
+      if (!mounted) return
+      
+      // Get current template (from state if fetched, or provided, or fallback)
+      const currentTemplate = providedTemplate || template
+      
       // Try to load from localStorage first
       const saved = localStorage.getItem('workers_block_schedule')
       if (saved) {
@@ -426,11 +463,13 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
               startTime: new Date(b.startTime),
               endTime: new Date(b.endTime),
             }))
-            setBlocks(loadedBlocks)
-            initialLoadRef.current = true
-            
-            // Still check for incomplete blocks from yesterday
-            checkForIncomplete()
+            if (mounted) {
+              setBlocks(loadedBlocks)
+              initialLoadRef.current = true
+              
+              // Still check for incomplete blocks from yesterday
+              checkForIncomplete()
+            }
             return
           }
         } catch (e) {
@@ -441,9 +480,11 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
       // Try to load from backend
       const backendLoaded = await loadFromBackend()
       
+      if (!mounted) return
+      
       if (!backendLoaded) {
-        // Use default schedule
-        setBlocks(buildSchedule(startTime, template, carriedMinutes))
+        // Use template-based schedule (from API or fallback)
+        setBlocks(buildSchedule(startTime, currentTemplate, carriedMinutes))
       }
       
       initialLoadRef.current = true
@@ -460,10 +501,12 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
     
     // Cleanup
     return () => {
+      mounted = false
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run on mount
 
   // Calculate work/break totals

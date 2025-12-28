@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Cookies from 'js-cookie'
 import { getApiUrl } from '@/utils/config'
-import { LevelDefinition, LEVEL_DEFINITIONS } from '@shared/constants'
+import { LevelDefinition, LEVEL_DEFINITIONS, MAX_LEVEL, MAX_LEVEL_XP } from '@shared/constants'
 
 export interface GamificationData {
   totalXP: number
@@ -29,15 +29,25 @@ interface ApiGamificationData {
 
 // Helper function to calculate level from XP
 function getLevelFromXP(xp: number): LevelDefinition {
+  // Ensure non-negative integer
+  const validXP = Math.max(0, Math.floor(xp));
+  
   let currentLevel = LEVEL_DEFINITIONS[0]
   for (const level of LEVEL_DEFINITIONS) {
-    if (xp >= level.xp) {
+    if (validXP >= level.xp) {
       currentLevel = level
     } else {
       break
     }
   }
   return currentLevel
+}
+
+// Helper to get next level data (handles max level)
+function getNextLevelData(currentXP: number): LevelDefinition | null {
+  const validXP = Math.max(0, Math.floor(currentXP));
+  const nextLevel = LEVEL_DEFINITIONS.find(l => l.xp > validXP);
+  return nextLevel || null; // null if at max level
 }
 
 // Fetch gamification data
@@ -58,16 +68,18 @@ export function useGamificationData() {
       const apiData: ApiGamificationData = await res.json()
 
       // Map API data to our format
-      const level = getLevelFromXP(apiData.total_xp || 0)
-      const nextLevelData = LEVEL_DEFINITIONS.find(l => l.xp > (apiData.total_xp || 0)) || LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1]
+      const totalXP = Math.min(apiData.total_xp || 0, MAX_LEVEL_XP);
+      const level = getLevelFromXP(totalXP);
+      const nextLevelData = getNextLevelData(totalXP);
+      const isMaxLevel = level.level >= MAX_LEVEL;
 
       return {
-        totalXP: apiData.total_xp || 0,
+        totalXP,
         level: level.level,
         levelTitle: level.title,
         levelColor: level.color,
-        currentLevelXP: (apiData.total_xp || 0) - level.xp,
-        nextLevelXP: nextLevelData.xp - level.xp,
+        currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - level.xp : totalXP - level.xp,
+        nextLevelXP: nextLevelData ? nextLevelData.xp - level.xp : 0,
         currentStreak: apiData.current_streak || 0,
         totalHoursWorked: apiData.total_hours_worked || 0,
         totalSessions: apiData.total_sessions || 0,
@@ -84,6 +96,12 @@ export function useAwardXP() {
 
   return useMutation({
     mutationFn: async ({ amount, reason }: { amount: number; reason: string }) => {
+      // Validate amount
+      const validatedAmount = Math.floor(amount);
+      if (validatedAmount <= 0 || !Number.isFinite(amount)) {
+        throw new Error('Invalid XP amount: must be a positive integer');
+      }
+
       const token = Cookies.get('workers_token')
       if (!token) throw new Error('Not authenticated')
 
@@ -93,7 +111,7 @@ export function useAwardXP() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ amount, reason }),
+        body: JSON.stringify({ amount: validatedAmount, reason }),
       })
 
       if (!res.ok) {

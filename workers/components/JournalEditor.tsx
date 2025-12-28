@@ -1,181 +1,49 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { JournalEntry, JournalEntrySource, useJournal } from '@/contexts/JournalContext'
-import { useGamification } from '@/contexts/GamificationContext'
+import { JournalEntry, useJournal } from '@/contexts/JournalContext'
+import { useJournalAutoSave } from '@/hooks/useJournalAutoSave'
+import { useEditorCommands } from '@/hooks/useEditorCommands'
 
 interface JournalEditorProps {
   entry: JournalEntry | null
   onClose: () => void
 }
 
-type FormatAction = 'bold' | 'italic' | 'underline' | 'strikethrough' | 'heading' | 'quote' | 'ul' | 'ol' | 'link' | 'code'
-
 export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
-  const { archiveNote, updateEntry } = useJournal()
-  const { addXP } = useGamification()
   const editorRef = useRef<HTMLDivElement>(null)
-  
-  // Local state to track the entry being edited (handles switching from new -> existing)
-  const [activeEntry, setActiveEntry] = useState<JournalEntry | null>(entry)
   
   const [title, setTitle] = useState(entry?.title || '')
   const [content, setContent] = useState(entry?.richContent || entry?.content || '')
   const [tags, setTags] = useState<string[]>(entry?.tags || [])
   const [tagInput, setTagInput] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  
-  // Refs for cleanup save
-  const contentRef = useRef(content)
-  const titleRef = useRef(title)
-  const tagsRef = useRef(tags)
-  const hasChangesRef = useRef(hasChanges)
-  const activeEntryRef = useRef(activeEntry)
 
-  // Update refs
-  useEffect(() => {
-    contentRef.current = content
-    titleRef.current = title
-    tagsRef.current = tags
-    hasChangesRef.current = hasChanges
-    activeEntryRef.current = activeEntry
-  }, [content, title, tags, hasChanges, activeEntry])
+  // Use auto-save hook
+  const {
+    isSaving,
+    hasChanges,
+    lastSaved,
+    save,
+    activeEntry,
+    setActiveEntry,
+  } = useJournalAutoSave({
+    entry,
+    title,
+    richContent: content,
+    tags,
+  })
 
-  // Save on unmount
-  useEffect(() => {
-    return () => {
-      if (hasChangesRef.current) {
-        const tempDiv = document.createElement('div')
-        tempDiv.innerHTML = contentRef.current
-        const plainText = tempDiv.textContent || ''
-        
-        if (!plainText.trim() && !titleRef.current.trim()) return
-
-        const payload = {
-            title: titleRef.current.trim() || undefined,
-            content: plainText,
-            richContent: contentRef.current,
-            tags: tagsRef.current
-        }
-
-        if (activeEntryRef.current) {
-             updateEntry(activeEntryRef.current.id, payload).catch(console.error)
-        } else {
-             archiveNote(
-                payload.content,
-                'journal_editor',
-                undefined,
-                payload.title,
-                payload.tags,
-                payload.richContent
-             ).catch(console.error)
-        }
-      }
-    }
-  }, [])
-
-  // Track changes
-  useEffect(() => {
-    const originalContent = activeEntry?.richContent || activeEntry?.content || ''
-    const originalTitle = activeEntry?.title || ''
-    const originalTags = activeEntry?.tags || []
-    
-    const contentChanged = content !== originalContent
-    const titleChanged = title !== originalTitle
-    const tagsChanged = JSON.stringify(tags) !== JSON.stringify(originalTags)
-    
-    setHasChanges(contentChanged || titleChanged || tagsChanged)
-  }, [content, title, tags, activeEntry])
-
-  // Auto-save logic
-  useEffect(() => {
-    if (!hasChanges || isSaving) return
-
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current)
-    }
-
-    autoSaveTimeoutRef.current = setTimeout(() => {
-      handleSave()
-    }, 3000) // Auto-save after 3 seconds
-
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current)
-      }
-    }
-  }, [content, title, tags, hasChanges, isSaving])
-
-  // Auto-save on leaving
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasChanges) {
-        e.preventDefault()
-        e.returnValue = ''
-        handleSave()
-      }
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [hasChanges])
-
-  // Initialize editor content
-  useEffect(() => {
-    if (editorRef.current && content && !editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = content
-    }
-  }, [])
-
+  // Use editor commands hook
   const handleContentChange = useCallback(() => {
     if (editorRef.current) {
       setContent(editorRef.current.innerHTML)
     }
   }, [])
 
-  const execCommand = (command: FormatAction, value?: string) => {
-    switch (command) {
-      case 'bold':
-        document.execCommand('bold', false)
-        break
-      case 'italic':
-        document.execCommand('italic', false)
-        break
-      case 'underline':
-        document.execCommand('underline', false)
-        break
-      case 'strikethrough':
-        document.execCommand('strikeThrough', false)
-        break
-      case 'heading':
-        document.execCommand('formatBlock', false, '<h2>')
-        break
-      case 'quote':
-        document.execCommand('formatBlock', false, '<blockquote>')
-        break
-      case 'ul':
-        document.execCommand('insertUnorderedList', false)
-        break
-      case 'ol':
-        document.execCommand('insertOrderedList', false)
-        break
-      case 'link':
-        const url = prompt('Enter URL:')
-        if (url) {
-          document.execCommand('createLink', false, url)
-        }
-        break
-      case 'code':
-        document.execCommand('formatBlock', false, '<pre>')
-        break
-    }
-    handleContentChange()
-    editorRef.current?.focus()
-  }
+  const { execCommand, formatButtons } = useEditorCommands({
+    editorRef,
+    onContentChange: handleContentChange,
+  })
 
   const handleAddTag = () => {
     const tag = tagInput.trim().toLowerCase().replace(/[^a-z0-9-]/g, '')
@@ -189,134 +57,30 @@ export default function JournalEditor({ entry, onClose }: JournalEditorProps) {
     setTags(tags.filter(t => t !== tagToRemove))
   }
 
-  const handleSave = async () => {
-    if (!editorRef.current) return
-    
-    const htmlContent = editorRef.current.innerHTML
-    const plainContent = editorRef.current.textContent || ''
-    
-    if (!plainContent.trim() && !title.trim()) {
-      return // Don't save empty entries
+  // Initialize editor content
+  useEffect(() => {
+    if (editorRef.current && content && !editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = content
     }
+  }, [])
 
-    setIsSaving(true)
-    
-    try {
-      if (activeEntry) {
-        // Update existing entry
-        await updateEntry(activeEntry.id, {
-          title: title.trim() || undefined,
-          content: plainContent,
-          richContent: htmlContent,
-          tags
-        })
-      } else {
-        // Create new entry
-        const newEntry = await archiveNote(
-          plainContent,
-          'journal_editor',
-          undefined,
-          title.trim() || undefined,
-          tags,
-          htmlContent
-        )
-        setActiveEntry(newEntry)
+  // Update content ref when content changes
+  useEffect(() => {
+    if (editorRef.current && content !== editorRef.current.innerHTML) {
+      // Only update if content actually changed (avoid infinite loop)
+      const currentHtml = editorRef.current.innerHTML
+      if (content !== currentHtml) {
+        editorRef.current.innerHTML = content
       }
-      setLastSaved(new Date())
-      setHasChanges(false)
-      
-      // Award XP for saving journal entry
-      addXP(20, 'Journal Entry Saved')
-    } catch (error) {
-      console.error('Failed to save journal entry:', error)
-    } finally {
-      setIsSaving(false)
     }
-  }
+  }, [content])
 
   const handleClose = async () => {
     if (hasChanges) {
-      await handleSave()
+      await save()
     }
     onClose()
   }
-
-  const formatButtons: { action: FormatAction; icon: JSX.Element; tooltip: string }[] = [
-    {
-      action: 'bold',
-      tooltip: 'Bold (Ctrl+B)',
-      icon: <span className="font-bold">B</span>
-    },
-    {
-      action: 'italic',
-      tooltip: 'Italic (Ctrl+I)',
-      icon: <span className="italic">I</span>
-    },
-    {
-      action: 'underline',
-      tooltip: 'Underline (Ctrl+U)',
-      icon: <span className="underline">U</span>
-    },
-    {
-      action: 'strikethrough',
-      tooltip: 'Strikethrough',
-      icon: <span className="line-through">S</span>
-    },
-    {
-      action: 'heading',
-      tooltip: 'Heading',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
-        </svg>
-      )
-    },
-    {
-      action: 'quote',
-      tooltip: 'Quote',
-      icon: (
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-        </svg>
-      )
-    },
-    {
-      action: 'ul',
-      tooltip: 'Bullet List',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-        </svg>
-      )
-    },
-    {
-      action: 'ol',
-      tooltip: 'Numbered List',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-        </svg>
-      )
-    },
-    {
-      action: 'link',
-      tooltip: 'Insert Link',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-        </svg>
-      )
-    },
-    {
-      action: 'code',
-      tooltip: 'Code Block',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
-      )
-    }
-  ]
 
   return (
     <div className="p-6 flex flex-col h-full min-h-[60vh]">
