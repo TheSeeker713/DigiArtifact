@@ -67,6 +67,14 @@ export async function verifyJWT(token: string, secret: string): Promise<JWTPaylo
     const [headerB64, payloadB64, signatureB64] = token.split('.');
     if (!headerB64 || !payloadB64 || !signatureB64) return null;
 
+    // Parse and verify header algorithm to prevent algorithm confusion attacks
+    const header = JSON.parse(atob(headerB64));
+    if (header.alg !== 'HS256') {
+      // Explicitly reject any algorithm other than HS256
+      console.error('JWT verification failed: Invalid algorithm', header.alg);
+      return null;
+    }
+
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       'raw',
@@ -108,7 +116,7 @@ export function corsHeaders(origin: string): HeadersInit {
   };
 }
 
-export function jsonResponse(data: any, status = 200, origin: string): Response {
+export function jsonResponse(data: unknown, status = 200, origin: string): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {

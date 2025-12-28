@@ -23,7 +23,7 @@ export function useEditorCommands({
   onContentChange,
 }: UseEditorCommandsOptions): UseEditorCommandsReturn {
   
-  const execCommand = useCallback((command: FormatAction, value?: string) => {
+  const execCommand = useCallback((command: FormatAction, value?: string): void => {
     switch (command) {
       case 'bold':
         document.execCommand('bold', false)

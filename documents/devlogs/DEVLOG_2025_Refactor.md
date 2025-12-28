@@ -256,3 +256,65 @@ Clean up massive components and fix data synchronization logic by extracting bus
 - Add configuration management UI for admins
 - Optimize sync queue for better performance
 
+---
+
+## Phase 4: Cleanup & Security
+**Date:** 2025-12-28
+**Status:** ✅ Completed
+
+### Objective
+Remove deprecated code, harden security settings, and improve type safety across the codebase.
+
+### Changes Implemented
+
+#### 1. PIN Deprecation
+- **Verified `schema.sql`**: No `pin_hash` references found - already clean
+- **Verified `AuthContext.tsx`**: No PIN references found - already using OAuth only
+- **Verified `routes/auth.ts`**: Already deprecated with placeholder comment
+- **Verified `router.ts`**: Only uses OAuth routes (`routes/oauth.ts`), no legacy auth routes
+
+#### 2. JWT Hardening
+- **Updated `workers/api/src/utils.ts` - `verifyJWT()` function**
+  - Added explicit algorithm check: `if (header.alg !== 'HS256')`
+  - Prevents algorithm confusion attacks by rejecting any algorithm other than HS256
+  - Logs security violations for monitoring
+  - Ensures tokens can only use the intended HMAC-SHA256 algorithm
+
+#### 3. Codebase Type Safety Audit
+- **Replaced `any` types in `useDynamicSchedule.ts`**:
+  - Created proper interfaces: `ConfigTemplateBlock`, `ConfigResponse`, `ApiScheduleBlock`, `ApiBlocksResponse`, `LocalStorageBlock`, `LocalStorageSchedule`
+  - Replaced 3 instances of `any` with typed interfaces
+  - Improved type safety for API responses and localStorage data
+
+- **Fixed `jsonResponse` function**:
+  - Changed parameter type from `any` to `unknown` for better type safety
+  - Located in `workers/api/src/utils.ts`
+
+- **Verified other new hooks**:
+  - `useJournalAutoSave.ts`: No `any` types found
+  - `useEditorCommands.tsx`: No `any` types found
+  - `useSyncQueue.ts`: No `any` types found
+
+### Security Improvements
+- **Algorithm Confusion Protection**: JWT verification now explicitly rejects non-HS256 algorithms
+- **Type Safety**: Eliminated all `any` types in new hooks and utilities
+- **Legacy Code Removal**: Confirmed all PIN-based authentication code is deprecated/removed
+
+### Verification
+- ✅ Build passes (`npm run build`)
+- ✅ TypeScript compilation successful
+- ✅ No `any` types in new hooks
+- ✅ JWT verification explicitly checks algorithm
+- ✅ All routes use OAuth, no legacy auth routes
+
+### Files Changed
+- Modified: `workers/api/src/utils.ts` (JWT hardening, jsonResponse type)
+- Modified: `workers/hooks/useDynamicSchedule.ts` (replaced `any` types)
+- Deleted: `workers/hooks/useEditorCommands.ts` (duplicate file)
+
+### Next Steps (Future Phases)
+- Continue type safety improvements across remaining codebase
+- Add runtime validation with Zod for API request/response schemas
+- Implement security headers middleware
+- Add rate limiting for API endpoints
+

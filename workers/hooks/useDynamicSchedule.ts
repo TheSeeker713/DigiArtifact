@@ -12,6 +12,66 @@ const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev
 export type BlockType = 'WORK' | 'BREAK' | 'LUNCH' | 'FLEX'
 export type BlockStatus = 'pending' | 'in_progress' | 'completed' | 'skipped' | 'partial' | 'extended' | 'carried_over'
 
+// API response types
+interface ConfigTemplateBlock {
+  type: string
+  duration: number
+  label: string
+}
+
+interface ConfigResponse {
+  xpConfig: Record<string, number>
+  defaultTemplate: {
+    name: string
+    description: string
+    blocks: ConfigTemplateBlock[]
+    totalWorkMinutes: number
+    totalBreakMinutes: number
+  }
+}
+
+interface ApiScheduleBlock {
+  id?: number | string
+  block_type: string
+  order_index: number
+  start_time: string
+  end_time: string
+  duration_minutes: number
+  label?: string
+  activity_label?: string
+  status: string
+  project_id?: number
+  notes?: string
+  xp_earned?: number
+  focus_score?: number
+}
+
+interface ApiBlocksResponse {
+  blocks: ApiScheduleBlock[]
+  date?: string
+}
+
+interface LocalStorageBlock {
+  id: string
+  type: BlockType
+  orderIndex: number
+  startTime: string
+  endTime: string
+  durationMinutes: number
+  label: string
+  status: BlockStatus
+  projectId?: number
+  projectName?: string
+  notes?: string
+  xpEarned: number
+  focusScore: number
+}
+
+interface LocalStorageSchedule {
+  blocks: LocalStorageBlock[]
+  savedAt: string
+}
+
 export interface ScheduleBlock {
   id: string
   type: BlockType
@@ -157,9 +217,9 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
     try {
       const response = await fetch(`${API_BASE}/config`)
       if (response.ok) {
-        const data = await response.json()
+        const data = (await response.json()) as ConfigResponse
         if (data.defaultTemplate?.blocks) {
-          setTemplate(data.defaultTemplate.blocks.map((b: any) => ({
+          setTemplate(data.defaultTemplate.blocks.map((b: ConfigTemplateBlock) => ({
             type: b.type as BlockType,
             duration: b.duration,
             label: b.label,
@@ -296,20 +356,20 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
       
       if (!response.ok) return false
       
-      const data = await response.json()
+      const data = (await response.json()) as ApiBlocksResponse
       
       if (data.blocks && data.blocks.length > 0) {
-        const loadedBlocks: ScheduleBlock[] = data.blocks.map((b: any) => ({
+        const loadedBlocks: ScheduleBlock[] = data.blocks.map((b: ApiScheduleBlock) => ({
           id: b.id?.toString() || generateId(),
           type: b.block_type as BlockType,
           orderIndex: b.order_index,
           startTime: new Date(b.start_time),
           endTime: new Date(b.end_time),
           durationMinutes: b.duration_minutes,
-          label: b.label || b.activity_label,
+          label: b.label || b.activity_label || '',
           status: b.status as BlockStatus,
           projectId: b.project_id,
-          projectName: b.project_name,
+          projectName: undefined, // Not in API response
           notes: b.notes,
           xpEarned: b.xp_earned || 0,
           focusScore: b.focus_score || 0,
@@ -452,16 +512,26 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
       const saved = localStorage.getItem('workers_block_schedule')
       if (saved) {
         try {
-          const parsed = JSON.parse(saved)
+          const parsed = JSON.parse(saved) as LocalStorageSchedule
           const savedDate = parsed.savedAt ? new Date(parsed.savedAt).toDateString() : null
           const today = new Date().toDateString()
           
           // Only use localStorage data if it's from today
           if (savedDate === today && parsed.blocks?.length > 0) {
-            const loadedBlocks = parsed.blocks.map((b: any) => ({
-              ...b,
+            const loadedBlocks: ScheduleBlock[] = parsed.blocks.map((b: LocalStorageBlock) => ({
+              id: b.id,
+              type: b.type,
+              orderIndex: b.orderIndex,
               startTime: new Date(b.startTime),
               endTime: new Date(b.endTime),
+              durationMinutes: b.durationMinutes,
+              label: b.label,
+              status: b.status,
+              projectId: b.projectId,
+              projectName: b.projectName,
+              notes: b.notes,
+              xpEarned: b.xpEarned,
+              focusScore: b.focusScore,
             }))
             if (mounted) {
               setBlocks(loadedBlocks)
