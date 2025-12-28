@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { useAuth, Project } from '@/contexts/AuthContext'
+import { useProjects } from '@/hooks/useProjects'
 import Cookies from 'js-cookie'
 
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
 export default function ProjectsPage() {
-  const { projects, user, refreshData } = useAuth()
+  const { user } = useAuth()
+  const { data: projects = [], refetch: refreshData } = useProjects()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)

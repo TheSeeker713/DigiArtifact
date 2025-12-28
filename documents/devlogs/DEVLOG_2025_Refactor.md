@@ -72,3 +72,94 @@ Replace manual if/else routing with Hono and raw SQL with Drizzle ORM for Open/C
 - All existing functionality preserved
 - Ready for incremental migration of remaining routes
 
+---
+
+## Phase 2: Frontend State & Data Layer
+**Date:** 2025-12-28
+**Status:** ✅ Completed
+
+### Objective
+Decouple AuthContext and solve "Context Hell" by implementing TanStack Query for server state management.
+
+### Changes Implemented
+
+#### 1. Dependencies Installed
+- `@tanstack/react-query` - Modern data fetching and state management library
+
+#### 2. Query Client Setup
+- **Created `workers/lib/queryClient.ts`**
+  - Configured QueryClient with default options (staleTime, gcTime, refetch settings)
+  
+- **Created `workers/components/Providers.tsx`**
+  - Wrapper component for QueryClientProvider to maintain metadata exports in layout
+  
+- **Updated `workers/app/layout.tsx`**
+  - Wrapped application with QueryClientProvider via Providers component
+
+#### 3. AuthContext Refactoring
+- **Refactored `workers/contexts/AuthContext.tsx`**
+  - Removed server state: `projects`, `todayEntries`, `weeklyHours`, `clockStatus`, `currentEntry`
+  - Kept session state: `user`, `isLoading`, `logout`
+  - Removed data fetching functions: `refreshData`, `clockIn`, `clockOut`, `startBreak`, `endBreak`
+  - Simplified to focus only on authentication state
+
+#### 4. Query Hooks Implementation
+- **Created `workers/hooks/useTimeEntries.ts`**
+  - `useClockStatus()` - Fetch current clock status and active entry
+  - `useTimeEntries()` - Fetch time entries with date/range filtering
+  - `useTodayEntries()` - Convenience hook for today's entries
+  - `useWeeklyStats()` - Fetch weekly hours statistics
+  - `useClockIn()`, `useClockOut()`, `useBreakStart()`, `useBreakEnd()` - Mutations with automatic query invalidation
+
+- **Created `workers/hooks/useProjects.ts`**
+  - `useProjects()` - Fetch all active projects
+
+- **Created `workers/hooks/useGamificationData.ts`**
+  - `useGamificationData()` - Fetch gamification stats (XP, level, streaks)
+  - `useAwardXP()` - Mutation for awarding XP with query invalidation
+
+#### 5. Component Updates
+- **Updated `workers/components/ClockWidget.tsx`**
+  - Migrated from AuthContext to query hooks
+  - Uses `useClockStatus()`, `useProjects()`, and mutation hooks
+  - Automatic query invalidation on clock in/out ensures immediate UI updates
+
+- **Updated `workers/app/dashboard/page.tsx`**
+  - No direct changes needed (uses child components that were updated)
+
+- **Updated Dashboard Components:**
+  - `QuickStats.tsx` - Uses `useTodayEntries()` and `useWeeklyStats()`
+  - `WeeklyChart.tsx` - Uses `useWeeklyStats()`
+  - `RecentEntries.tsx` - Uses `useTodayEntries()`
+  - `StreakCounter.tsx` - Uses `useTodayEntries()` and `useWeeklyStats()`
+  - `TodaysAgenda.tsx` - Uses `useClockStatus()`, `useTodayEntries()`, `useProjects()`
+  - `MobileNav.tsx` - Uses `useClockStatus()`
+  - `MobileQuickActions.tsx` - Uses clock mutation hooks
+
+- **Updated Additional Pages:**
+  - `analytics/page.tsx` - Uses query hooks
+  - `goals/page.tsx` - Uses query hooks
+  - `projects/page.tsx` - Uses `useProjects()`
+  - `admin/entries/page.tsx` - Uses `useProjects()`
+  - `dashboard/layout.tsx` - Uses query hooks for tutorial data
+
+### Benefits
+- **Separation of Concerns**: Auth state (session) separated from server state (data)
+- **Automatic Caching**: TanStack Query handles caching, deduplication, and background refetching
+- **Optimistic Updates**: Mutations invalidate queries automatically for immediate UI updates
+- **Type Safety**: All hooks are fully typed with TypeScript
+- **Reduced Re-renders**: Only components using specific queries re-render on data changes
+- **Better Error Handling**: Built-in error states and retry logic
+
+### Verification
+- ✅ Build passes (`npm run build`)
+- ✅ TypeScript compilation successful
+- ✅ All dashboard components updated to use query hooks
+- ✅ ClockWidget updates immediately on clock in/out (query invalidation working)
+
+### Next Steps (Future Phases)
+- Migrate remaining components that still use AuthContext for server state
+- Add optimistic updates for better UX
+- Implement query prefetching for common navigation patterns
+- Add query persistence for offline support
+

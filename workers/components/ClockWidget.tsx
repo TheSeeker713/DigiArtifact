@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth, ClockStatus } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useGamification } from '@/contexts/GamificationContext'
+import { useClockStatus, useClockIn, useClockOut, useBreakStart, useBreakEnd, type ClockStatus } from '@/hooks/useTimeEntries'
+import { useProjects } from '@/hooks/useProjects'
+import { useAwardXP } from '@/hooks/useGamificationData'
 
 // Mood/Energy options
 const MOOD_OPTIONS = [
@@ -33,9 +36,20 @@ const PRESET_TAGS = [
 ]
 
 export default function ClockWidget() {
-  const { clockStatus, currentEntry, projects, clockIn, clockOut, startBreak, endBreak } = useAuth()
   const { formatTime, parseUTCTimestamp, timezone } = useSettings()
   const { addXP } = useGamification()
+  
+  // Use query hooks for data fetching
+  const { data: clockData } = useClockStatus()
+  const { data: projects = [] } = useProjects()
+  const clockInMutation = useClockIn()
+  const clockOutMutation = useClockOut()
+  const breakStartMutation = useBreakStart()
+  const breakEndMutation = useBreakEnd()
+  const awardXPMutation = useAwardXP()
+  
+  const clockStatus = clockData?.status || 'clocked-out'
+  const currentEntry = clockData?.currentEntry || null
   const [elapsedTime, setElapsedTime] = useState('00:00:00')
   const [selectedProject, setSelectedProject] = useState<number | undefined>()
   const [notes, setNotes] = useState('')
@@ -86,7 +100,8 @@ export default function ClockWidget() {
     setIsLoading(true)
     setError('')
     try {
-      await clockIn(selectedProject)
+      await clockInMutation.mutateAsync(selectedProject)
+      awardXPMutation.mutate({ amount: 10, reason: 'Clock In' })
       addXP(10, 'Clock In')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clock in')
@@ -105,7 +120,8 @@ export default function ClockWidget() {
     try {
       // Combine notes with mood/energy/tags data
       const enhancedNotes = buildEnhancedNotes()
-      await clockOut(enhancedNotes)
+      await clockOutMutation.mutateAsync(enhancedNotes)
+      awardXPMutation.mutate({ amount: 20, reason: 'Clock Out' })
       addXP(20, 'Clock Out')
       setNotes('')
       setInlineNotes('')
@@ -157,9 +173,9 @@ export default function ClockWidget() {
     setError('')
     try {
       if (clockStatus === 'on-break') {
-        await endBreak()
+        await breakEndMutation.mutateAsync()
       } else {
-        await startBreak()
+        await breakStartMutation.mutateAsync()
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle break')

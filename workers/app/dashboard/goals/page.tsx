@@ -3,6 +3,8 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useGamification } from '@/contexts/GamificationContext'
+import { useTodayEntries, useWeeklyStats } from '@/hooks/useTimeEntries'
+import { useProjects } from '@/hooks/useProjects'
 
 type GoalPeriod = 'daily' | 'weekly' | 'monthly' | 'custom'
 type GoalType = 'total' | 'project'
@@ -39,7 +41,11 @@ const goalTemplates: GoalTemplate[] = [
 ]
 
 export default function GoalsPage() {
-  const { weeklyHours, projects, todayEntries } = useAuth()
+  const { } = useAuth()
+  const { data: weeklyStats } = useWeeklyStats()
+  const { data: projects = [] } = useProjects()
+  const { data: todayEntries = [] } = useTodayEntries()
+  const weeklyHours = weeklyStats?.hours || [0, 0, 0, 0, 0, 0, 0]
   const { addXP } = useGamification()
   
   // Calculate total weekly hours from array

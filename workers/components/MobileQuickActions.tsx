@@ -2,10 +2,22 @@
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useClockStatus, useClockIn, useClockOut, useBreakStart, useBreakEnd } from '../hooks/useTimeEntries'
 import { useSwipe, SwipeDirection } from '../hooks/useSwipe'
 
 export default function MobileQuickActions() {
-  const { clockStatus, clockIn, clockOut, startBreak, endBreak } = useAuth()
+  const { } = useAuth()
+  const { data: clockData } = useClockStatus()
+  const clockInMutation = useClockIn()
+  const clockOutMutation = useClockOut()
+  const breakStartMutation = useBreakStart()
+  const breakEndMutation = useBreakEnd()
+  const clockStatus = clockData?.status || 'clocked-out'
+  
+  const clockIn = () => clockInMutation.mutate(undefined)
+  const clockOut = () => clockOutMutation.mutate(undefined)
+  const startBreak = () => breakStartMutation.mutate()
+  const endBreak = () => breakEndMutation.mutate()
   const [showActions, setShowActions] = useState(false)
   const [swipeHint, setSwipeHint] = useState<string | null>(null)
   const [actionConfirm, setActionConfirm] = useState<string | null>(null)

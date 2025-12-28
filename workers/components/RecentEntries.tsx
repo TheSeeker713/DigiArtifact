@@ -1,10 +1,10 @@
 'use client'
 
-import { useAuth } from '@/contexts/AuthContext'
+import { useTodayEntries } from '@/hooks/useTimeEntries'
 import { useSettings } from '@/contexts/SettingsContext'
 
 export default function RecentEntries() {
-  const { todayEntries } = useAuth()
+  const { data: todayEntries = [] } = useTodayEntries()
   const { formatTime, parseUTCTimestamp } = useSettings()
 
   const formatDuration = (clockIn: string, clockOut: string | null, breakMinutes: number) => {

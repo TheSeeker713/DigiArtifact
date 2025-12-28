@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useTodayEntries, useWeeklyStats } from '@/hooks/useTimeEntries'
+import { getApiUrl } from '@/utils/config'
 import { generatePDFReport, type ReportData } from '@/utils/pdfExport'
 import Cookies from 'js-cookie'
 
@@ -57,7 +59,10 @@ interface MonthlyStats {
 }
 
 export default function AnalyticsPage() {
-  const { user, todayEntries, weeklyHours } = useAuth()
+  const { user } = useAuth()
+  const { data: todayEntries = [] } = useTodayEntries()
+  const { data: weeklyStats } = useWeeklyStats()
+  const weeklyHours = weeklyStats?.hours || [0, 0, 0, 0, 0, 0, 0]
   const { formatTime } = useSettings()
 
   const [period, setPeriod] = useState<PeriodType>('week')

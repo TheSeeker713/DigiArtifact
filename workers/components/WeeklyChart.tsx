@@ -2,14 +2,15 @@
 
 import { useEffect, useRef } from 'react'
 import { Chart, registerables } from 'chart.js'
-import { useAuth } from '@/contexts/AuthContext'
+import { useWeeklyStats } from '@/hooks/useTimeEntries'
 
 Chart.register(...registerables)
 
 const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function WeeklyChart() {
-  const { weeklyHours } = useAuth()
+  const { data: weeklyStats } = useWeeklyStats()
+  const weeklyHours = weeklyStats?.hours || [0, 0, 0, 0, 0, 0, 0]
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstance = useRef<Chart | null>(null)
 

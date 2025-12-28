@@ -17,10 +17,16 @@ import InstallPrompt from '@/components/InstallPrompt'
 import DebugPanel from '@/components/DebugPanel'
 import StickyHeader from '@/components/StickyHeader'
 import WalkthroughTutorial, { useTutorial } from '@/components/WalkthroughTutorial'
+import { useClockStatus, useTodayEntries, useWeeklyStats } from '@/hooks/useTimeEntries'
 
 // Inner component to use hooks inside providers
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { clockStatus, weeklyHours, todayEntries } = useAuth()
+  const { } = useAuth()
+  const { data: clockData } = useClockStatus()
+  const { data: weeklyStats } = useWeeklyStats()
+  const { data: todayEntries = [] } = useTodayEntries()
+  const clockStatus = clockData?.status || 'clocked-out'
+  const weeklyHours = weeklyStats?.hours || [0, 0, 0, 0, 0, 0, 0]
   const { showTutorial, closeTutorial, completeTutorial } = useTutorial({
     clockStatus,
     weeklyHours,

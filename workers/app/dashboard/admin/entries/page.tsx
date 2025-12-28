@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth, TimeEntry, Project } from '@/contexts/AuthContext'
+import { useProjects } from '@/hooks/useProjects'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
@@ -14,7 +15,8 @@ interface AdminTimeEntry extends TimeEntry {
 }
 
 export default function AdminEntriesPage() {
-  const { user, projects } = useAuth()
+  const { user } = useAuth()
+  const { data: projects = [] } = useProjects()
   const { formatTime, formatDate, parseUTCTimestamp } = useSettings()
   const router = useRouter()
   const [entries, setEntries] = useState<AdminTimeEntry[]>([])

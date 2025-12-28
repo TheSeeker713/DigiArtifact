@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { Providers } from '@/components/Providers'
 
 export const metadata: Metadata = {
   title: 'Workers Portal | DigiArtifact',
@@ -55,7 +56,9 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/icon-512.png" />
       </head>
       <body className="min-h-screen bg-grid-overlay">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

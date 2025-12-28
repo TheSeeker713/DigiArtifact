@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTodayEntries, useWeeklyStats } from '@/hooks/useTimeEntries'
 
 interface StreakData {
   currentStreak: number
@@ -14,7 +15,10 @@ interface StreakData {
 const STORAGE_KEY = 'workers_streak_data'
 
 export default function StreakCounter() {
-  const { todayEntries, weeklyHours } = useAuth()
+  const { } = useAuth()
+  const { data: todayEntries = [] } = useTodayEntries()
+  const { data: weeklyStats } = useWeeklyStats()
+  const weeklyHours = weeklyStats?.hours || [0, 0, 0, 0, 0, 0, 0]
   const [streakData, setStreakData] = useState<StreakData>({
     currentStreak: 0,
     longestStreak: 0,

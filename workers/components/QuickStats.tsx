@@ -1,9 +1,11 @@
 'use client'
 
-import { useAuth } from '@/contexts/AuthContext'
+import { useTodayEntries, useWeeklyStats } from '@/hooks/useTimeEntries'
 
 export default function QuickStats() {
-  const { weeklyHours, todayEntries } = useAuth()
+  const { data: todayEntries = [] } = useTodayEntries()
+  const { data: weeklyStats } = useWeeklyStats()
+  const weeklyHours = weeklyStats?.hours || [0, 0, 0, 0, 0, 0, 0]
 
   // Calculate today's hours
   const todayHours = todayEntries.reduce((total, entry) => {

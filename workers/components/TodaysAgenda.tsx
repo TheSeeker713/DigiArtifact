@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTodayEntries, useClockStatus } from '@/hooks/useTimeEntries'
+import { useProjects } from '@/hooks/useProjects'
 import { useSettings } from '@/contexts/SettingsContext'
 import { useGamification } from '@/contexts/GamificationContext'
 
@@ -16,7 +18,11 @@ interface AgendaItem {
 }
 
 export default function TodaysAgenda() {
-  const { clockStatus, todayEntries, projects } = useAuth()
+  const { } = useAuth()
+  const { data: clockData } = useClockStatus()
+  const { data: todayEntries = [] } = useTodayEntries()
+  const { data: projects = [] } = useProjects()
+  const clockStatus = clockData?.status || 'clocked-out'
   const { formatTime, formatDate } = useSettings()
   const { addXP } = useGamification()
   const [tasks, setTasks] = useState<AgendaItem[]>([])
