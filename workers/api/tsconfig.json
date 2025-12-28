@@ -7,6 +7,15 @@
     "types": ["@cloudflare/workers-types"],
     "strict": true,
     "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@shared/*": [
+        "../../shared/*"
+      ]
+    },
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",

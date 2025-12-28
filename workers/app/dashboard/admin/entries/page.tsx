@@ -6,8 +6,7 @@ import { useSettings } from '@/contexts/SettingsContext'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import Cookies from 'js-cookie'
-
-const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
+import { getApiUrl } from '@/utils/config' 
 
 interface AdminTimeEntry extends TimeEntry {
   user_name: string
@@ -49,7 +48,7 @@ export default function AdminEntriesPage() {
       if (filter.project) params.append('project', filter.project)
       if (filter.date) params.append('date', filter.date)
       
-      const response = await fetch(`https://digiartifact-workers-api.digitalartifact11.workers.dev/api/admin/entries?${params}`, {
+      const response = await fetch(getApiUrl(`/admin/entries?${params}`), {
         headers: { 'Authorization': `Bearer ${token}` },
       })
       
@@ -81,7 +80,7 @@ export default function AdminEntriesPage() {
     
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch(`https://digiartifact-workers-api.digitalartifact11.workers.dev/api/entries/${entryId}`, {
+      const response = await fetch(getApiUrl(`/entries/${entryId}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       })
@@ -117,7 +116,7 @@ export default function AdminEntriesPage() {
 
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch(`${API_BASE}/entries/${editingEntry.id}`, {
+      const response = await fetch(getApiUrl(`/entries/${editingEntry.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

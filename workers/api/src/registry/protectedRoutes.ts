@@ -37,7 +37,6 @@ import {
   handleGetUsers,
   handleCreateUser,
   handleUpdateUser,
-  handleResetUserPin,
   handleGetGlobalStats,
   handleGetUserStats,
   handleGetAllEntries,
@@ -46,7 +45,7 @@ import {
   handlePurgeUserData,
   handlePurgeAllData,
 } from '../routes/admin';
-import { handleGetProfile, handleChangePin } from '../routes/user';
+import { handleGetProfile } from '../routes/user';
 
 /**
  * Try to match and handle protected routes
@@ -159,9 +158,6 @@ export async function handleProtectedRoutes(
   if (path === '/api/user/profile' && method === 'GET') {
     return handleGetProfile(user, origin);
   }
-  if (path === '/api/user/change-pin' && method === 'POST') {
-    return handleChangePin(request, env, user, origin);
-  }
 
   // --- ADMIN ROUTES ---
   if (path === '/api/admin/users' && method === 'GET') {
@@ -173,9 +169,7 @@ export async function handleProtectedRoutes(
   if (path.match(/^\/api\/admin\/users\/\d+$/) && method === 'PUT') {
     return handleUpdateUser(path.split('/').pop()!, request, env, user, origin);
   }
-  if (path.match(/^\/api\/admin\/users\/\d+\/reset-pin$/) && method === 'POST') {
-    return handleResetUserPin(path.split('/')[4], request, env, user, origin);
-  }
+
   if (path.match(/^\/api\/admin\/users\/\d+\/stats$/) && method === 'GET') {
     return handleGetUserStats(path.split('/')[4], env, user, origin);
   }

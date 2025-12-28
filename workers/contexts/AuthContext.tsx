@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import Cookies from 'js-cookie'
+import { getApiUrl } from '@/utils/config'
 
 export interface User {
   id: number
@@ -40,7 +41,6 @@ interface AuthContextType {
   projects: Project[]
   todayEntries: TimeEntry[]
   weeklyHours: number[]
-  login: (email: string, pin: string) => Promise<void>
   logout: () => void
   clockIn: (projectId?: number) => Promise<void>
   clockOut: (notes?: string) => Promise<void>
@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshData = async () => {
     try {
       // Fetch clock status
-      const statusRes = await fetch(`${API_BASE}/clock/status`, {
+      const statusRes = await fetch(getApiUrl('/clock/status'), {
         headers: getAuthHeaders(),
       })
       if (statusRes.ok) {
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch projects
-      const projectsRes = await fetch(`${API_BASE}/projects`, {
+      const projectsRes = await fetch(getApiUrl('/projects'), {
         headers: getAuthHeaders(),
       })
       if (projectsRes.ok) {
@@ -151,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Fetch today's entries
       const today = new Date().toISOString().split('T')[0]
-      const entriesRes = await fetch(`${API_BASE}/entries?date=${today}`, {
+      const entriesRes = await fetch(getApiUrl(`/entries?date=${today}`), {
         headers: getAuthHeaders(),
       })
       if (entriesRes.ok) {
@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch weekly stats
-      const weeklyRes = await fetch(`${API_BASE}/stats/weekly`, {
+      const weeklyRes = await fetch(getApiUrl('/stats/weekly'), {
         headers: getAuthHeaders(),
       })
       if (weeklyRes.ok) {
@@ -172,24 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const login = async (email: string, pin: string) => {
-    const response = await fetch(`${API_BASE}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, pin }),
-    })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed')
-    }
-
-    Cookies.set('workers_token', data.token, { expires: 7 })
-    Cookies.set('workers_user', JSON.stringify(data.user), { expires: 7 })
-    setUser(data.user)
-    await refreshData()
-  }
 
   const logout = () => {
     Cookies.remove('workers_token')
@@ -201,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const clockIn = async (projectId?: number) => {
-    const response = await fetch(`${API_BASE}/clock/in`, {
+    const response = await fetch(getApiUrl('/clock/in'), {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ project_id: projectId }),
@@ -216,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const clockOut = async (notes?: string) => {
-    const response = await fetch(`${API_BASE}/clock/out`, {
+    const response = await fetch(getApiUrl('/clock/out'), {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ notes }),
@@ -231,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const startBreak = async () => {
-    const response = await fetch(`${API_BASE}/break/start`, {
+    const response = await fetch(getApiUrl('/break/start'), {
       method: 'POST',
       headers: getAuthHeaders(),
     })
@@ -245,7 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const endBreak = async () => {
-    const response = await fetch(`${API_BASE}/break/end`, {
+    const response = await fetch(getApiUrl('/break/end'), {
       method: 'POST',
       headers: getAuthHeaders(),
     })
@@ -268,7 +251,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         projects,
         todayEntries,
         weeklyHours,
-        login,
         logout,
         clockIn,
         clockOut,

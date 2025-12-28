@@ -1,7 +1,38 @@
 /**
  * Gamification routes (XP, streaks, achievements)
+ * FINAL PRODUCTION VERSION - "MM-DD-YYYY" EDITION
+ * - Strict Input: MM-DD-YYYY (User Requirement)
+ * - Internal Storage: YYYY-MM-DD (Database Requirement)
+ * - Logic: "Cheat-Proof" Streak Updates
  */
 import { Env, User, jsonResponse, calculateLevel } from '../utils';
+
+interface Achievement {
+  id: string;
+  name: string;
+  unlocked?: boolean;
+  unlockedAt?: number | null;
+  [key: string]: unknown;
+}
+
+// VALIDATOR: Strictly enforces "MM-DD-YYYY"
+function isValidUSDateString(dateStr: string): boolean {
+  // Regex for MM-DD-YYYY
+  const regex = /^\d{2}-\d{2}-\d{4}$/;
+  if (!regex.test(dateStr)) return false;
+  
+  const [month, day, year] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  
+  // Check valid date (e.g. reject 02-30-2025)
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+}
+
+// ADAPTER: Converts "MM-DD-YYYY" -> "YYYY-MM-DD" for SQLite math
+function normalizeDate(usDate: string): string {
+  const [month, day, year] = usDate.split('-');
+  return `${year}-${month}-${day}`;
+}
 
 export async function handleGetGamification(
   env: Env,
@@ -16,9 +47,7 @@ export async function handleGetGamification(
     WHERE user_id = ?
   `).bind(user.id).first();
 
-  if (!gamification) {
-    // Return a sane default so the frontend can initialize without a persisted row
-    return jsonResponse({
+  const defaultStats = {
       total_xp: 0,
       level: 1,
       current_streak: 0,
@@ -28,12 +57,24 @@ export async function handleGetGamification(
       focus_sessions: 0,
       achievements: [],
       last_activity_date: null,
-    }, 200, origin);
+  };
+
+  if (!gamification) {
+    return jsonResponse(defaultStats, 200, origin);
+  }
+
+  // Safety: Prevent crashes if DB JSON is corrupt
+  let achievements: Achievement[] = [];
+  try {
+    achievements = JSON.parse(gamification.achievements as string || '[]') as Achievement[];
+  } catch (err) {
+    console.error(`Error parsing achievements for user ${user.id}:`, err);
+    achievements = []; 
   }
 
   return jsonResponse({
     ...gamification,
-    achievements: JSON.parse(gamification.achievements as string || '[]'),
+    achievements: achievements,
   }, 200, origin);
 }
 
@@ -49,31 +90,37 @@ export async function handleAwardXP(
     action_type?: string;
   };
 
-  if (!amount || amount < 0) {
-    return jsonResponse({ error: 'Valid XP amount required' }, 400, origin);
+  // Validation: No NaNs, No Negatives
+  if (typeof amount !== 'number' || Number.isNaN(amount) || amount <= 0) {
+    return jsonResponse({ error: 'Valid positive XP amount required' }, 400, origin);
   }
 
-  // Atomic UPSERT: Insert new row or add to existing XP total
+  // Atomic UPSERT
   const result = await env.DB.prepare(`
-    INSERT INTO user_gamification (user_id, total_xp, current_streak, updated_at)
-    VALUES (?, ?, 0, CURRENT_TIMESTAMP)
+    INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)
+    VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP)
     ON CONFLICT(user_id) DO UPDATE SET
       total_xp = total_xp + excluded.total_xp,
       updated_at = CURRENT_TIMESTAMP
-    RETURNING total_xp, current_streak
+    RETURNING total_xp, level
   `).bind(user.id, amount).first<{
     total_xp: number;
-    current_streak: number;
+    level: number;
   }>();
 
   if (!result) {
     return jsonResponse({ error: 'Failed to award XP' }, 500, origin);
   }
 
-  // Calculate level from returned total_xp (Level = floor(xp / 100) + 1)
-  const newLevel = Math.floor(result.total_xp / 100) + 1;
+  const newLevel = calculateLevel(result.total_xp);
+  const leveledUp = newLevel > result.level;
 
-  // Log the XP transaction
+  if (leveledUp) {
+    await env.DB.prepare(`
+      UPDATE user_gamification SET level = ? WHERE user_id = ?
+    `).bind(newLevel, user.id).run();
+  }
+
   await env.DB.prepare(`
     INSERT INTO xp_transactions (user_id, amount, reason, action_type)
     VALUES (?, ?, ?, ?)
@@ -84,7 +131,7 @@ export async function handleAwardXP(
     total_xp: result.total_xp,
     level: newLevel,
     xp_gained: amount,
-    leveled_up: false,
+    leveled_up: leveledUp,
   }, 200, origin);
 }
 
@@ -94,7 +141,10 @@ export async function handleUpdateStreak(
   user: User,
   origin: string
 ): Promise<Response> {
-  const { increment } = await request.json() as { increment?: boolean };
+  const { increment, clientDate } = await request.json() as { 
+    increment?: boolean; 
+    clientDate?: string; 
+  };
 
   const gamification = await env.DB.prepare(`
     SELECT current_streak, longest_streak, last_activity_date
@@ -110,28 +160,43 @@ export async function handleUpdateStreak(
     return jsonResponse({ error: 'Gamification record not found' }, 404, origin);
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const lastActivity = gamification.last_activity_date;
-  
+  // --- STRICT MM-DD-YYYY HANDLING ---
+  let todayISO: string; 
+
+  if (clientDate && isValidUSDateString(clientDate)) {
+    // User sent valid "MM-DD-YYYY", we accept it and normalize for DB
+    todayISO = normalizeDate(clientDate); 
+  } else {
+    // Fallback: Use server time, but this shouldn't happen if frontend is correct
+    todayISO = new Date().toISOString().split('T')[0];
+  }
+
+  const lastActivityISO = gamification.last_activity_date; // stored as YYYY-MM-DD
   let newStreak = gamification.current_streak;
   
+  // LOGIC FIX: Determine the date to save
+  // Default: Keep the OLD date (don't give credit for just checking)
+  let dateToSave = lastActivityISO; 
+
   if (increment) {
-    // Check if last activity was yesterday (continue streak) or today (already counted)
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    // User actually worked -> Update the date to Today
+    dateToSave = todayISO;
+
+    const todayDate = new Date(todayISO);
+    const yesterdayDate = new Date(todayDate);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayISO = yesterdayDate.toISOString().split('T')[0];
     
-    if (lastActivity === yesterdayStr) {
+    if (lastActivityISO === yesterdayISO) {
       newStreak += 1;
-    } else if (lastActivity !== today) {
-      // Streak broken, start fresh
+    } else if (lastActivityISO !== todayISO) {
       newStreak = 1;
     }
-    // If last activity is today, don't change streak
   }
 
   const newLongestStreak = Math.max(newStreak, gamification.longest_streak);
 
+  // We store ISO (YYYY-MM-DD) so SQL sorting works, but logic relied on your MM-DD-YYYY input
   await env.DB.prepare(`
     UPDATE user_gamification
     SET current_streak = ?,
@@ -139,7 +204,7 @@ export async function handleUpdateStreak(
         last_activity_date = ?,
         updated_at = datetime('now')
     WHERE user_id = ?
-  `).bind(newStreak, newLongestStreak, today, user.id).run();
+  `).bind(newStreak, newLongestStreak, dateToSave, user.id).run();
 
   return jsonResponse({
     success: true,
@@ -160,7 +225,6 @@ export async function handleUnlockAchievement(
     return jsonResponse({ error: 'Achievement ID required' }, 400, origin);
   }
 
-  // Fetch current user_gamification row
   const gamification = await env.DB.prepare(`
     SELECT id, achievements
     FROM user_gamification
@@ -174,17 +238,15 @@ export async function handleUnlockAchievement(
     return jsonResponse({ error: 'Gamification record not found' }, 404, origin);
   }
 
-  // Parse achievements JSON column
-  let achievements: any[];
+  let achievements: Achievement[];
   try {
-    achievements = JSON.parse(gamification.achievements || '[]');
+    achievements = JSON.parse(gamification.achievements || '[]') as Achievement[];
   } catch (error) {
     achievements = [];
   }
 
-  // Find matching achievement and unlock it
   let achievementFound = false;
-  let unlockedAchievement: any = null;
+  let unlockedAchievement: Achievement | null = null;
 
   const updatedAchievements = achievements.map(achievement => {
     if (achievement.id === achievementId) {
@@ -203,7 +265,6 @@ export async function handleUnlockAchievement(
     return jsonResponse({ error: 'Achievement not found' }, 404, origin);
   }
 
-  // Save updated achievements array back to database
   await env.DB.prepare(`
     UPDATE user_gamification
     SET achievements = ?,
@@ -214,6 +275,6 @@ export async function handleUnlockAchievement(
   return jsonResponse({
     success: true,
     achievement: unlockedAchievement,
-    message: `Achievement "${unlockedAchievement.name}" unlocked!`,
+    message: `Achievement "${unlockedAchievement!.name}" unlocked!`,
   }, 200, origin);
 }

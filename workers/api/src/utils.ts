@@ -2,6 +2,11 @@
  * Shared utility functions for DigiArtifact Workers API
  */
 
+import { LEVEL_THRESHOLDS } from '../../shared/constants';
+import { getDb } from './db/client';
+import { users } from './db/schema';
+import { eq, and } from 'drizzle-orm';
+
 export interface Env {
   DB: D1Database;
   JWT_SECRET: string;
@@ -93,14 +98,6 @@ export async function verifyJWT(token: string, secret: string): Promise<JWTPaylo
   }
 }
 
-export async function hashPin(pin: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 export function corsHeaders(origin: string): HeadersInit {
   return {
@@ -129,15 +126,22 @@ export async function getUser(request: Request, env: Env): Promise<User | null> 
   const payload = await verifyJWT(token, env.JWT_SECRET);
   if (!payload) return null;
   
-  const result = await env.DB.prepare(
-    'SELECT id, email, name, role FROM users WHERE id = ? AND active = 1'
-  ).bind(payload.userId).first<User>();
+  // Use Drizzle for type-safe query
+  const db = getDb(env);
   
-  return result || null;
+  const result = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      role: users.role,
+    })
+    .from(users)
+    .where(and(eq(users.id, payload.userId), eq(users.active, true)))
+    .limit(1);
+  
+  return result[0] || null;
 }
-
-// XP Level calculation constants
-export const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2500, 4000, 6000, 10000];
 
 export function calculateLevel(totalXP: number): number {
   let level = 1;

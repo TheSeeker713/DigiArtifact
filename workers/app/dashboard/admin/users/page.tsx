@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth, User } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
-
-const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
+import { getApiUrl } from '@/utils/config' 
 
 interface AdminUser extends User {
   created_at: string
@@ -39,7 +38,7 @@ export default function AdminUsersPage() {
     setIsLoading(true)
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch('https://digiartifact-workers-api.digitalartifact11.workers.dev/api/admin/users', {
+      const response = await fetch(getApiUrl('/admin/users'), {
         headers: { 'Authorization': `Bearer ${token}` },
       })
       
@@ -61,7 +60,7 @@ export default function AdminUsersPage() {
     
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch('https://digiartifact-workers-api.digitalartifact11.workers.dev/api/admin/users', {
+      const response = await fetch(getApiUrl('/admin/users'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +111,7 @@ export default function AdminUsersPage() {
       const token = Cookies.get('workers_token')
       
       // Update user info
-      const response = await fetch(`${API_BASE}/admin/users/${editingUser.id}`, {
+      const response = await fetch(getApiUrl(`/admin/users/${editingUser.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +127,7 @@ export default function AdminUsersPage() {
 
       // Reset PIN if provided
       if (resetPin && resetPin.length >= 4) {
-        const pinResponse = await fetch(`${API_BASE}/admin/users/${editingUser.id}/reset-pin`, {
+        const pinResponse = await fetch(getApiUrl(`/admin/users/${editingUser.id}/reset-pin`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

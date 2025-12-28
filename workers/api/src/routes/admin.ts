@@ -1,7 +1,7 @@
 /**
  * Admin routes - user management, data export/purge
  */
-import { Env, User, jsonResponse, hashPin } from '../utils';
+import { Env, User, jsonResponse } from '../utils';
 
 // ============================================
 // USER MANAGEMENT
@@ -36,23 +36,20 @@ export async function handleCreateUser(
     return jsonResponse({ error: 'Admin access required' }, 403, origin);
   }
 
-  const { name, email, pin, role } = await request.json() as {
+  const { name, email, role } = await request.json() as {
     name: string;
     email: string;
-    pin: string;
     role?: 'admin' | 'worker';
   };
 
-  if (!name || !email || !pin) {
-    return jsonResponse({ error: 'Name, email, and PIN required' }, 400, origin);
+  if (!name || !email) {
+    return jsonResponse({ error: 'Name and email required' }, 400, origin);
   }
-
-  const pinHash = await hashPin(pin);
 
   try {
     const result = await env.DB.prepare(
-      'INSERT INTO users (name, email, pin_hash, role) VALUES (?, ?, ?, ?) RETURNING id, email, name, role, created_at'
-    ).bind(name, email, pinHash, role || 'worker').first();
+      'INSERT INTO users (name, email, role) VALUES (?, ?, ?) RETURNING id, email, name, role, created_at'
+    ).bind(name, email, role || 'worker').first();
 
     return jsonResponse({ user: result }, 201, origin);
   } catch (e: any) {
@@ -97,38 +94,7 @@ export async function handleUpdateUser(
   return jsonResponse({ user: result }, 200, origin);
 }
 
-export async function handleResetUserPin(
-  userId: string,
-  request: Request,
-  env: Env,
-  user: User,
-  origin: string
-): Promise<Response> {
-  if (user.role !== 'admin') {
-    return jsonResponse({ error: 'Admin access required' }, 403, origin);
-  }
 
-  const { newPin } = await request.json() as { newPin: string };
-
-  if (!newPin) {
-    return jsonResponse({ error: 'New PIN required' }, 400, origin);
-  }
-
-  if (newPin.length < 4 || newPin.length > 6) {
-    return jsonResponse({ error: 'PIN must be 4-6 digits' }, 400, origin);
-  }
-
-  const pinHash = await hashPin(newPin);
-  const result = await env.DB.prepare(
-    'UPDATE users SET pin_hash = ?, updated_at = datetime("now") WHERE id = ? RETURNING id, name, email'
-  ).bind(pinHash, userId).first();
-
-  if (!result) {
-    return jsonResponse({ error: 'User not found' }, 404, origin);
-  }
-
-  return jsonResponse({ success: true, user: result }, 200, origin);
-}
 
 // ============================================
 // STATISTICS

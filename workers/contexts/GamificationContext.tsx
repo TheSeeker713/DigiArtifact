@@ -2,39 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 import Cookies from 'js-cookie'
+import { LevelDefinition, LEVEL_DEFINITIONS, XP_CONFIG as SHARED_XP_CONFIG } from '@shared/constants'
 
 // API base URL
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
-// XP Configuration
-const XP_CONFIG = {
-  clockIn: 10,
-  clockOut: 20,
-  hourWorked: 50,
-  streakDay: 25,
-  streak3Days: 100,
-  streak7Days: 250,
-  streak30Days: 1000,
-  focusSessionComplete: 30,
-  taskComplete: 15,
-  noteCreated: 5,
-  earlyArrival: 50,
-  fullWeek: 500,
-}
+// Use shared LEVEL_DEFINITIONS from `@shared/constants` (LEVEL_DEFINITIONS)
 
-// Level thresholds (cumulative XP needed)
-const LEVELS = [
-  { level: 1, xp: 0, title: 'Apprentice', color: '#a0a0a0' },
-  { level: 2, xp: 100, title: 'Worker', color: '#4ade80' },
-  { level: 3, xp: 300, title: 'Craftsman', color: '#22c55e' },
-  { level: 4, xp: 600, title: 'Journeyman', color: '#3b82f6' },
-  { level: 5, xp: 1000, title: 'Artisan', color: '#6366f1' },
-  { level: 6, xp: 1500, title: 'Expert', color: '#8b5cf6' },
-  { level: 7, xp: 2500, title: 'Master', color: '#a855f7' },
-  { level: 8, xp: 4000, title: 'Grandmaster', color: '#cca43b' },
-  { level: 9, xp: 6000, title: 'Legend', color: '#f59e0b' },
-  { level: 10, xp: 10000, title: 'Mythic', color: '#ef4444' },
-]
 
 // Achievement definitions
 export interface Achievement {
@@ -112,16 +86,16 @@ interface GamificationContextType {
   addXP: (amount: number, reason: string) => void
   checkAchievements: () => void
   refreshChallenges: () => void
-  getLevel: (xp: number) => typeof LEVELS[0]
-  xpConfig: typeof XP_CONFIG
+  getLevel: (xp: number) => LevelDefinition
+  xpConfig: typeof SHARED_XP_CONFIG
 }
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined)
 
-// Helper function to calculate level from XP
-function getLevelFromXP(xp: number) {
-  let currentLevel = LEVELS[0]
-  for (const level of LEVELS) {
+// Helper function to calculate level from XP using shared LEVEL_DEFINITIONS
+function getLevelFromXP(xp: number): LevelDefinition {
+  let currentLevel = LEVEL_DEFINITIONS[0]
+  for (const level of LEVEL_DEFINITIONS) {
     if (xp >= level.xp) {
       currentLevel = level
     } else {
@@ -133,11 +107,11 @@ function getLevelFromXP(xp: number) {
 
 const DEFAULT_DATA: GamificationData = {
   totalXP: 0,
-  level: 1,
-  levelTitle: 'Apprentice',
-  levelColor: '#a0a0a0',
+  level: LEVEL_DEFINITIONS[0].level,
+  levelTitle: LEVEL_DEFINITIONS[0].title,
+  levelColor: LEVEL_DEFINITIONS[0].color,
   currentLevelXP: 0,
-  nextLevelXP: 100,
+  nextLevelXP: LEVEL_DEFINITIONS[1].xp - LEVEL_DEFINITIONS[0].xp,
   achievements: ACHIEVEMENT_TEMPLATES.map(a => ({ ...a, unlocked: false, progress: 0 })),
   weeklyChallenge: null,
   totalHoursWorked: 0,
@@ -170,7 +144,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
           const apiData = await res.json()
           // Map API data to our format
           const level = getLevelFromXP(apiData.total_xp || 0)
-          const nextLevelData = LEVELS.find(l => l.xp > (apiData.total_xp || 0)) || LEVELS[LEVELS.length - 1]
+          const nextLevelData = LEVEL_DEFINITIONS.find(l => l.xp > (apiData.total_xp || 0)) || LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1]
           
           setData(prev => ({
             ...prev,
@@ -212,7 +186,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
     setData(prev => {
       const newTotalXP = prev.totalXP + amount
       const newLevel = getLevel(newTotalXP)
-      const nextLevelData = LEVELS.find(l => l.xp > newTotalXP) || LEVELS[LEVELS.length - 1]
+      const nextLevelData = LEVEL_DEFINITIONS.find(l => l.xp > newTotalXP) || LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1]
       
       return {
         ...prev,
@@ -338,7 +312,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       if (bonusXP > 0) {
         const newTotalXP = prev.totalXP + bonusXP
         const newLevel = getLevel(newTotalXP)
-        const nextLevelData = LEVELS.find(l => l.xp > newTotalXP) || LEVELS[LEVELS.length - 1]
+        const nextLevelData = LEVEL_DEFINITIONS.find(l => l.xp > newTotalXP) || LEVEL_DEFINITIONS[LEVEL_DEFINITIONS.length - 1]
         
         return {
           ...prev,
@@ -400,7 +374,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         checkAchievements,
         refreshChallenges,
         getLevel,
-        xpConfig: XP_CONFIG,
+        xpConfig: SHARED_XP_CONFIG,
       }}
     >
       {children}
