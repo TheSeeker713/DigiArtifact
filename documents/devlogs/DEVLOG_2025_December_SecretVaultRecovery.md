@@ -28,4 +28,9 @@ On Dec 29, 2025 an accidental deletion removed the `secretvault/` folder from th
 - We will add an additional confirmation step to the cleanup script and optionally log deletions for auditability.
 
 ---
-*Recorded and authored by the DigArtifact Engineering Team.*
+
+## Audit trail
+- **Recovery commit:** `0ce0d1081902a69f20a993611735d38e6cb4876d` — committed **2025-12-29 11:41:59 -07:00 (MST)**
+- **Pushed to:** `origin/main` at **2025-12-29 11:43:15 -07:00 (MST)**
+
+*Recorded and authored by the DigiArtifact Engineering Team.*
