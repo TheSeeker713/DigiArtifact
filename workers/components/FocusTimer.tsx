@@ -38,7 +38,7 @@ const PRESET_DURATIONS = [
 const STORAGE_KEY = 'workers_focus_timer_state'
 
 export default function FocusTimer() {
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   const [mode, setMode] = useState<TimerMode>('focus')
   const [timeRemaining, setTimeRemaining] = useState(DEFAULT_CONFIG.focus)
   const [isRunning, setIsRunning] = useState(false)
@@ -136,7 +136,7 @@ export default function FocusTimer() {
     // Auto-switch modes
     if (mode === 'focus') {
       // Award XP for completing a focus session
-      addXP(30, 'Focus Session Complete')
+      recordAction('FOCUS_SESSION_COMPLETE', { reason: 'Focus Session Complete' })
       
       const newSessionCount = completedSessions + 1
       setCompletedSessions(newSessionCount)
@@ -152,7 +152,7 @@ export default function FocusTimer() {
       setMode('focus')
       setTimeRemaining(customFocusTime)
     }
-  }, [mode, completedSessions, config, customFocusTime, addXP])
+  }, [mode, completedSessions, config, customFocusTime, recordAction])
 
   const toggleTimer = () => {
     if (!isRunning && timeRemaining === 0) {

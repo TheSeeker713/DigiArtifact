@@ -24,7 +24,7 @@ export default function TodaysAgenda() {
   const { data: projects = [] } = useProjects()
   const clockStatus = clockData?.status || 'clocked-out'
   const { formatTime, formatDate } = useSettings()
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   const [tasks, setTasks] = useState<AgendaItem[]>([])
   const [newTask, setNewTask] = useState('')
   const [showAddTask, setShowAddTask] = useState(false)
@@ -87,7 +87,7 @@ export default function TodaysAgenda() {
         const newCompleted = !t.completed
         // Award XP only when completing (not unchecking)
         if (newCompleted && !t.completed) {
-          addXP(15, 'Task Completed')
+          recordAction('TASK_COMPLETED', { reason: 'Task Completed' })
         }
         return { ...t, completed: newCompleted }
       }

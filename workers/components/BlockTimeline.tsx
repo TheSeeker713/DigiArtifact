@@ -306,7 +306,7 @@ export default function BlockTimeline({
   carriedMinutes = 0,
   onBlockComplete,
 }: BlockTimelineProps) {
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   const {
     blocks,
     stats,
@@ -361,8 +361,8 @@ export default function BlockTimeline({
   const handleCompleteBlock = useCallback(async (blockId: string) => {
     const result = await completeBlock(blockId)
     
-    // Award XP through gamification system
-    addXP(result.xpEarned, result.milestone || 'Block completed')
+    // Award XP through gamification system (server determines amount)
+    recordAction('BLOCK_COMPLETED', { reason: result.milestone || 'Block completed' })
     setXpGained(prev => prev + result.xpEarned)
     
     // Trigger confetti
@@ -379,7 +379,7 @@ export default function BlockTimeline({
       if (streakDays + 1 === STREAK_TARGET) {
         setCurrentMilestone('7-Day Champion')
         setShowMilestoneModal(true)
-        addXP(1000, 'Weekly Milestone: 7-Day Champion')
+        recordAction('WEEKLY_MILESTONE', { reason: 'Weekly Milestone: 7-Day Champion' })
       }
     }
     
@@ -388,7 +388,7 @@ export default function BlockTimeline({
     if (block) {
       onBlockComplete?.(block, result.xpEarned, result.milestone)
     }
-  }, [completeBlock, addXP, blocks, streakDays, onBlockComplete])
+  }, [completeBlock, recordAction, blocks, streakDays, onBlockComplete])
   
   // Handle time update
   const handleUpdateTime = useCallback((blockId: string, startTime: string, endTime: string) => {

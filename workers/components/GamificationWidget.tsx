@@ -7,6 +7,12 @@ export default function GamificationWidget() {
   const { data, checkAchievements } = useGamification()
   const [showAchievements, setShowAchievements] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [isMounted, setIsMounted] = useState(false)
+  
+  // Fix hydration: Only render client-side after mount
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
   
   // Debug: Log data to help diagnose issues
   useEffect(() => {
@@ -66,8 +72,10 @@ export default function GamificationWidget() {
       </pre>
       
       <div data-tutorial="gamification-widget" className="card relative">
-        {/* Glass Overlay */}
-        <div className="absolute inset-0 z-10 pointer-events-none opacity-40 mix-blend-screen bg-repeat" style={{ backgroundImage: 'url(/glass_tiled.webp)' }} />
+        {/* Glass Overlay - Only render on client to prevent hydration mismatch */}
+        {isMounted && (
+          <div className="absolute inset-0 z-10 pointer-events-none opacity-40 mix-blend-screen bg-repeat" style={{ backgroundImage: 'url(/glass_tiled.webp)' }} />
+        )}
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-heading text-lg text-sand">Progress</h3>

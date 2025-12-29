@@ -34,7 +34,7 @@ const VIRTUAL_PARTNERS = [
 ]
 
 export default function BodyDoublingTimer() {
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   const [isSessionActive, setIsSessionActive] = useState(false)
   const [selectedDuration, setSelectedDuration] = useState(SESSION_PRESETS[1].duration)
   const [timeRemaining, setTimeRemaining] = useState(selectedDuration)
@@ -137,7 +137,7 @@ export default function BodyDoublingTimer() {
       setSessionHistory(prev => [completedSession, ...prev.slice(0, 19)]) // Keep last 20
       
       // Award XP for completing the session
-      addXP(30, 'Body Doubling Session')
+      recordAction('BODY_DOUBLING_SESSION', { reason: 'Body Doubling Session' })
     }
     
     setCurrentSession(null)
@@ -150,7 +150,7 @@ export default function BodyDoublingTimer() {
         icon: '/favicon.ico'
       })
     }
-  }, [currentSession, addXP])
+  }, [currentSession, recordAction])
 
   const cancelSession = () => {
     setIsSessionActive(false)

@@ -90,18 +90,13 @@ export function useGamificationData() {
   })
 }
 
-// Award XP mutation
+// Record action mutation (server-authoritative XP)
+// DEPRECATED: Use recordAction from GamificationContext instead
 export function useAwardXP() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ amount, reason }: { amount: number; reason: string }) => {
-      // Validate amount
-      const validatedAmount = Math.floor(amount);
-      if (validatedAmount <= 0 || !Number.isFinite(amount)) {
-        throw new Error('Invalid XP amount: must be a positive integer');
-      }
-
+    mutationFn: async ({ actionType, metadata }: { actionType: string; metadata?: Record<string, unknown> }) => {
       const token = Cookies.get('workers_token')
       if (!token) throw new Error('Not authenticated')
 
@@ -111,12 +106,12 @@ export function useAwardXP() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ amount: validatedAmount, reason }),
+        body: JSON.stringify({ actionType, metadata: metadata || {} }),
       })
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to award XP')
+        throw new Error(data.error || 'Failed to record action')
       }
 
       return res.json()

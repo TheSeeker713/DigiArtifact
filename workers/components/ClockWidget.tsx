@@ -36,7 +36,7 @@ const PRESET_TAGS = [
 
 export default function ClockWidget() {
   const { formatTime, parseUTCTimestamp, timezone } = useSettings()
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   
   // Use query hooks for data fetching
   const { data: clockData } = useClockStatus()
@@ -45,7 +45,7 @@ export default function ClockWidget() {
   const clockOutMutation = useClockOut()
   const breakStartMutation = useBreakStart()
   const breakEndMutation = useBreakEnd()
-  // Removed awardXPMutation - using addXP from context instead to avoid duplicate API calls
+  // Using recordAction from context for server-authoritative XP
   
   const clockStatus = clockData?.status || 'clocked-out'
   const currentEntry = clockData?.currentEntry || null
@@ -62,6 +62,12 @@ export default function ClockWidget() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showMoodPicker, setShowMoodPicker] = useState(false)
   const [inlineNotes, setInlineNotes] = useState('')
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Fix hydration: Only render client-side after mount
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Update elapsed time every second when clocked in
   useEffect(() => {
@@ -100,8 +106,8 @@ export default function ClockWidget() {
     setError('')
     try {
       await clockInMutation.mutateAsync(selectedProject)
-      // Only use addXP - it handles both optimistic update and API persistence
-      addXP(10, 'Clock In')
+      // Record action - server determines XP amount
+      recordAction('CLOCK_IN', { reason: 'Clock In' })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clock in')
     } finally {
@@ -120,8 +126,8 @@ export default function ClockWidget() {
       // Combine notes with mood/energy/tags data
       const enhancedNotes = buildEnhancedNotes()
       await clockOutMutation.mutateAsync(enhancedNotes)
-      // Only use addXP - it handles both optimistic update and API persistence
-      addXP(20, 'Clock Out')
+      // Record action - server determines XP amount
+      recordAction('CLOCK_OUT', { reason: 'Clock Out' })
       setNotes('')
       setInlineNotes('')
       setSelectedTags([])
@@ -211,8 +217,10 @@ export default function ClockWidget() {
   return (
     <>
       <div className={`card relative ${statusConfig.bgClass}`} data-tutorial="clock-widget">
-        {/* Glass Overlay */}
-        <div className="absolute inset-0 z-10 pointer-events-none opacity-40 mix-blend-screen bg-repeat" style={{ backgroundImage: 'url(/glass_tiled.webp)' }} />
+        {/* Glass Overlay - Only render on client to prevent hydration mismatch */}
+        {isMounted && (
+          <div className="absolute inset-0 z-10 pointer-events-none opacity-40 mix-blend-screen bg-repeat" style={{ backgroundImage: 'url(/glass_tiled.webp)' }} />
+        )}
         {/* Status Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -230,14 +238,20 @@ export default function ClockWidget() {
           )}
         </div>
 
-        {/* Time Display */}
+        {/* Time Display - Only render time on client to prevent hydration mismatch */}
         <div className="text-center mb-6">
-          <p className="time-display">{elapsedTime}</p>
-          <p className="text-text-slate text-sm font-mono mt-2">
-            {clockStatus === 'clocked-in' || clockStatus === 'on-break'
-              ? `Since ${formatTime(currentEntry?.clock_in || '')}`
-              : 'Ready to start'}
-          </p>
+          {isMounted ? (
+            <>
+              <p className="time-display">{elapsedTime}</p>
+              <p className="text-text-slate text-sm font-mono mt-2">
+                {clockStatus === 'clocked-in' || clockStatus === 'on-break'
+                  ? `Since ${formatTime(currentEntry?.clock_in || '')}`
+                  : 'Ready to start'}
+              </p>
+            </>
+          ) : (
+            <p className="time-display">00:00:00</p>
+          )}
         </div>
 
         {/* Mood/Energy Display (when clocked in) */}

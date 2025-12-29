@@ -4,8 +4,10 @@
  * - Strict Input: MM-DD-YYYY (User Requirement)
  * - Internal Storage: YYYY-MM-DD (Database Requirement)
  * - Logic: "Cheat-Proof" Streak Updates
+ * - SECURITY: Server-Authoritative XP (client cannot dictate amounts)
  */
 import { Env, User, jsonResponse, calculateLevel } from '../utils';
+import { getXPForAction, isValidActionType, type XPActionType } from '../constants';
 
 interface Achievement {
   id: string;
@@ -84,16 +86,30 @@ export async function handleAwardXP(
   user: User,
   origin: string
 ): Promise<Response> {
-  const { amount, reason, action_type } = await request.json() as {
-    amount: number;
-    reason: string;
-    action_type?: string;
+  const { actionType, metadata } = await request.json() as {
+    actionType: string;
+    metadata?: Record<string, unknown>;
   };
 
-  // Strict validation: No NaNs, No Negatives, Must be Integer
-  if (typeof amount !== 'number' || Number.isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
-    return jsonResponse({ error: 'Valid positive integer XP amount required' }, 400, origin);
+  // SECURITY: Validate action type - client cannot dictate XP amounts
+  if (!actionType || typeof actionType !== 'string') {
+    return jsonResponse({ error: 'actionType (string) is required' }, 400, origin);
   }
+
+  if (!isValidActionType(actionType)) {
+    return jsonResponse({ 
+      error: `Invalid actionType: "${actionType}". Must be one of: NOTE_ADDED, SESSION_COMPLETED, CHECKLIST_COMPLETE, CLOCK_IN, CLOCK_OUT, FOCUS_SESSION_COMPLETE, TASK_COMPLETED, GOAL_CREATED, QUICK_NOTE, JOURNAL_ENTRY_SAVED, BODY_DOUBLING_SESSION, BLOCK_COMPLETED, WEEKLY_MILESTONE` 
+    }, 400, origin);
+  }
+
+  // Get XP amount from server-side constants (source of truth)
+  const amount = getXPForAction(actionType);
+  if (amount === null) {
+    return jsonResponse({ error: 'Failed to get XP amount for action type' }, 500, origin);
+  }
+
+  // Generate reason from action type and metadata
+  const reason = metadata?.reason as string || `Action: ${actionType}`;
 
   // FIXED: Atomic UPSERT with level calculation in a single transaction
   // This prevents race conditions by calculating level atomically
@@ -139,7 +155,7 @@ export async function handleAwardXP(
     await env.DB.prepare(`
       INSERT INTO xp_transactions (user_id, amount, reason, action_type)
       VALUES (?, ?, ?, ?)
-    `).bind(user.id, amount, reason, action_type || 'general').run();
+    `).bind(user.id, amount, reason, actionType).run();
   } catch (error) {
     console.error(`Failed to log XP transaction for user ${user.id}:`, error);
     // Don't fail the request if transaction logging fails

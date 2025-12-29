@@ -24,6 +24,7 @@ import {
 } from './routes/clock';
 import { handleGetEntries, handleDeleteEntry, handleUpdateEntry } from './routes/entries';
 import { handleGetConfig } from './routes/config';
+import { handleGetGamification, handleAwardXP, handleUpdateStreak, handleUnlockAchievement } from './routes/gamification';
 
 // Create Hono app with typed context
 type HonoContext = {
@@ -157,6 +158,27 @@ app.put('/api/entries/:id', async (c) => {
   const user = c.get('user');
   const entryId = c.req.param('id');
   return handleUpdateEntry(entryId, c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+
+// Gamification routes
+app.get('/api/gamification', async (c) => {
+  const user = c.get('user');
+  return handleGetGamification(c.env, user, c.env.CORS_ORIGIN);
+});
+
+app.post('/api/gamification/xp', async (c) => {
+  const user = c.get('user');
+  return handleAwardXP(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+
+app.post('/api/gamification/streak', async (c) => {
+  const user = c.get('user');
+  return handleUpdateStreak(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+
+app.post('/api/gamification/achievement/unlock', async (c) => {
+  const user = c.get('user');
+  return handleUnlockAchievement(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
 });
 
 // ========================================

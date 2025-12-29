@@ -83,9 +83,27 @@ interface GamificationData {
   lastUpdated: number
 }
 
+// Server-authoritative action types (must match backend constants)
+export type XPActionType =
+  | 'NOTE_ADDED'
+  | 'SESSION_COMPLETED'
+  | 'CHECKLIST_COMPLETE'
+  | 'CLOCK_IN'
+  | 'CLOCK_OUT'
+  | 'FOCUS_SESSION_COMPLETE'
+  | 'TASK_COMPLETED'
+  | 'GOAL_CREATED'
+  | 'QUICK_NOTE'
+  | 'JOURNAL_ENTRY_SAVED'
+  | 'BODY_DOUBLING_SESSION'
+  | 'BLOCK_COMPLETED'
+  | 'WEEKLY_MILESTONE';
+
 interface GamificationContextType {
   data: GamificationData
-  addXP: (amount: number, reason: string) => void
+  recordAction: (actionType: XPActionType, metadata?: { reason?: string; [key: string]: unknown }) => void
+  // DEPRECATED: Use recordAction instead. Kept for type safety during migration
+  addXP?: never // This will cause TypeScript errors if used
   checkAchievements: () => void
   refreshChallenges: () => void
   getLevel: (xp: number) => LevelDefinition
@@ -252,72 +270,22 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
     return getLevelFromXP(xp)
   }, [])
 
-  const addXP = useCallback((amount: number, reason: string) => {
-    // STRICT VALIDATION: Must be positive integer
-    const validatedAmount = Math.floor(amount);
-    if (validatedAmount <= 0 || !Number.isFinite(amount)) {
-      console.error('Invalid XP amount:', amount);
-      return;
-    }
-
+  // Server-authoritative XP action recording
+  // The server determines XP amounts - client only sends action types
+  const recordAction = useCallback((actionType: XPActionType, metadata?: { reason?: string; [key: string]: unknown }) => {
     // Store previous state for rollback
     let previousState: GamificationData | null = null;
     
-    // Optimistic UI update - immediate feedback
-    setData(prev => {
-      previousState = prev; // Capture for rollback
-      previousStateRef.current = prev;
-      
-      const oldLevel = prev.level;
-      const newTotalXP = Math.min(prev.totalXP + validatedAmount, MAX_LEVEL_XP); // Cap at max
-      const newLevel = getLevel(newTotalXP);
-      const nextLevelData = getNextLevelData(newTotalXP);
-      
-      // Check if leveled up
-      const leveledUp = newLevel.level > oldLevel;
-      
-      // Calculate progress to next level (or show max level indicator)
-      const isMaxLevel = newLevel.level >= MAX_LEVEL;
-      const currentLevelXP = isMaxLevel ? MAX_LEVEL_XP - newLevel.xp : newTotalXP - newLevel.xp;
-      const nextLevelXP = nextLevelData 
-        ? nextLevelData.xp - newLevel.xp 
-        : 0; // At max level, no next level
-      
-      // Trigger level up overlay and sound
-      if (leveledUp) {
-        setLevelUpData({ level: newLevel });
-        playSound('level-up', { volume: 0.8 });
-      } else {
-        // Play XP gain sound for regular XP
-        playSound('xp-gain', { volume: 0.5 });
-      }
-      
-      return {
-        ...prev,
-        totalXP: newTotalXP,
-        level: newLevel.level,
-        levelTitle: newLevel.title,
-        levelColor: newLevel.color,
-        currentLevelXP,
-        nextLevelXP,
-        lastUpdated: Date.now(),
-      }
-    })
+    // We don't know the XP amount yet (server will tell us)
+    // But we can show a loading state or optimistic update
+    // For now, we'll wait for server response before updating UI
     
-    // Show notification
-    setXpNotification({ amount: validatedAmount, reason })
-    setTimeout(() => setXpNotification(null), 3000)
-
-    // Persist to server (async, non-blocking) with error recovery
-    const persistXP = async () => {
+    // Persist to server (server will return the XP amount)
+    const persistAction = async () => {
       try {
         const token = Cookies.get('workers_token')
         if (!token) {
-          // No token - rollback optimistic update
-          if (previousState) {
-            setData(previousState);
-            console.warn('No auth token, rolled back XP update');
-          }
+          console.warn('No auth token, cannot record action');
           return;
         }
 
@@ -327,72 +295,87 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ amount: validatedAmount, reason }),
+          body: JSON.stringify({ 
+            actionType,
+            metadata: metadata || {}
+          }),
         })
 
-        // CRITICAL FIX: Read response body only once
         const responseData = await response.json();
 
         if (!response.ok) {
-          console.error('Failed to persist XP to server:', responseData);
+          console.error('Failed to record action:', responseData);
+          return;
+        }
+
+        // Server returns the XP amount - update UI with server response
+        if (responseData.total_xp !== undefined) {
+          const serverXP = responseData.total_xp;
+          const serverLevel = getLevel(serverXP);
+          const nextLevelData = getNextLevelData(serverXP);
+          const isMaxLevel = serverLevel.level >= MAX_LEVEL;
+          const xpGained = responseData.xp_gained || 0;
           
-          // ROLLBACK: Restore previous state on error
-          if (previousState) {
-            setData(previousState);
-            console.warn('XP update failed, rolled back optimistic update');
-          }
-        } else {
-          // Success - sync with server response to ensure consistency
-          try {
-            if (responseData.total_xp !== undefined) {
-              const serverXP = responseData.total_xp;
-              const serverLevel = getLevel(serverXP);
-              const nextLevelData = getNextLevelData(serverXP);
-              const isMaxLevel = serverLevel.level >= MAX_LEVEL;
-              
-              console.log('XP persisted successfully, syncing with server:', {
-                serverXP,
-                serverLevel: serverLevel.level,
-                leveledUp: responseData.leveled_up,
-              });
-              
-              setData(prev => ({
-                ...prev,
-                totalXP: Math.min(serverXP, MAX_LEVEL_XP),
-                level: serverLevel.level,
-                levelTitle: serverLevel.title,
-                levelColor: serverLevel.color,
-                currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - serverLevel.xp : serverXP - serverLevel.xp,
-                nextLevelXP: nextLevelData ? nextLevelData.xp - serverLevel.xp : 0,
-                lastUpdated: Date.now(),
-              }));
-              
-              // Handle level up from server response if it happened
-              if (responseData.leveled_up && responseData.level) {
-                const levelDef = LEVEL_DEFINITIONS.find(l => l.level === responseData.level);
-                if (levelDef) {
-                  setLevelUpData({ level: levelDef });
-                  playSound('level-up', { volume: 0.8 });
-                }
-              }
+          // Store previous state before update
+          setData(prev => {
+            previousState = prev;
+            return prev;
+          });
+          
+          console.log('Action recorded successfully, syncing with server:', {
+            actionType,
+            xpGained,
+            serverXP,
+            serverLevel: serverLevel.level,
+            leveledUp: responseData.leveled_up,
+          });
+          
+          // Update UI with server response
+          setData(prev => {
+            const oldLevel = prev.level;
+            const leveledUp = serverLevel.level > oldLevel;
+            
+            // Trigger level up overlay and sound
+            if (leveledUp) {
+              setLevelUpData({ level: serverLevel });
+              playSound('level-up', { volume: 0.8 });
+            } else {
+              // Play XP gain sound for regular XP
+              playSound('xp-gain', { volume: 0.5 });
             }
-          } catch (syncError) {
-            console.error('Failed to sync server response:', syncError);
-            // Don't rollback if sync fails - server already has the XP
+            
+            return {
+              ...prev,
+              totalXP: Math.min(serverXP, MAX_LEVEL_XP),
+              level: serverLevel.level,
+              levelTitle: serverLevel.title,
+              levelColor: serverLevel.color,
+              currentLevelXP: isMaxLevel ? MAX_LEVEL_XP - serverLevel.xp : serverXP - serverLevel.xp,
+              nextLevelXP: nextLevelData ? nextLevelData.xp - serverLevel.xp : 0,
+              lastUpdated: Date.now(),
+            };
+          });
+          
+          // Show notification with server-determined XP amount
+          const reason = metadata?.reason as string || `Action: ${actionType}`;
+          setXpNotification({ amount: xpGained, reason });
+          setTimeout(() => setXpNotification(null), 3000);
+          
+          // Handle level up from server response
+          if (responseData.leveled_up && responseData.level) {
+            const levelDef = LEVEL_DEFINITIONS.find(l => l.level === responseData.level);
+            if (levelDef) {
+              setLevelUpData({ level: levelDef });
+              playSound('level-up', { volume: 0.8 });
+            }
           }
         }
       } catch (error) {
-        console.error('Error persisting XP to server:', error);
-        
-        // ROLLBACK: Network error - restore previous state
-        if (previousState) {
-          setData(previousState);
-          console.warn('Network error, rolled back XP update');
-        }
+        console.error('Error recording action:', error);
       }
     }
 
-    persistXP()
+    persistAction()
   }, [getLevel, playSound])
 
   const checkAchievements = useCallback(() => {
@@ -547,7 +530,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
     <GamificationContext.Provider
       value={{
         data,
-        addXP,
+        recordAction,
         checkAchievements,
         refreshChallenges,
         getLevel,

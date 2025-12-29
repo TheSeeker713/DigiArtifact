@@ -20,7 +20,7 @@ export default function QuickNotesWidget() {
   const [newNote, setNewNote] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
   const { archiveNote } = useJournal()
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   const midnightCheckRef = useRef<NodeJS.Timeout | null>(null)
 
   // Check if it's a new day and clear unpinned notes
@@ -120,7 +120,7 @@ export default function QuickNotesWidget() {
       undefined
     )
     
-    addXP(5, 'Quick Note')
+    recordAction('QUICK_NOTE', { reason: 'Quick Note' })
     
     setNotes(prev => [note, ...prev])
     setNewNote('')

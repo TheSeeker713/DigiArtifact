@@ -46,7 +46,7 @@ export default function GoalsPage() {
   const { data: projects = [] } = useProjects()
   const { data: todayEntries = [] } = useTodayEntries()
   const weeklyHours = weeklyStats?.hours || [0, 0, 0, 0, 0, 0, 0]
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   
   // Calculate total weekly hours from array
   const totalWeeklyHours = Array.isArray(weeklyHours) 
@@ -163,7 +163,7 @@ export default function GoalsPage() {
     setGoals(prev => [...prev, goal])
     setShowCreateModal(false)
     setNewGoal({ type: 'total', period: 'weekly', targetHours: 40, isActive: true })
-    addXP(10, 'Created new goal') // Award XP for creating a goal
+    recordAction('GOAL_CREATED', { reason: 'Created new goal' })
   }
 
   const deleteGoal = (id: string) => {

@@ -33,7 +33,7 @@ export function useJournalAutoSave({
   autoSaveDelay = 3000,
 }: UseJournalAutoSaveOptions): UseJournalAutoSaveReturn {
   const { archiveNote, updateEntry } = useJournal()
-  const { addXP } = useGamification()
+  const { recordAction } = useGamification()
   
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -114,15 +114,15 @@ export function useJournalAutoSave({
       setLastSaved(new Date())
       setHasChanges(false)
       
-      // Award XP for saving journal entry
-      addXP(20, 'Journal Entry Saved')
+      // Award XP for saving journal entry (server-authoritative)
+      recordAction('JOURNAL_ENTRY_SAVED', { reason: 'Journal Entry Saved' })
     } catch (error) {
       console.error('Failed to save journal entry:', error)
       throw error
     } finally {
       setIsSaving(false)
     }
-  }, [archiveNote, updateEntry, addXP])
+  }, [archiveNote, updateEntry, recordAction])
 
   // Auto-save logic with debounce
   useEffect(() => {

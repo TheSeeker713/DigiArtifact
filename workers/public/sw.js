@@ -280,6 +280,7 @@ self.addEventListener('push', (event) => {
     badge: '/icon-72.png'
   };
   
+  // Use provided icon or fallback to logo.png
   const options = {
     body: data.body,
     icon: data.icon || '/icon-192.png',

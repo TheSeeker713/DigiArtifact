@@ -775,16 +775,17 @@ export function useDynamicSchedule(options: UseDynamicScheduleOptions = {}): Use
         : b
     ))
     
-    // Sync XP to backend
+    // Sync XP to backend (server-authoritative)
     if (enableApiSync) {
       try {
         await fetch(`${API_BASE}/gamification/xp`, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
-            amount: xpEarned,
-            reason: milestone || `Completed: ${block.label}`,
-            action_type: 'block_complete',
+            actionType: 'BLOCK_COMPLETED',
+            metadata: {
+              reason: milestone || `Completed: ${block.label}`,
+            },
           }),
         })
         

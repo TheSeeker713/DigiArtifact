@@ -49,7 +49,7 @@ interface CarryOverInfo {
 
 export default function BlockSchedulePage() {
   const { user } = useAuth()
-  const { data: gamificationData, addXP } = useGamification()
+  const { data: gamificationData, recordAction } = useGamification()
   
   // Schedule settings
   const [startTime, setStartTime] = useState('08:00')
