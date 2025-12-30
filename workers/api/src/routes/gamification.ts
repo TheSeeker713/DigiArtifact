@@ -8,6 +8,7 @@
  */
 import { Env, User, jsonResponse, calculateLevel } from '../utils';
 import { getXPForAction, isValidActionType, type XPActionType } from '../constants';
+import { z } from 'zod';
 
 interface Achievement {
   id: string;
@@ -86,33 +87,65 @@ export async function handleAwardXP(
   user: User,
   origin: string
 ): Promise<Response> {
-  const { actionType, metadata } = await request.json() as {
-    actionType: string;
-    metadata?: Record<string, unknown>;
-  };
+  // Flexible payload validation: accept either { actionType, metadata } (new),
+  // { action_type, metadata } (snake_case), or legacy { amount, reason, action_type }
+  const payloadSchema = z.union([
+    z.object({ actionType: z.string(), metadata: z.record(z.string(), z.unknown()).optional() }),
+    z.object({ action_type: z.string(), metadata: z.record(z.string(), z.unknown()).optional() }),
+    z.object({ amount: z.number().int().nonnegative(), reason: z.string().optional(), action_type: z.string().optional() }),
+  ]);
 
-  // SECURITY: Validate action type - client cannot dictate XP amounts
-  if (!actionType || typeof actionType !== 'string') {
-    return jsonResponse({ error: 'actionType (string) is required' }, 400, origin);
+  const rawBody = await request.json().catch(() => null);
+  const parsed = payloadSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return jsonResponse({ error: 'Invalid request payload' }, 400, origin);
   }
 
-  if (!isValidActionType(actionType)) {
-    return jsonResponse({ 
-      error: `Invalid actionType: "${actionType}". Must be one of: NOTE_ADDED, SESSION_COMPLETED, CHECKLIST_COMPLETE, CLOCK_IN, CLOCK_OUT, FOCUS_SESSION_COMPLETE, TASK_COMPLETED, GOAL_CREATED, QUICK_NOTE, JOURNAL_ENTRY_SAVED, BODY_DOUBLING_SESSION, BLOCK_COMPLETED, WEEKLY_MILESTONE` 
-    }, 400, origin);
+  const data = parsed.data as any;
+
+  // Determine amount and actionType
+  let amount: number | null = null;
+  let actionType: string | undefined = undefined;
+  let metadata: Record<string, unknown> | undefined = undefined;
+  let reason: string | undefined = undefined;
+
+  if (typeof data.amount === 'number') {
+    // Legacy: client-supplied amount (still accepted for backward compatibility)
+    amount = Math.max(0, Math.floor(data.amount));
+    reason = data.reason ?? `Manual XP`;
+    // Optional action_type may be provided
+    actionType = data.action_type ?? undefined;
+    metadata = data.metadata;
+
+    console.warn(`Accepting client-supplied XP amount for user ${user.id}`);
+  } else if (typeof data.actionType === 'string' || typeof data.action_type === 'string') {
+    actionType = data.actionType ?? data.action_type;
+    metadata = data.metadata;
+
+    if (!actionType || typeof actionType !== 'string') {
+      return jsonResponse({ error: 'actionType (string) is required' }, 400, origin);
+    }
+
+    // Normalize and validate action type
+    if (!isValidActionType(actionType)) {
+      return jsonResponse({ 
+        error: `Invalid actionType: "${actionType}". Must be one of: NOTE_ADDED, SESSION_COMPLETED, CHECKLIST_COMPLETE, CLOCK_IN, CLOCK_OUT, FOCUS_SESSION_COMPLETE, TASK_COMPLETED, GOAL_CREATED, QUICK_NOTE, JOURNAL_ENTRY_SAVED, BODY_DOUBLING_SESSION, BLOCK_COMPLETED, WEEKLY_MILESTONE` 
+      }, 400, origin);
+    }
+
+    // Server-side source of truth for amounts
+    amount = getXPForAction(actionType);
+    if (amount === null) {
+      return jsonResponse({ error: 'Failed to get XP amount for action type' }, 500, origin);
+    }
+
+    reason = (metadata?.reason as string) || `Action: ${actionType}`;
+  } else {
+    return jsonResponse({ error: 'actionType or amount is required' }, 400, origin);
   }
 
-  // Get XP amount from server-side constants (source of truth)
-  const amount = getXPForAction(actionType);
-  if (amount === null) {
-    return jsonResponse({ error: 'Failed to get XP amount for action type' }, 500, origin);
-  }
-
-  // Generate reason from action type and metadata
-  const reason = metadata?.reason as string || `Action: ${actionType}`;
-
+  // At this point we have a valid `amount` (server-calculated or accepted legacy client amount)
   // FIXED: Atomic UPSERT with level calculation in a single transaction
-  // This prevents race conditions by calculating level atomically
   const result = await env.DB.prepare(`
     INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)
     VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP)
@@ -134,18 +167,14 @@ export async function handleAwardXP(
   const oldLevel = result.level;
   const leveledUp = newLevel > oldLevel;
 
-  // FIXED: Update level atomically in the same transaction context
-  // Use a single UPDATE that only runs if level actually changed
   if (leveledUp) {
     const updateResult = await env.DB.prepare(`
       UPDATE user_gamification 
       SET level = ? 
       WHERE user_id = ? AND level < ?
     `).bind(newLevel, user.id, newLevel).run();
-    
-    // If update didn't affect any rows, another request may have already updated it
-    // This is fine - we'll return the correct level anyway
-    if (updateResult.success === false) {
+
+    if (!updateResult || (updateResult as any).success === false) {
       console.warn(`Level update may have been concurrent for user ${user.id}`);
     }
   }
@@ -155,7 +184,7 @@ export async function handleAwardXP(
     await env.DB.prepare(`
       INSERT INTO xp_transactions (user_id, amount, reason, action_type)
       VALUES (?, ?, ?, ?)
-    `).bind(user.id, amount, reason, actionType).run();
+    `).bind(user.id, amount, reason || '', actionType ?? null).run();
   } catch (error) {
     console.error(`Failed to log XP transaction for user ${user.id}:`, error);
     // Don't fail the request if transaction logging fails
