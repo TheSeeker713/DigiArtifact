@@ -194,17 +194,17 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             ? (apiData.total_work_minutes / 60).toFixed(1) 
             : 0;
           
-          // CRITICAL FIX: Only update if we don't have more recent local data
-          // This prevents overwriting optimistic updates
+          // CRITICAL FIX: Only skip API update if there's a significant XP decrease
+          // This prevents rollbacks from overwriting legitimate updates
           setData(prev => {
-            // If we have a more recent update (within last 2 seconds), don't overwrite
-            // This allows optimistic updates to persist
-            const timeSinceLastUpdate = Date.now() - prev.lastUpdated;
-            if (timeSinceLastUpdate < 2000 && prev.totalXP > totalXP) {
-              console.log('Skipping API update - more recent local data exists', {
+            // Only skip if XP decreased significantly (> 100 XP), indicating a rollback/error
+            // Small decreases are likely reconciliation and should be accepted
+            const xpDifference = prev.totalXP - totalXP;
+            if (xpDifference > 100) {
+              console.log('Skipping API update - detected significant XP decrease (rollback)', {
                 localXP: prev.totalXP,
                 apiXP: totalXP,
-                timeSinceUpdate: timeSinceLastUpdate,
+                difference: xpDifference,
               });
               return prev;
             }
