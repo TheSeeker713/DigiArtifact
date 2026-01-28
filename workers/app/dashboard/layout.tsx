@@ -62,12 +62,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <DebugPanel />
       </div>
 
-      {/* Onboarding Tutorial (shows on first visit) */}
-      <WalkthroughTutorial
+      {/* Onboarding Tutorial (disabled temporarily) */}
+      {/* <WalkthroughTutorial
         isOpen={showTutorial}
         onClose={closeTutorial}
         onComplete={completeTutorial}
-      />
+      /> */}
     </>
   )
 }

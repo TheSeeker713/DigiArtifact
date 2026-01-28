@@ -150,12 +150,12 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Walkthrough Tutorial */}
-      <WalkthroughTutorial
+      {/* Walkthrough Tutorial (disabled temporarily) */}
+      {/* <WalkthroughTutorial
         isOpen={showTutorial}
         onClose={closeTutorial}
         onComplete={completeTutorial}
-      />
+      /> */}
     </div>
   )
 }
