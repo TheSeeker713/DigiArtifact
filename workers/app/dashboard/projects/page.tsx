@@ -7,26 +7,26 @@ import Cookies from 'js-cookie'
 
 const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev/api'
 
-export default function ProjectsPage() {
+export default function TasksPage() {
   const { user } = useAuth()
-  const { data: activeProjects = [], refetch: refreshData } = useProjects()
+  const { data: activeTasks = [], refetch: refreshData } = useProjects()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showArchiveConfirm, setShowArchiveConfirm] = useState<number | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
-  const [editingProject, setEditingProject] = useState<Project | null>(null)
-  const [newProject, setNewProject] = useState({ name: '', description: '', color: '#cca43b' })
-  const [editProject, setEditProject] = useState({ name: '', description: '', color: '#cca43b', active: true })
+  const [editingTask, setEditingTask] = useState<Project | null>(null)
+  const [newTask, setNewTask] = useState({ name: '', description: '', color: '#cca43b' })
+  const [editTask, setEditTask] = useState({ name: '', description: '', color: '#cca43b', active: true })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [filterView, setFilterView] = useState<'active' | 'all' | 'archived'>('active')
-  const [allProjects, setAllProjects] = useState<Project[]>([])
+  const [allTasks, setAllTasks] = useState<Project[]>([])
 
   const isAdmin = user?.role === 'admin'
 
-  // Fetch all projects (including archived) when filter changes
+  // Fetch all tasks (including archived) when filter changes
   useEffect(() => {
-    const fetchAllProjects = async () => {
+    const fetchAllTasks = async () => {
       try {
         const token = Cookies.get('workers_token')
         const response = await fetch(`${API_BASE}/projects?includeInactive=true`, {
@@ -37,30 +37,30 @@ export default function ProjectsPage() {
 
         if (response.ok) {
           const data = await response.json()
-          setAllProjects(data.projects || [])
+          setAllTasks(data.projects || [])
         }
       } catch (err) {
-        console.error('Failed to fetch all projects:', err)
+        console.error('Failed to fetch all tasks:', err)
       }
     }
 
     if (filterView !== 'active') {
-      fetchAllProjects()
+      fetchAllTasks()
     }
   }, [filterView])
 
-  // Filter projects based on view
-  const filteredProjects = (() => {
+  // Filter tasks based on view
+  const filteredTasks = (() => {
     if (filterView === 'active') {
-      return activeProjects
+      return activeTasks
     } else if (filterView === 'archived') {
-      return allProjects.filter((p) => !p.active)
+      return allTasks.filter((p) => !p.active)
     } else {
-      return allProjects
+      return allTasks
     }
   })()
 
-  const handleCreateProject = async (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
@@ -73,63 +73,63 @@ export default function ProjectsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(newProject),
+        body: JSON.stringify(newTask),
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to create project')
+        throw new Error(data.error || 'Failed to create task')
       }
 
       setShowCreateModal(false)
-      setNewProject({ name: '', description: '', color: '#cca43b' })
+      setNewTask({ name: '', description: '', color: '#cca43b' })
       await refreshData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create project')
+      setError(err instanceof Error ? err.message : 'Failed to create task')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleEditProject = async (e: React.FormEvent) => {
+  const handleEditTask = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editingProject) return
+    if (!editingTask) return
     setIsLoading(true)
     setError('')
 
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch(`${API_BASE}/projects/${editingProject.id}`, {
+      const response = await fetch(`${API_BASE}/projects/${editingTask.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(editProject),
+        body: JSON.stringify(editTask),
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to update project')
+        throw new Error(data.error || 'Failed to update task')
       }
 
       setShowEditModal(false)
-      setEditingProject(null)
+      setEditingTask(null)
       await refreshData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update project')
+      setError(err instanceof Error ? err.message : 'Failed to update task')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleArchiveProject = async (projectId: number) => {
+  const handleArchiveTask = async (taskId: number) => {
     setIsLoading(true)
     setError('')
 
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+      const response = await fetch(`${API_BASE}/projects/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -140,25 +140,25 @@ export default function ProjectsPage() {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to archive project')
+        throw new Error(data.error || 'Failed to archive task')
       }
 
       setShowArchiveConfirm(null)
       await refreshData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to archive project')
+      setError(err instanceof Error ? err.message : 'Failed to archive task')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleDeleteProject = async (projectId: number) => {
+  const handleDeleteTask = async (taskId: number) => {
     setIsLoading(true)
     setError('')
 
     try {
       const token = Cookies.get('workers_token')
-      const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+      const response = await fetch(`${API_BASE}/projects/${taskId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -167,35 +167,35 @@ export default function ProjectsPage() {
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to delete project')
+        throw new Error(data.error || 'Failed to delete task')
       }
 
       setShowDeleteConfirm(null)
       await refreshData()
-      // Also refresh all projects if not on active view
+      // Also refresh all tasks if not on active view
       if (filterView !== 'active') {
         const allResponse = await fetch(`${API_BASE}/projects?includeInactive=true`, {
           headers: { 'Authorization': `Bearer ${token}` },
         })
         if (allResponse.ok) {
           const data = await allResponse.json()
-          setAllProjects(data.projects || [])
+          setAllTasks(data.projects || [])
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete project')
+      setError(err instanceof Error ? err.message : 'Failed to delete task')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const openEditModal = (project: Project) => {
-    setEditingProject(project)
-    setEditProject({
-      name: project.name,
-      description: project.description || '',
-      color: project.color,
-      active: project.active,
+  const openEditModal = (task: Project) => {
+    setEditingTask(task)
+    setEditTask({
+      name: task.name,
+      description: task.description || '',
+      color: task.color,
+      active: task.active,
     })
     setError('')
     setShowEditModal(true)
@@ -217,9 +217,9 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="font-heading text-3xl text-sand mb-2">Projects</h1>
+          <h1 className="font-heading text-3xl text-sand mb-2">Tasks</h1>
           <p className="text-text-slate font-mono text-sm">
-            Track time across different projects and clients
+            Create and organize work tasks and assignments
           </p>
         </div>
         <div className="flex gap-3">
@@ -239,7 +239,7 @@ export default function ProjectsPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              New Project
+              New Task
             </button>
           )}
         </div>
@@ -254,73 +254,75 @@ export default function ProjectsPage() {
           className="input-field text-sm py-1 px-3 max-w-xs"
         >
           <option value="active">Active Only</option>
-          <option value="all">All Projects</option>
+          <option value="all">All Tasks</option>
           <option value="archived">Archived Only</option>
         </select>
       </div>
 
-      {/* Projects Grid */}
-      {filteredProjects.length === 0 ? (
+      {/* Tasks Grid */}
+      {filteredTasks.length === 0 ? (
         <div className="card text-center py-12">
           <svg className="w-16 h-16 mx-auto text-text-slate/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3" />
           </svg>
-          <p className="text-text-slate font-mono mb-2">No projects yet</p>
+          <p className="text-text-slate font-mono mb-2">No tasks yet</p>
           {isAdmin && (
             <p className="text-text-slate/70 text-sm">
-              Create your first project to start organizing time entries
+              Create your first task to get started
             </p>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <div key={project.id} className="card card-hover">
+          {filteredTasks.map((task) => (
+            <div key={task.id} className="card card-hover">
               <div className="flex items-start justify-between mb-4">
                 <div
                   className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: project.color }}
+                  style={{ backgroundColor: task.color }}
                 />
                 <span className={`text-xs font-mono px-2 py-1 rounded ${
-                  project.active 
+                  task.active 
                     ? 'bg-status-active/20 text-status-active' 
                     : 'bg-text-slate/20 text-text-slate'
                 }`}>
-                  {project.active ? 'Active' : 'Archived'}
+                  {task.active ? 'Active' : 'Archived'}
                 </span>
               </div>
               
-              <h3 className="font-heading text-xl text-sand mb-2">{project.name}</h3>
+              <h3 className="font-heading text-xl text-sand mb-2">{task.name}</h3>
               
-              {project.description && (
+              {task.description && (
                 <p className="text-text-slate text-sm mb-4 line-clamp-2">
-                  {project.description}
+                  {task.description}
                 </p>
               )}
               
               <div className="pt-4 border-t border-baked-clay/30">
                 <div className="flex items-center justify-between text-xs font-mono text-text-slate mb-3">
-                  <span>Project #{project.id}</span>
+                  <span>Task #{task.id}</span>
                 </div>
                 {isAdmin && (
                   <div className="flex gap-2 flex-wrap">
                     <button 
-                      onClick={() => openEditModal(project)}
+                      onClick={() => openEditModal(task)}
                       className="text-relic-gold hover:text-hologram-cyan transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
+                      disabled={isLoading}
                     >
                       Edit
                     </button>
-                    {project.active && (
+                    {task.active && (
                       <button
-                        onClick={() => setShowArchiveConfirm(project.id)}
+                        onClick={() => setShowArchiveConfirm(task.id)}
                         className="text-text-slate hover:text-relic-gold transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
+                        disabled={isLoading}
                       >
                         Archive
                       </button>
                     )}
-                    {!project.active && (
+                    {!task.active && (
                       <button
-                        onClick={() => handleArchiveProject(project.id)}
+                        onClick={() => handleArchiveTask(task.id)}
                         className="text-status-active hover:text-hologram-cyan transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
                         disabled={isLoading}
                       >
@@ -328,8 +330,9 @@ export default function ProjectsPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => setShowDeleteConfirm(project.id)}
+                      onClick={() => setShowDeleteConfirm(task.id)}
                       className="text-status-offline hover:text-ruby transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
+                      disabled={isLoading}
                     >
                       Delete
                     </button>
@@ -341,23 +344,23 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Create Project Modal */}
+      {/* Create Task Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card w-full max-w-md">
-            <h3 className="font-heading text-xl text-relic-gold mb-6">Create New Project</h3>
+            <h3 className="font-heading text-xl text-relic-gold mb-6">Create New Task</h3>
             
-            <form onSubmit={handleCreateProject} className="space-y-4">
+            <form onSubmit={handleCreateTask} className="space-y-4">
               <div>
                 <label className="block text-sm font-mono text-sand mb-2">
-                  Project Name *
+                  Task Name *
                 </label>
                 <input
                   type="text"
-                  value={newProject.name}
-                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                  value={newTask.name}
+                  onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
                   className="input-field"
-                  placeholder="e.g., Client Website"
+                  placeholder="e.g., Design new dashboard"
                   required
                 />
               </div>
@@ -367,10 +370,10 @@ export default function ProjectsPage() {
                   Description
                 </label>
                 <textarea
-                  value={newProject.description}
-                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                   className="input-field min-h-[80px]"
-                  placeholder="Brief project description..."
+                  placeholder="Brief task description..."
                 />
               </div>
               
@@ -383,9 +386,9 @@ export default function ProjectsPage() {
                     <button
                       key={color.value}
                       type="button"
-                      onClick={() => setNewProject({ ...newProject, color: color.value })}
+                      onClick={() => setNewTask({ ...newTask, color: color.value })}
                       className={`w-8 h-8 rounded-full transition-all ${
-                        newProject.color === color.value 
+                        newTask.color === color.value 
                           ? 'ring-2 ring-offset-2 ring-offset-slate ring-white scale-110' 
                           : 'hover:scale-110'
                       }`}
@@ -412,10 +415,10 @@ export default function ProjectsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || !newProject.name}
+                  disabled={isLoading || !newTask.name}
                   className="btn-rune flex-1"
                 >
-                  {isLoading ? 'Creating...' : 'Create Project'}
+                  {isLoading ? 'Creating...' : 'Create Task'}
                 </button>
               </div>
             </form>
@@ -423,23 +426,23 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Edit Project Modal */}
-      {showEditModal && editingProject && (
+      {/* Edit Task Modal */}
+      {showEditModal && editingTask && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card w-full max-w-md">
-            <h3 className="font-heading text-xl text-relic-gold mb-6">Edit Project</h3>
+            <h3 className="font-heading text-xl text-relic-gold mb-6">Edit Task</h3>
             
-            <form onSubmit={handleEditProject} className="space-y-4">
+            <form onSubmit={handleEditTask} className="space-y-4">
               <div>
                 <label className="block text-sm font-mono text-sand mb-2">
-                  Project Name *
+                  Task Name *
                 </label>
                 <input
                   type="text"
-                  value={editProject.name}
-                  onChange={(e) => setEditProject({ ...editProject, name: e.target.value })}
+                  value={editTask.name}
+                  onChange={(e) => setEditTask({ ...editTask, name: e.target.value })}
                   className="input-field"
-                  placeholder="e.g., Client Website"
+                  placeholder="e.g., Design new dashboard"
                   required
                 />
               </div>
@@ -449,10 +452,10 @@ export default function ProjectsPage() {
                   Description
                 </label>
                 <textarea
-                  value={editProject.description}
-                  onChange={(e) => setEditProject({ ...editProject, description: e.target.value })}
+                  value={editTask.description}
+                  onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
                   className="input-field min-h-[80px]"
-                  placeholder="Brief project description..."
+                  placeholder="Brief task description..."
                 />
               </div>
               
@@ -465,9 +468,9 @@ export default function ProjectsPage() {
                     <button
                       key={color.value}
                       type="button"
-                      onClick={() => setEditProject({ ...editProject, color: color.value })}
+                      onClick={() => setEditTask({ ...editTask, color: color.value })}
                       className={`w-8 h-8 rounded-full transition-all ${
-                        editProject.color === color.value 
+                        editTask.color === color.value 
                           ? 'ring-2 ring-offset-2 ring-offset-slate ring-white scale-110' 
                           : 'hover:scale-110'
                       }`}
@@ -482,11 +485,11 @@ export default function ProjectsPage() {
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={editProject.active}
-                    onChange={(e) => setEditProject({ ...editProject, active: e.target.checked })}
+                    checked={editTask.active}
+                    onChange={(e) => setEditTask({ ...editTask, active: e.target.checked })}
                     className="w-5 h-5 rounded border-baked-clay bg-obsidian text-relic-gold focus:ring-relic-gold"
                   />
-                  <span className="text-sm font-mono text-sand">Active Project</span>
+                  <span className="text-sm font-mono text-sand">Active Task</span>
                 </label>
               </div>
               
@@ -501,7 +504,7 @@ export default function ProjectsPage() {
                   type="button"
                   onClick={() => {
                     setShowEditModal(false)
-                    setEditingProject(null)
+                    setEditingTask(null)
                     setError('')
                   }}
                   className="btn-hologram flex-1"
@@ -510,7 +513,7 @@ export default function ProjectsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || !editProject.name}
+                  disabled={isLoading || !editTask.name}
                   className="btn-rune flex-1"
                 >
                   {isLoading ? 'Saving...' : 'Save Changes'}
@@ -521,14 +524,14 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Archive Project Confirmation Modal */}
+      {/* Archive Task Confirmation Modal */}
       {showArchiveConfirm !== null && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card w-full max-w-md">
-            <h3 className="font-heading text-xl text-relic-gold mb-4">Archive Project?</h3>
+            <h3 className="font-heading text-xl text-relic-gold mb-4">Archive Task?</h3>
             
             <p className="text-text-slate font-mono mb-6">
-              This project will be moved to archived and hidden from the active list. You can restore it later from the archived view.
+              This task will be moved to archived and hidden from the active list. You can restore it later from the archived view.
             </p>
             
             {error && (
@@ -548,29 +551,29 @@ export default function ProjectsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleArchiveProject(showArchiveConfirm)}
+                onClick={() => handleArchiveTask(showArchiveConfirm)}
                 disabled={isLoading}
                 className="btn-rune flex-1"
               >
-                {isLoading ? 'Archiving...' : 'Archive Project'}
+                {isLoading ? 'Archiving...' : 'Archive Task'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Project Confirmation Modal */}
+      {/* Delete Task Confirmation Modal */}
       {showDeleteConfirm !== null && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card w-full max-w-md">
-            <h3 className="font-heading text-xl text-ruby mb-4">Delete Project Permanently?</h3>
+            <h3 className="font-heading text-xl text-ruby mb-4">Delete Task Permanently?</h3>
             
             <p className="text-text-slate font-mono mb-4">
-              This action cannot be undone. The project will be permanently deleted from the system.
+              This action cannot be undone. The task will be permanently deleted from the system.
             </p>
             
             <p className="text-text-slate font-mono text-sm mb-6 p-3 bg-status-offline/10 border border-status-offline/20 rounded">
-              <strong>Note:</strong> Any time entries previously assigned to this project will be preserved and converted to "Work Session" entries without a project link.
+              <strong>Note:</strong> Any time entries previously assigned to this task will be preserved and converted to "Work Session" entries without a task link.
             </p>
             
             {error && (
@@ -590,7 +593,7 @@ export default function ProjectsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleDeleteProject(showDeleteConfirm)}
+                onClick={() => handleDeleteTask(showDeleteConfirm)}
                 disabled={isLoading}
                 className="bg-ruby hover:bg-ruby/80 disabled:opacity-50 text-white font-mono px-4 py-2 rounded transition-colors flex-1"
               >
