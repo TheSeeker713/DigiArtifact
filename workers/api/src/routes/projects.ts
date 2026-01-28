@@ -104,19 +104,20 @@ export async function handleDeleteProject(
     return jsonResponse({ error: 'Invalid project ID' }, 400, origin);
   }
 
-  // First, verify the project exists
-  const exists = await env.DB.prepare(
-    'SELECT id FROM projects WHERE id = ?'
-  ).bind(id).first();
+  try {
+    // Reassign any time entries with this project_id to NULL (no project)
+    await env.DB.prepare(
+      'UPDATE time_entries SET project_id = NULL WHERE project_id = ?'
+    ).bind(id).run();
 
-  if (!exists) {
-    return jsonResponse({ error: 'Project not found' }, 404, origin);
+    // Delete the project
+    await env.DB.prepare(
+      'DELETE FROM projects WHERE id = ?'
+    ).bind(id).run();
+
+    return jsonResponse({ success: true, message: 'Project deleted successfully' }, 200, origin);
+  } catch (error) {
+    console.error('Delete project error:', error);
+    return jsonResponse({ error: 'Failed to delete project', details: String(error) }, 500, origin);
   }
-
-  // Delete the project
-  await env.DB.prepare(
-    'DELETE FROM projects WHERE id = ?'
-  ).bind(id).run();
-
-  return jsonResponse({ success: true, message: 'Project deleted successfully' }, 200, origin);
 }
