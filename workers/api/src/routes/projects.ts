@@ -59,6 +59,11 @@ export async function handleUpdateProject(
     return jsonResponse({ error: 'Admin access required' }, 403, origin);
   }
 
+  const id = parseInt(projectId, 10);
+  if (isNaN(id)) {
+    return jsonResponse({ error: 'Invalid project ID' }, 400, origin);
+  }
+
   const { name, description, color, active } = await request.json() as {
     name?: string;
     description?: string;
@@ -75,7 +80,7 @@ export async function handleUpdateProject(
         updated_at = datetime('now')
     WHERE id = ?
     RETURNING *
-  `).bind(name || null, description || null, color || null, active !== undefined ? (active ? 1 : 0) : null, projectId).first();
+  `).bind(name || null, description || null, color || null, active !== undefined ? (active ? 1 : 0) : null, id).first();
 
   if (!result) {
     return jsonResponse({ error: 'Project not found' }, 404, origin);
@@ -94,9 +99,14 @@ export async function handleDeleteProject(
     return jsonResponse({ error: 'Admin access required' }, 403, origin);
   }
 
+  const id = parseInt(projectId, 10);
+  if (isNaN(id)) {
+    return jsonResponse({ error: 'Invalid project ID' }, 400, origin);
+  }
+
   const result = await env.DB.prepare(
     'DELETE FROM projects WHERE id = ? RETURNING *'
-  ).bind(projectId).first();
+  ).bind(id).first();
 
   if (!result) {
     return jsonResponse({ error: 'Project not found' }, 404, origin);
