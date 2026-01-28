@@ -24,6 +24,11 @@
     @apply font-heading;
   }
   
+  /* Remove default link underline and styling */
+  a {
+    @apply no-underline text-inherit;
+  }
+  
   /* Noise texture overlay */
   body::before {
     content: '';
