@@ -26,7 +26,8 @@
   
   /* Remove default link underline and styling */
   a {
-    @apply no-underline text-inherit;
+    color: inherit;
+    text-decoration: none;
   }
   
   /* Noise texture overlay */
