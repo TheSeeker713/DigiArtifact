@@ -7,6 +7,7 @@ import { jsonResponse } from '../utils/responses';
 import { getDb } from '../db/client';
 import { timeEntries, projects } from '../db/schema';
 import { eq, desc, and, sql, between, or } from 'drizzle-orm';
+import { XP_REWARDS } from '../constants';
 
 export async function handleGetEntries(
   url: URL,
@@ -88,6 +89,15 @@ export async function handleUpdateEntry(
 
   const db = getDb(env);
 
+  // Get the old entry to check if notes are being added
+  const oldEntryResult = await db
+    .select({ notes: timeEntries.notes })
+    .from(timeEntries)
+    .where(eq(timeEntries.id, parseInt(entryId)))
+    .limit(1);
+
+  const oldEntry = oldEntryResult[0];
+
   // Build update object with only provided fields
   const updateData: any = {
     updatedAt: sql`datetime('now')`,
@@ -107,6 +117,29 @@ export async function handleUpdateEntry(
 
   if (result.length === 0) {
     return jsonResponse({ error: 'Entry not found' }, 404, origin);
+  }
+
+  // Award XP if notes were added (or updated with new notes)
+  if (notes !== undefined && notes && !oldEntry?.notes) {
+    const xpAmount = XP_REWARDS.NOTE_ADDED;
+    try {
+      await env.DB.prepare(`
+        INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)
+        VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          total_xp = total_xp + excluded.total_xp,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(user.id, xpAmount).run();
+
+      // Log XP transaction
+      await env.DB.prepare(`
+        INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+        VALUES (?, ?, ?, ?)
+      `).bind(user.id, xpAmount, 'Note added to time entry', 'NOTE_ADDED').run();
+    } catch (error) {
+      console.error(`Failed to award XP for note added for user ${user.id}:`, error);
+      // Don't fail the request if XP award fails
+    }
   }
 
   return jsonResponse({ entry: result[0] }, 200, origin);

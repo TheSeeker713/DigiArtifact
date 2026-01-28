@@ -7,6 +7,7 @@ import { jsonResponse } from '../utils/responses';
 import { getDb } from '../db/client';
 import { timeEntries, breaks, projects } from '../db/schema';
 import { eq, isNull, desc, sql, and } from 'drizzle-orm';
+import { XP_REWARDS } from '../constants';
 
 export async function handleClockStatus(
   env: Env,
@@ -87,6 +88,27 @@ export async function handleClockIn(
     })
     .returning();
 
+  // Award XP for clocking in (server-authoritative: 10 XP)
+  const clockInXP = XP_REWARDS.CLOCK_IN;
+  try {
+    await env.DB.prepare(`
+      INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)
+      VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET
+        total_xp = total_xp + excluded.total_xp,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(user.id, clockInXP).run();
+
+    // Log XP transaction
+    await env.DB.prepare(`
+      INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+      VALUES (?, ?, ?, ?)
+    `).bind(user.id, clockInXP, 'Clocked in', 'CLOCK_IN').run();
+  } catch (error) {
+    console.error(`Failed to award XP for clock in for user ${user.id}:`, error);
+    // Don't fail the request if XP award fails
+  }
+
   return jsonResponse({ entry: result[0] }, 201, origin);
 }
 
@@ -101,7 +123,7 @@ export async function handleClockOut(
 
   // Get current active time entry
   const entryResult = await db
-    .select({ id: timeEntries.id })
+    .select({ id: timeEntries.id, clockIn: timeEntries.clockIn })
     .from(timeEntries)
     .where(and(eq(timeEntries.userId, user.id), isNull(timeEntries.clockOut)))
     .limit(1);
@@ -134,6 +156,13 @@ export async function handleClockOut(
 
   const breakTotal = breakTotalResult?.total || 0;
 
+  // Calculate hours worked
+  const hoursWorkedResult = await env.DB.prepare(`
+    SELECT (julianday('now') - julianday(?)) * 24 - ? / 60.0 as hours
+  `).bind(entry.clockIn, breakTotal).first<{ hours: number }>();
+
+  const hoursWorked = Math.max(0, hoursWorkedResult?.hours || 0);
+
   // Update time entry
   const result = await db
     .update(timeEntries)
@@ -145,6 +174,34 @@ export async function handleClockOut(
     })
     .where(eq(timeEntries.id, entry.id))
     .returning();
+
+  // Award XP for clocking out
+  const clockOutXP = XP_REWARDS.CLOCK_OUT;
+  const hourWorkedXP = Math.floor(hoursWorked) * XP_REWARDS.CLOCK_OUT; // Bonus: 20 XP per hour
+  const totalXP = clockOutXP + hourWorkedXP;
+
+  try {
+    await env.DB.prepare(`
+      INSERT INTO user_gamification (user_id, total_xp, level, current_streak, total_work_minutes, updated_at)
+      VALUES (?, ?, 1, 0, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET
+        total_xp = total_xp + excluded.total_xp,
+        total_work_minutes = total_work_minutes + excluded.total_work_minutes,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(user.id, totalXP, Math.round(hoursWorked * 60)).run();
+
+    // Log XP transaction
+    const reason = hoursWorked > 0 
+      ? `Clocked out (${hoursWorked.toFixed(1)}h worked)` 
+      : 'Clocked out';
+    await env.DB.prepare(`
+      INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+      VALUES (?, ?, ?, ?)
+    `).bind(user.id, totalXP, reason, 'CLOCK_OUT').run();
+  } catch (error) {
+    console.error(`Failed to award XP for clock out for user ${user.id}:`, error);
+    // Don't fail the request if XP award fails
+  }
 
   return jsonResponse({ entry: result[0] }, 200, origin);
 }

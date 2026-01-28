@@ -2,6 +2,7 @@
  * Schedule blocks routes
  */
 import { Env, User, jsonResponse } from '../utils';
+import { XP_REWARDS } from '../constants';
 
 export async function handleGetBlocks(
   url: URL,
@@ -73,6 +74,10 @@ export async function handleSaveBlocks(
     DELETE FROM schedule_blocks WHERE shift_id = ?
   `).bind(shift!.id).run();
 
+  // Calculate total XP from all blocks
+  let totalXP = 0;
+  let blocksWithXP = 0;
+
   // Insert all blocks
   for (const block of blocks) {
     await env.DB.prepare(`
@@ -94,12 +99,40 @@ export async function handleSaveBlocks(
       block.notes || null,
       block.xp_earned || 0
     ).run();
+
+    if (block.xp_earned && block.xp_earned > 0) {
+      totalXP += block.xp_earned;
+      blocksWithXP++;
+    }
+  }
+
+  // Award aggregated XP for all blocks if any have XP
+  if (totalXP > 0) {
+    try {
+      await env.DB.prepare(`
+        INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)
+        VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          total_xp = total_xp + excluded.total_xp,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(user.id, totalXP).run();
+
+      // Log XP transaction
+      await env.DB.prepare(`
+        INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+        VALUES (?, ?, ?, ?)
+      `).bind(user.id, totalXP, `Schedule blocks completed (${blocksWithXP} blocks)`, 'BLOCK_COMPLETED').run();
+    } catch (error) {
+      console.error(`Failed to award XP for blocks for user ${user.id}:`, error);
+      // Don't fail the request if XP award fails
+    }
   }
 
   return jsonResponse({ 
     success: true, 
     shift_id: shift!.id,
     blocks_saved: blocks.length,
+    xp_awarded: totalXP,
   }, 200, origin);
 }
 
@@ -116,6 +149,15 @@ export async function handleUpdateBlock(
     xp_earned?: number;
     notes?: string;
   };
+
+  // Get the old block to check if status is changing to completed
+  const oldBlock = await env.DB.prepare(`
+    SELECT status, xp_earned FROM schedule_blocks WHERE id = ? AND user_id = ?
+  `).bind(blockId, user.id).first<{ status: string; xp_earned: number }>();
+
+  if (!oldBlock) {
+    return jsonResponse({ error: 'Block not found' }, 404, origin);
+  }
 
   const result = await env.DB.prepare(`
     UPDATE schedule_blocks
@@ -137,6 +179,32 @@ export async function handleUpdateBlock(
 
   if (!result) {
     return jsonResponse({ error: 'Block not found' }, 404, origin);
+  }
+
+  // Award XP if block was just completed and has XP earned value
+  const statusChanged = updates.status && updates.status !== oldBlock.status;
+  const isNowComplete = updates.status === 'completed';
+  const blockXP = (result as any).xp_earned || 0;
+
+  if (statusChanged && isNowComplete && blockXP > 0) {
+    try {
+      await env.DB.prepare(`
+        INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)
+        VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          total_xp = total_xp + excluded.total_xp,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(user.id, blockXP).run();
+
+      // Log XP transaction
+      await env.DB.prepare(`
+        INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+        VALUES (?, ?, ?, ?)
+      `).bind(user.id, blockXP, 'Schedule block completed', 'BLOCK_COMPLETED').run();
+    } catch (error) {
+      console.error(`Failed to award XP for block completion for user ${user.id}:`, error);
+      // Don't fail the request if XP award fails
+    }
   }
 
   return jsonResponse({ block: result }, 200, origin);

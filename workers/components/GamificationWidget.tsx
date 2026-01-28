@@ -35,20 +35,6 @@ export default function GamificationWidget() {
   // Ensure progress is at least 0
   const safeProgress = Math.max(0, Math.min(100, xpProgress))
   
-  // STEP 1: RAW DATA DUMP - Glass Box Mode Diagnostic
-  const diagnosticData = {
-    xp: data.totalXP,
-    level: data.level,
-    nextLevelXp: data.nextLevelXP,
-    currentLevelXp: data.currentLevelXP,
-    progress: safeProgress,
-    progressRaw: xpProgress,
-    isNaN: isNaN(safeProgress) || isNaN(xpProgress),
-    isInfinity: !isFinite(safeProgress) || !isFinite(xpProgress),
-    dataKeys: Object.keys(data),
-    dataValues: Object.values(data),
-  }
-
   const unlockedCount = data.achievements.filter(a => a.unlocked).length
   const totalAchievements = data.achievements.length
 
@@ -66,11 +52,6 @@ export default function GamificationWidget() {
 
   return (
     <>
-      {/* STEP 1: RAW DATA DUMP - Glass Box Mode Diagnostic */}
-      <pre className="text-xs text-red-500 z-50 relative bg-black/90 p-4 mb-4 border-2 border-red-500 rounded overflow-auto max-h-64">
-        {JSON.stringify(diagnosticData, null, 2)}
-      </pre>
-      
       <div data-tutorial="gamification-widget" className="card relative">
         {/* Glass Overlay - Only render on client to prevent hydration mismatch */}
         {isMounted && (

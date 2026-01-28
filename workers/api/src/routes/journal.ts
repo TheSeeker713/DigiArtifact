@@ -2,6 +2,7 @@
  * Journal entries routes
  */
 import { Env, User, jsonResponse, getStorageLimit } from '../utils';
+import { XP_REWARDS } from '../constants';
 
 export async function handleGetJournalEntries(
   url: URL,
@@ -83,6 +84,27 @@ export async function handleCreateJournalEntry(
     now,
     now
   ).run();
+
+  // Award XP for creating journal entry
+  const xpAmount = XP_REWARDS.JOURNAL_ENTRY_SAVED;
+  try {
+    await env.DB.prepare(`
+      INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)
+      VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET
+        total_xp = total_xp + excluded.total_xp,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(user.id, xpAmount).run();
+
+    // Log XP transaction
+    await env.DB.prepare(`
+      INSERT INTO xp_transactions (user_id, amount, reason, action_type)
+      VALUES (?, ?, ?, ?)
+    `).bind(user.id, xpAmount, `Journal entry saved (${source || 'journal_editor'})`, 'JOURNAL_ENTRY_SAVED').run();
+  } catch (error) {
+    console.error(`Failed to award XP for journal entry for user ${user.id}:`, error);
+    // Don't fail the request if XP award fails
+  }
 
   return jsonResponse({ 
     entry: { 
