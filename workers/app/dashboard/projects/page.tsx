@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth, Project } from '@/contexts/AuthContext'
 import { useProjects } from '@/hooks/useProjects'
 import Cookies from 'js-cookie'
@@ -9,16 +9,56 @@ const API_BASE = 'https://digiartifact-workers-api.digitalartifact11.workers.dev
 
 export default function ProjectsPage() {
   const { user } = useAuth()
-  const { data: projects = [], refetch: refreshData } = useProjects()
+  const { data: activeProjects = [], refetch: refreshData } = useProjects()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState<number | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [newProject, setNewProject] = useState({ name: '', description: '', color: '#cca43b' })
   const [editProject, setEditProject] = useState({ name: '', description: '', color: '#cca43b', active: true })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [filterView, setFilterView] = useState<'active' | 'all' | 'archived'>('active')
+  const [allProjects, setAllProjects] = useState<Project[]>([])
 
   const isAdmin = user?.role === 'admin'
+
+  // Fetch all projects (including archived) when filter changes
+  useEffect(() => {
+    const fetchAllProjects = async () => {
+      try {
+        const token = Cookies.get('workers_token')
+        const response = await fetch(`${API_BASE}/projects?includeInactive=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setAllProjects(data.projects || [])
+        }
+      } catch (err) {
+        console.error('Failed to fetch all projects:', err)
+      }
+    }
+
+    if (filterView !== 'active') {
+      fetchAllProjects()
+    }
+  }, [filterView])
+
+  // Filter projects based on view
+  const filteredProjects = (() => {
+    if (filterView === 'active') {
+      return activeProjects
+    } else if (filterView === 'archived') {
+      return allProjects.filter((p) => !p.active)
+    } else {
+      return allProjects
+    }
+  })()
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +123,72 @@ export default function ProjectsPage() {
     }
   }
 
+  const handleArchiveProject = async (projectId: number) => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ active: false }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to archive project')
+      }
+
+      setShowArchiveConfirm(null)
+      await refreshData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to archive project')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteProject = async (projectId: number) => {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const token = Cookies.get('workers_token')
+      const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete project')
+      }
+
+      setShowDeleteConfirm(null)
+      await refreshData()
+      // Also refresh all projects if not on active view
+      if (filterView !== 'active') {
+        const allResponse = await fetch(`${API_BASE}/projects?includeInactive=true`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (allResponse.ok) {
+          const data = await allResponse.json()
+          setAllProjects(data.projects || [])
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete project')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const openEditModal = (project: Project) => {
     setEditingProject(project)
     setEditProject({
@@ -109,28 +215,52 @@ export default function ProjectsPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="font-heading text-3xl text-sand mb-2">Projects</h1>
           <p className="text-text-slate font-mono text-sm">
             Track time across different projects and clients
           </p>
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-rune flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Project
-          </button>
-        )}
+        <div className="flex gap-3">
+          {isAdmin && filterView === 'archived' && (
+            <button
+              onClick={() => setFilterView('active')}
+              className="btn-hologram"
+            >
+              View Active
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn-rune flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Project
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter Dropdown */}
+      <div className="mb-6 flex gap-2">
+        <label className="text-sm font-mono text-sand">Show:</label>
+        <select
+          value={filterView}
+          onChange={(e) => setFilterView(e.target.value as 'active' | 'all' | 'archived')}
+          className="input-field text-sm py-1 px-3 max-w-xs"
+        >
+          <option value="active">Active Only</option>
+          <option value="all">All Projects</option>
+          <option value="archived">Archived Only</option>
+        </select>
       </div>
 
       {/* Projects Grid */}
-      {projects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <div className="card text-center py-12">
           <svg className="w-16 h-16 mx-auto text-text-slate/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -144,7 +274,7 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <div key={project.id} className="card card-hover">
               <div className="flex items-start justify-between mb-4">
                 <div
@@ -169,17 +299,42 @@ export default function ProjectsPage() {
               )}
               
               <div className="pt-4 border-t border-baked-clay/30">
-                <div className="flex items-center justify-between text-xs font-mono text-text-slate">
+                <div className="flex items-center justify-between text-xs font-mono text-text-slate mb-3">
                   <span>Project #{project.id}</span>
-                  {isAdmin && (
+                </div>
+                {isAdmin && (
+                  <div className="flex gap-2 flex-wrap">
                     <button 
                       onClick={() => openEditModal(project)}
-                      className="text-relic-gold hover:text-hologram-cyan transition-colors"
+                      className="text-relic-gold hover:text-hologram-cyan transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
                     >
                       Edit
                     </button>
-                  )}
-                </div>
+                    {project.active && (
+                      <button
+                        onClick={() => setShowArchiveConfirm(project.id)}
+                        className="text-text-slate hover:text-relic-gold transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
+                      >
+                        Archive
+                      </button>
+                    )}
+                    {!project.active && (
+                      <button
+                        onClick={() => handleArchiveProject(project.id)}
+                        className="text-status-active hover:text-hologram-cyan transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? 'Restoring...' : 'Restore'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowDeleteConfirm(project.id)}
+                      className="text-status-offline hover:text-ruby transition-colors text-xs px-2 py-1 rounded hover:bg-baked-clay/10"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -362,6 +517,86 @@ export default function ProjectsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Archive Project Confirmation Modal */}
+      {showArchiveConfirm !== null && (
+        <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
+            <h3 className="font-heading text-xl text-relic-gold mb-4">Archive Project?</h3>
+            
+            <p className="text-text-slate font-mono mb-6">
+              This project will be moved to archived and hidden from the active list. You can restore it later from the archived view.
+            </p>
+            
+            {error && (
+              <div className="p-3 bg-status-offline/20 border border-status-offline/50 rounded-md mb-4">
+                <p className="text-status-offline text-sm font-mono">{error}</p>
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowArchiveConfirm(null)}
+                disabled={isLoading}
+                className="btn-hologram flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleArchiveProject(showArchiveConfirm)}
+                disabled={isLoading}
+                className="btn-rune flex-1"
+              >
+                {isLoading ? 'Archiving...' : 'Archive Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Project Confirmation Modal */}
+      {showDeleteConfirm !== null && (
+        <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-md">
+            <h3 className="font-heading text-xl text-ruby mb-4">Delete Project Permanently?</h3>
+            
+            <p className="text-text-slate font-mono mb-4">
+              This action cannot be undone. The project will be permanently deleted from the system.
+            </p>
+            
+            <p className="text-text-slate font-mono text-sm mb-6 p-3 bg-status-offline/10 border border-status-offline/20 rounded">
+              <strong>Note:</strong> Any time entries previously assigned to this project will be preserved and converted to "Work Session" entries without a project link.
+            </p>
+            
+            {error && (
+              <div className="p-3 bg-status-offline/20 border border-status-offline/50 rounded-md mb-4">
+                <p className="text-status-offline text-sm font-mono">{error}</p>
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={isLoading}
+                className="btn-hologram flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteProject(showDeleteConfirm)}
+                disabled={isLoading}
+                className="bg-ruby hover:bg-ruby/80 disabled:opacity-50 text-white font-mono px-4 py-2 rounded transition-colors flex-1"
+              >
+                {isLoading ? 'Deleting...' : 'Delete Permanently'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -4,12 +4,19 @@
 import { Env, User, jsonResponse } from '../utils';
 
 export async function handleGetProjects(
+  url: URL,
   env: Env,
   origin: string
 ): Promise<Response> {
-  const result = await env.DB.prepare(
-    'SELECT * FROM projects WHERE active = 1 ORDER BY name'
-  ).all();
+  const includeInactive = url.searchParams.get('includeInactive') === 'true';
+  
+  let query = 'SELECT * FROM projects';
+  if (!includeInactive) {
+    query += ' WHERE active = 1';
+  }
+  query += ' ORDER BY name';
+  
+  const result = await env.DB.prepare(query).all();
 
   return jsonResponse({ projects: result.results }, 200, origin);
 }
@@ -75,4 +82,25 @@ export async function handleUpdateProject(
   }
 
   return jsonResponse({ project: result }, 200, origin);
+}
+
+export async function handleDeleteProject(
+  projectId: string,
+  env: Env,
+  user: User,
+  origin: string
+): Promise<Response> {
+  if (user.role !== 'admin') {
+    return jsonResponse({ error: 'Admin access required' }, 403, origin);
+  }
+
+  const result = await env.DB.prepare(
+    'DELETE FROM projects WHERE id = ? RETURNING *'
+  ).bind(projectId).first();
+
+  if (!result) {
+    return jsonResponse({ error: 'Project not found' }, 404, origin);
+  }
+
+  return jsonResponse({ project: result, message: 'Project deleted successfully' }, 200, origin);
 }

@@ -25,6 +25,7 @@ import {
 import { handleGetEntries, handleDeleteEntry, handleUpdateEntry } from './routes/entries';
 import { handleGetConfig } from './routes/config';
 import { handleGetGamification, handleAwardXP, handleUpdateStreak, handleUnlockAchievement } from './routes/gamification';
+import { handleGetProjects, handleCreateProject, handleUpdateProject, handleDeleteProject } from './routes/projects';
 
 // Create Hono app with typed context
 type HonoContext = {
@@ -179,6 +180,29 @@ app.post('/api/gamification/streak', async (c) => {
 app.post('/api/gamification/achievement/unlock', async (c) => {
   const user = c.get('user');
   return handleUnlockAchievement(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+
+// Projects routes
+app.get('/api/projects', async (c) => {
+  const url = new URL(c.req.url);
+  return handleGetProjects(url, c.env, c.env.CORS_ORIGIN);
+});
+
+app.post('/api/projects', async (c) => {
+  const user = c.get('user');
+  return handleCreateProject(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+
+app.put('/api/projects/:id', async (c) => {
+  const user = c.get('user');
+  const projectId = c.req.param('id');
+  return handleUpdateProject(projectId, c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+
+app.delete('/api/projects/:id', async (c) => {
+  const user = c.get('user');
+  const projectId = c.req.param('id');
+  return handleDeleteProject(projectId, c.env, user, c.env.CORS_ORIGIN);
 });
 
 // ========================================
