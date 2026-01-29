@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
 
 type Gem = {
   name: string
@@ -65,9 +64,15 @@ export default function Reliquary() {
             initial={{ scale: 0.9, opacity: 0.9 }}
             animate={{ scale: [1, 1.06, 1], opacity: [0.95, 1, 0.95] }}
             transition={{ duration: 6, repeat: Infinity }}
-            className="w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 rounded-full bg-gradient-to-br from-amber-900 via-slate-900 to-emerald-900 shadow-2xl flex items-center justify-center border border-amber-800"
+            className="w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 rounded-full bg-gradient-to-br from-amber-900 via-slate-900 to-emerald-900 shadow-2xl flex items-center justify-center border border-amber-800 relative overflow-hidden"
           >
-            <Sparkles className="text-amber-300" size={28} />
+            <Image
+              src="/assets/images/Logo_DigiArtifact.png"
+              alt="DigiArtifact Logo"
+              fill
+              className="object-contain p-2"
+              priority
+            />
           </motion.div>
           <div className="mt-3 text-center text-xs text-slate-300/80">The Portal</div>
         </div>
