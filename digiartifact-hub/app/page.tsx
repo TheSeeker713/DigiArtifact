@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import Reliquary from '@/components/Reliquary'
 
 export default function HomePage() {
@@ -15,11 +16,14 @@ export default function HomePage() {
         {/* Splash Screen Content */}
         <div className="relative z-10 flex flex-col items-center justify-center gap-8 px-4">
           {/* Portal-like central element */}
-          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-amber-900 via-slate-900 to-emerald-900 shadow-2xl flex items-center justify-center border-2 border-amber-700 animate-pulse">
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-heading text-amber-300 mb-2">◊</div>
-              <p className="font-mono text-xs text-amber-200/70">DIGIARTIFACT</p>
-            </div>
+          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-amber-900 via-slate-900 to-emerald-900 shadow-2xl flex items-center justify-center border-2 border-amber-700 animate-pulse relative overflow-hidden">
+            <Image
+              src="/assets/images/Logo_DigiArtifact.png"
+              alt="DigiArtifact Logo"
+              fill
+              className="object-contain p-4"
+              priority
+            />
           </div>
 
           {/* Title */}
