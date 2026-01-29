@@ -18,7 +18,7 @@ export default function HomePage() {
           {/* Portal-like central element */}
           <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-amber-900 via-slate-900 to-emerald-900 shadow-2xl flex items-center justify-center border-2 border-amber-700 animate-pulse relative overflow-hidden">
             <Image
-              src="/assets/images/Logo_DigiArtifact.png"
+              src="/assets/images/Logo_Digiartifact.png"
               alt="DigiArtifact Logo"
               fill
               className="object-contain p-4"

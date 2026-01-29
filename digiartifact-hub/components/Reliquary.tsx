@@ -67,7 +67,7 @@ export default function Reliquary() {
             className="w-20 h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 rounded-full bg-gradient-to-br from-amber-900 via-slate-900 to-emerald-900 shadow-2xl flex items-center justify-center border border-amber-800 relative overflow-hidden"
           >
             <Image
-              src="/assets/images/Logo_DigiArtifact.png"
+              src="/assets/images/Logo_Digiartifact.png"
               alt="DigiArtifact Logo"
               fill
               className="object-contain p-2"
