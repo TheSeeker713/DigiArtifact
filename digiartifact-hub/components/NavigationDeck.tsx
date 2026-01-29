@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Home, Palette, Music, Terminal, Lock, Search, Menu, X } from 'lucide-react'
 
@@ -13,7 +14,13 @@ const navItems = [
 ]
 
 export default function NavigationDeck() {
+  const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  
+  // Hide navigation completely on home page
+  if (pathname === '/') {
+    return null
+  }
   
   return (
     <>

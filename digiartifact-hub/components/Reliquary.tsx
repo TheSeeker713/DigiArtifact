@@ -81,13 +81,13 @@ export default function Reliquary() {
           const y = radius * Math.sin(angleRad)
 
           const GemInner = (
-            <motion.div
-              onMouseEnter={() => setHoverIdx(i)}
-              onMouseLeave={() => setHoverIdx((s) => (s === i ? null : s))}
-              whileTap={{ scale: 0.96 }}
-              className="relative w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden shadow-lg bg-slate-900/50 border border-slate-800 cursor-pointer"
-              style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
-            >
+            <div className="relative w-full h-full">
+              <motion.div
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() => setHoverIdx((s) => (s === i ? null : s))}
+                whileTap={{ scale: 0.96 }}
+                className="relative w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden shadow-lg bg-slate-900/50 border border-slate-800 cursor-pointer"
+              >
               {/* static image - use next/image with fill so it respects responsive parent */}
               <div className="w-full h-full relative">
                 <Image
@@ -102,11 +102,12 @@ export default function Reliquary() {
                 {/* video overlay - fades in on hover (higher z-index) */}
                 <motion.video
                   src={`/assets/video/gems/${gem.name}.webm`}
+                  autoPlay
                   loop
                   muted
                   playsInline
                   preload="metadata"
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10 mix-blend-screen"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: hoverIdx === i ? 1 : 0 }}
                   transition={{ duration: 0.28 }}
@@ -114,26 +115,31 @@ export default function Reliquary() {
                 />
               </div>
 
-              {/* floating label on hover */}
-              <AnimatePresence>
-                {hoverIdx === i && (
-                  <motion.span
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    transition={{ duration: 0.18 }}
-                    className="absolute left-1/2 -translate-x-1/2 -bottom-8 md:-bottom-10 bg-slate-900/80 px-2 py-1 rounded text-xs text-slate-200 backdrop-blur"
-                  >
-                    {gem.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.div>
+                {/* floating label on hover */}
+                <AnimatePresence>
+                  {hoverIdx === i && (
+                    <motion.span
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.18 }}
+                      className="absolute left-1/2 -translate-x-1/2 -bottom-8 md:-bottom-10 bg-slate-900/80 px-2 py-1 rounded text-xs text-slate-200 backdrop-blur whitespace-nowrap"
+                    >
+                      {gem.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
           )
 
           // wrap with Link or anchor depending on external
           return (
-            <div key={gem.name} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div 
+              key={gem.name} 
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
+            >
               {gem.external ? (
                 <a
                   href={gem.route}
