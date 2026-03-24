@@ -1,0 +1,38 @@
+name: Deploy Kaia Checklist Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "kaia/**"
+      - ".github/workflows/deploy-kaia.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: kaia
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: kaia/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build OpenNext output
+        run: npm run cf:build
+
+      - name: Deploy Worker
+        run: npx opennextjs-cloudflare deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
