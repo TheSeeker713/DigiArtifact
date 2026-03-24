@@ -3,7 +3,7 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-03-24"
 compatibility_flags = ["nodejs_compat"]
 routes = [
-  { pattern = "kaia.digiartifact.com/*", zone_name = "digiartifact.com" }
+  { pattern = "kaia.digiartifact.com", custom_domain = true }
 ]
 
 [assets]
