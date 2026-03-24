@@ -2,6 +2,9 @@ name = "kaia-checklist"
 main = ".open-next/worker.js"
 compatibility_date = "2026-03-24"
 compatibility_flags = ["nodejs_compat"]
+routes = [
+  { pattern = "kaia.digiartifact.com/*", zone_name = "digiartifact.com" }
+]
 
 [assets]
 binding = "ASSETS"
@@ -10,4 +13,4 @@ directory = ".open-next/assets"
 [[d1_databases]]
 binding = "DB"
 database_name = "kaia-checklist"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "00f840dd-4d81-42db-9576-63f72757762e"
