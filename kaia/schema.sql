@@ -32,3 +32,98 @@ VALUES
   ('main_bedroom_mop', 'Main Bedroom', 'mop', 4),
   ('main_bedroom_dust', 'Main Bedroom', 'dust', 5),
   ('main_bedroom_wash_bedding', 'Main Bedroom', 'wash bedding', 6);
+
+-- Immutable backup archive of the original checklist source.
+CREATE TABLE IF NOT EXISTS checklist_archive_sets (
+  id TEXT PRIMARY KEY,
+  source_version TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS checklist_archive_items (
+  archive_set_id TEXT NOT NULL,
+  original_id TEXT NOT NULL,
+  section TEXT NOT NULL,
+  label TEXT NOT NULL,
+  sort_order INTEGER NOT NULL,
+  is_checked INTEGER NOT NULL CHECK (is_checked IN (0, 1)),
+  updated_at TEXT NOT NULL,
+  archived_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (archive_set_id, original_id),
+  FOREIGN KEY (archive_set_id) REFERENCES checklist_archive_sets(id)
+);
+
+INSERT OR IGNORE INTO checklist_archive_sets (id, source_version)
+VALUES ('seed_v1', 'checklist_items_v1');
+
+INSERT OR IGNORE INTO checklist_archive_items (
+  archive_set_id,
+  original_id,
+  section,
+  label,
+  sort_order,
+  is_checked,
+  updated_at
+)
+SELECT
+  'seed_v1',
+  id,
+  section,
+  label,
+  sort_order,
+  is_checked,
+  updated_at
+FROM checklist_items;
+
+CREATE TABLE IF NOT EXISTS todo_lists (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  archived_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS todo_items (
+  id TEXT PRIMARY KEY,
+  list_id TEXT NOT NULL,
+  section TEXT,
+  label TEXT NOT NULL CHECK(length(trim(label)) BETWEEN 1 AND 200),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_checked INTEGER NOT NULL DEFAULT 0 CHECK (is_checked IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at TEXT,
+  FOREIGN KEY (list_id) REFERENCES todo_lists(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_todo_lists_active
+ON todo_lists(archived_at, sort_order);
+
+CREATE INDEX IF NOT EXISTS idx_todo_items_list_active
+ON todo_items(list_id, deleted_at, sort_order);
+
+INSERT OR IGNORE INTO todo_lists (id, name, sort_order)
+VALUES ('default_home_checklist', 'Home Checklist', 0);
+
+-- Initial migration copy from legacy table into the new list/item model.
+INSERT OR IGNORE INTO todo_items (
+  id,
+  list_id,
+  section,
+  label,
+  sort_order,
+  is_checked,
+  created_at,
+  updated_at
+)
+SELECT
+  id,
+  'default_home_checklist',
+  section,
+  label,
+  sort_order,
+  is_checked,
+  datetime('now'),
+  updated_at
+FROM checklist_items;

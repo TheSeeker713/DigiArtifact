@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { DEFAULT_LIST_ID } from "@/lib/checklist";
 
 type Body = {
   isChecked?: unknown;
@@ -24,14 +25,28 @@ export async function PATCH(
     }
 
     const db = getDb();
-    const updateResult = await db
-      .prepare(
-        `UPDATE checklist_items
-         SET is_checked = ?, updated_at = datetime('now')
-         WHERE id = ?`
-      )
-      .bind(body.isChecked ? 1 : 0, id)
-      .run();
+    let updateResult: unknown;
+    try {
+      updateResult = await db
+        .prepare(
+          `UPDATE todo_items
+           SET is_checked = ?, updated_at = datetime('now')
+           WHERE id = ?
+             AND list_id = ?
+             AND deleted_at IS NULL`
+        )
+        .bind(body.isChecked ? 1 : 0, id, DEFAULT_LIST_ID)
+        .run();
+    } catch {
+      updateResult = await db
+        .prepare(
+          `UPDATE checklist_items
+           SET is_checked = ?, updated_at = datetime('now')
+           WHERE id = ?`
+        )
+        .bind(body.isChecked ? 1 : 0, id)
+        .run();
+    }
 
     return NextResponse.json({
       ok: true,

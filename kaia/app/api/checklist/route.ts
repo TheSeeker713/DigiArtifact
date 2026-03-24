@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { ChecklistItem, ChecklistSection, SECTION_ORDER } from "@/lib/checklist";
+import { ChecklistItem, ChecklistSection, DEFAULT_LIST_ID, SECTION_ORDER } from "@/lib/checklist";
 
 type ChecklistRow = {
   id: string;
-  section: string;
+  section: string | null;
   label: string;
   sort_order: number;
   is_checked: number;
@@ -14,25 +14,47 @@ type ChecklistRow = {
 export async function GET() {
   try {
     const db = getDb();
-    const result = await db
-      .prepare(
-        `SELECT id, section, label, sort_order, is_checked, updated_at
-         FROM checklist_items
-         ORDER BY
-           CASE section
-             WHEN 'Bathroom' THEN 1
-             WHEN 'Kitchen' THEN 2
-             WHEN 'Living Room' THEN 3
-             WHEN 'Main Bedroom' THEN 4
-             ELSE 99
-           END,
-           sort_order ASC`
-      )
-      .all<ChecklistRow>();
+    let result: { results: ChecklistRow[] };
+    try {
+      result = await db
+        .prepare(
+          `SELECT id, section, label, sort_order, is_checked, updated_at
+           FROM todo_items
+           WHERE list_id = ?
+             AND deleted_at IS NULL
+           ORDER BY
+             CASE section
+               WHEN 'Bathroom' THEN 1
+               WHEN 'Kitchen' THEN 2
+               WHEN 'Living Room' THEN 3
+               WHEN 'Main Bedroom' THEN 4
+               ELSE 99
+             END,
+             sort_order ASC`
+        )
+        .bind(DEFAULT_LIST_ID)
+        .all<ChecklistRow>();
+    } catch {
+      result = await db
+        .prepare(
+          `SELECT id, section, label, sort_order, is_checked, updated_at
+           FROM checklist_items
+           ORDER BY
+             CASE section
+               WHEN 'Bathroom' THEN 1
+               WHEN 'Kitchen' THEN 2
+               WHEN 'Living Room' THEN 3
+               WHEN 'Main Bedroom' THEN 4
+               ELSE 99
+             END,
+             sort_order ASC`
+        )
+        .all<ChecklistRow>();
+    }
 
     const items: ChecklistItem[] = (result.results ?? []).map((row) => ({
       id: row.id,
-      section: row.section,
+      section: row.section ?? "General",
       label: row.label,
       sortOrder: row.sort_order,
       isChecked: row.is_checked === 1,

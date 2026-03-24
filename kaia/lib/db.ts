@@ -2,9 +2,11 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 type D1Statement = {
   all: <T = unknown>() => Promise<{ results: T[] }>;
+  first: <T = unknown>(columnName?: string) => Promise<T | null>;
   run: () => Promise<unknown>;
   bind: (...values: unknown[]) => {
     all: <T = unknown>() => Promise<{ results: T[] }>;
+    first: <T = unknown>(columnName?: string) => Promise<T | null>;
     run: () => Promise<unknown>;
   };
 };
