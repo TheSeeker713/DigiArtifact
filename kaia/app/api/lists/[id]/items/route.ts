@@ -57,7 +57,17 @@ export async function GET(
          FROM todo_items
          WHERE list_id = ?
            AND deleted_at IS NULL
-         ORDER BY sort_order ASC, created_at ASC`
+         ORDER BY
+           CASE section
+             WHEN 'Bathroom' THEN 1
+             WHEN 'Kitchen' THEN 2
+             WHEN 'Living Room' THEN 3
+             WHEN 'Main Bedroom' THEN 4
+             WHEN NULL THEN 98
+             ELSE 99
+           END,
+           sort_order ASC,
+           created_at ASC`
       )
       .bind(listId)
       .all<TodoItemRow>();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DEFAULT_LIST_ID } from "@/lib/checklist";
+import { DEFAULT_LIST_ID, SECTION_ORDER } from "@/lib/checklist";
 
 type ListSummary = {
   id: string;
@@ -32,6 +32,7 @@ export default function Home() {
   const [newItemLabel, setNewItemLabel] = useState("");
   const [editingItemId, setEditingItemId] = useState("");
   const [editingLabel, setEditingLabel] = useState("");
+  const [newItemSection, setNewItemSection] = useState(SECTION_ORDER[0]);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [itemErrors, setItemErrors] = useState<Record<string, string>>({});
 
@@ -104,6 +105,36 @@ export default function Home() {
     const complete = items.filter((item) => item.isChecked).length;
     return { total, complete };
   }, [items]);
+
+  const isDefaultChecklist = activeListId === DEFAULT_LIST_ID;
+
+  const groupedItems = useMemo(() => {
+    if (!isDefaultChecklist) {
+      return [
+        {
+          section: "Tasks",
+          items,
+        },
+      ];
+    }
+
+    const sectionMap = new Map<string, TodoItem[]>();
+    for (const section of SECTION_ORDER) {
+      sectionMap.set(section, []);
+    }
+
+    for (const item of items) {
+      const section = item.section && item.section.length > 0 ? item.section : "General";
+      if (!sectionMap.has(section)) {
+        sectionMap.set(section, []);
+      }
+      sectionMap.get(section)?.push(item);
+    }
+
+    return Array.from(sectionMap.entries())
+      .map(([section, sectionItems]) => ({ section, items: sectionItems }))
+      .filter((group) => group.items.length > 0);
+  }, [isDefaultChecklist, items]);
 
   const withSaving = async (id: string, fn: () => Promise<void>) => {
     setSaving((current) => ({ ...current, [id]: true }));
@@ -230,12 +261,18 @@ export default function Home() {
       const response = await fetch(`/api/lists/${activeListId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label }),
+        body: JSON.stringify({
+          label,
+          section: isDefaultChecklist ? newItemSection : null,
+        }),
       });
       if (!response.ok) {
         throw new Error("Failed to add item");
       }
       setNewItemLabel("");
+      if (isDefaultChecklist) {
+        setNewItemSection(SECTION_ORDER[0]);
+      }
       await loadItems(activeListId);
       await loadLists();
     } catch (error) {
@@ -293,7 +330,9 @@ export default function Home() {
     <main className="mx-auto min-h-screen w-full max-w-md bg-neutral-50 px-4 py-5 text-neutral-900">
       <header className="mb-5 rounded-2xl border border-neutral-200 bg-white px-4 py-4 shadow-sm">
         <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Kaia</p>
-        <h1 className="mt-1 text-2xl font-semibold">Todo Lists</h1>
+        <h1 className="mt-1 text-2xl font-semibold">
+          {isDefaultChecklist ? "Home Checklist" : "Todo Lists"}
+        </h1>
         <p className="mt-2 text-sm text-neutral-600">
           {counts.complete}/{counts.total} completed
         </p>
@@ -384,6 +423,20 @@ export default function Home() {
                 className="h-10 flex-1 rounded-lg border border-neutral-300 px-3 text-sm"
                 disabled={!activeListId}
               />
+              {isDefaultChecklist ? (
+                <select
+                  value={newItemSection}
+                  onChange={(event) => setNewItemSection(event.target.value)}
+                  className="h-10 rounded-lg border border-neutral-300 bg-white px-2 text-sm"
+                  disabled={!activeListId}
+                >
+                  {SECTION_ORDER.map((section) => (
+                    <option key={section} value={section}>
+                      {section}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
               <button
                 type="button"
                 onClick={() => void handleAddItem()}
@@ -394,73 +447,87 @@ export default function Home() {
               </button>
             </div>
 
-            <ul className="space-y-1">
-              {items.map((item) => (
-                <li key={item.id}>
-                  <div className="rounded-xl px-2 py-2 active:bg-neutral-100">
-                    <div className="flex min-h-12 items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={item.isChecked}
-                        onChange={(event) =>
-                          void handleToggle(item.id, event.currentTarget.checked)
-                        }
-                        className="h-6 w-6 shrink-0 accent-neutral-900"
-                        disabled={Boolean(saving[item.id])}
-                      />
+            <div className="space-y-3">
+              {groupedItems.map((group) => (
+                <section
+                  key={group.section}
+                  className="rounded-xl border border-neutral-200 bg-white p-2"
+                >
+                  <h2 className="px-2 pb-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-600">
+                    {group.section}
+                  </h2>
+                  <ul className="space-y-1">
+                    {group.items.map((item) => (
+                      <li key={item.id}>
+                        <div className="rounded-xl px-2 py-2 active:bg-neutral-100">
+                          <div className="flex min-h-12 items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={item.isChecked}
+                              onChange={(event) =>
+                                void handleToggle(item.id, event.currentTarget.checked)
+                              }
+                              className="h-6 w-6 shrink-0 accent-neutral-900"
+                              disabled={Boolean(saving[item.id])}
+                            />
 
-                      {editingItemId === item.id ? (
-                        <input
-                          value={editingLabel}
-                          onChange={(event) => setEditingLabel(event.target.value)}
-                          className="h-9 flex-1 rounded-lg border border-neutral-300 px-2 text-sm"
-                        />
-                      ) : (
-                        <span
-                          className={`flex-1 text-[15px] leading-5 ${
-                            item.isChecked ? "text-neutral-400 line-through" : "text-neutral-900"
-                          }`}
-                        >
-                          {item.label}
-                        </span>
-                      )}
+                            {editingItemId === item.id ? (
+                              <input
+                                value={editingLabel}
+                                onChange={(event) => setEditingLabel(event.target.value)}
+                                className="h-9 flex-1 rounded-lg border border-neutral-300 px-2 text-sm"
+                              />
+                            ) : (
+                              <span
+                                className={`flex-1 text-[15px] leading-5 ${
+                                  item.isChecked
+                                    ? "text-neutral-400 line-through"
+                                    : "text-neutral-900"
+                                }`}
+                              >
+                                {item.label}
+                              </span>
+                            )}
 
-                      {editingItemId === item.id ? (
-                        <button
-                          type="button"
-                          onClick={() => void saveEditedItem(item.id)}
-                          className="rounded-md border border-neutral-300 px-2 py-1 text-xs"
-                        >
-                          Done
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startEditingItem(item)}
-                          className="rounded-md border border-neutral-300 px-2 py-1 text-xs"
-                        >
-                          Edit
-                        </button>
-                      )}
+                            {editingItemId === item.id ? (
+                              <button
+                                type="button"
+                                onClick={() => void saveEditedItem(item.id)}
+                                className="rounded-md border border-neutral-300 px-2 py-1 text-xs"
+                              >
+                                Done
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => startEditingItem(item)}
+                                className="rounded-md border border-neutral-300 px-2 py-1 text-xs"
+                              >
+                                Edit
+                              </button>
+                            )}
 
-                      <button
-                        type="button"
-                        onClick={() => void deleteItem(item.id)}
-                        className="rounded-md border border-rose-300 px-2 py-1 text-xs text-rose-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    {saving[item.id] ? (
-                      <p className="px-1 text-xs text-neutral-500">Saving...</p>
-                    ) : null}
-                    {itemErrors[item.id] ? (
-                      <p className="px-1 text-xs text-rose-600">{itemErrors[item.id]}</p>
-                    ) : null}
-                  </div>
-                </li>
+                            <button
+                              type="button"
+                              onClick={() => void deleteItem(item.id)}
+                              className="rounded-md border border-rose-300 px-2 py-1 text-xs text-rose-700"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                          {saving[item.id] ? (
+                            <p className="px-1 text-xs text-neutral-500">Saving...</p>
+                          ) : null}
+                          {itemErrors[item.id] ? (
+                            <p className="px-1 text-xs text-rose-600">{itemErrors[item.id]}</p>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
           </section>
         </div>
       ) : null}
