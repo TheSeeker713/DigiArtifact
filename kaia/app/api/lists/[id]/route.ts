@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { DEFAULT_LIST_ID, isValidEntityId, normalizeSortOrder, sanitizeLabel } from "@/lib/checklist";
+import { publishCollabEvent } from "@/lib/realtime";
+import { trackAnalyticsEvent } from "@/lib/telemetry";
 
 type UpdateListBody = {
   name?: unknown;
@@ -82,6 +84,15 @@ export async function PATCH(
     if (!updated) {
       return NextResponse.json({ error: "List not found." }, { status: 404 });
     }
+
+    const eventType = updated.archived_at ? "list_archived" : "list_updated";
+    await publishCollabEvent(updated.id, eventType, updated.id, {
+      id: updated.id,
+      name: updated.name,
+      sortOrder: updated.sort_order,
+      archivedAt: updated.archived_at,
+    });
+    await trackAnalyticsEvent(eventType, { listId: updated.id });
 
     return NextResponse.json({
       list: {

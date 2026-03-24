@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { isValidEntityId, normalizeSortOrder, sanitizeLabel } from "@/lib/checklist";
+import { publishCollabEvent } from "@/lib/realtime";
+import { recordGamificationEvent, trackAnalyticsEvent } from "@/lib/telemetry";
 
 type UpdateItemBody = {
   label?: unknown;
@@ -104,6 +106,34 @@ export async function PATCH(
       return NextResponse.json({ error: "Item not found." }, { status: 404 });
     }
 
+    const checkedUpdate = typeof body.isChecked === "boolean";
+    const eventType = checkedUpdate
+      ? "item_checked"
+      : "item_updated";
+
+    await publishCollabEvent(item.list_id, eventType, item.id, {
+      id: item.id,
+      listId: item.list_id,
+      section: item.section,
+      label: item.label,
+      sortOrder: item.sort_order,
+      isChecked: item.is_checked === 1,
+      updatedAt: item.updated_at,
+    });
+
+    await trackAnalyticsEvent(eventType, {
+      listId: item.list_id,
+      itemId: item.id,
+      isChecked: item.is_checked === 1,
+    });
+
+    if (checkedUpdate && body.isChecked === true) {
+      await recordGamificationEvent("item_checked", 5, {
+        listId: item.list_id,
+        itemId: item.id,
+      });
+    }
+
     return NextResponse.json({
       item: {
         id: item.id,
@@ -132,6 +162,11 @@ export async function DELETE(
     }
 
     const db = getDb();
+    const existing = await db
+      .prepare("SELECT id, list_id FROM todo_items WHERE id = ? AND deleted_at IS NULL")
+      .bind(id)
+      .first<{ id: string; list_id: string }>();
+
     await db
       .prepare(
         `UPDATE todo_items
@@ -141,6 +176,17 @@ export async function DELETE(
       )
       .bind(id)
       .run();
+
+    if (existing) {
+      await publishCollabEvent(existing.list_id, "item_deleted", existing.id, {
+        id: existing.id,
+        listId: existing.list_id,
+      });
+      await trackAnalyticsEvent("item_deleted", {
+        listId: existing.list_id,
+        itemId: existing.id,
+      });
+    }
 
     return NextResponse.json({ ok: true, deletedId: id });
   } catch (error) {

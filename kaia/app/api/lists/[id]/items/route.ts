@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { isValidEntityId, normalizeSortOrder, sanitizeLabel } from "@/lib/checklist";
+import { publishCollabEvent } from "@/lib/realtime";
+import { trackAnalyticsEvent } from "@/lib/telemetry";
 
 type TodoItemRow = {
   id: string;
@@ -152,6 +154,16 @@ export async function POST(
       )
       .bind(idCandidate, listId, section, label, sortOrder)
       .run();
+
+    await publishCollabEvent(listId, "item_created", idCandidate, {
+      id: idCandidate,
+      listId,
+      section,
+      label,
+      sortOrder,
+      isChecked: false,
+    });
+    await trackAnalyticsEvent("item_created", { listId, itemId: idCandidate });
 
     return NextResponse.json(
       {

@@ -75,6 +75,119 @@ SELECT
   updated_at
 FROM checklist_items;
 
+-- Phase A: Live collaboration event stream (room-by-list over polling/SSE transport).
+CREATE TABLE IF NOT EXISTS collab_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  list_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_collab_events_list_id_id
+ON collab_events(list_id, id);
+
+-- Phase B1: Routine engine primitives.
+CREATE TABLE IF NOT EXISTS routines (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 120),
+  schedule_window TEXT NOT NULL DEFAULT 'anytime',
+  is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS routine_steps (
+  id TEXT PRIMARY KEY,
+  routine_id TEXT NOT NULL,
+  label TEXT NOT NULL CHECK(length(trim(label)) BETWEEN 1 AND 200),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  duration_minutes INTEGER NOT NULL DEFAULT 5,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (routine_id) REFERENCES routines(id)
+);
+
+CREATE TABLE IF NOT EXISTS routine_runs (
+  id TEXT PRIMARY KEY,
+  routine_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'started',
+  started_at TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (routine_id) REFERENCES routines(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_routine_steps_routine
+ON routine_steps(routine_id, sort_order);
+
+CREATE INDEX IF NOT EXISTS idx_routine_runs_routine
+ON routine_runs(routine_id, started_at);
+
+INSERT OR IGNORE INTO routines (id, name, schedule_window, is_active)
+VALUES ('home_checklist_routine', 'Home Checklist Routine', 'anytime', 1);
+
+INSERT OR IGNORE INTO routine_steps (id, routine_id, label, sort_order, duration_minutes)
+VALUES
+  ('home_step_1', 'home_checklist_routine', 'Pick one room card', 0, 3),
+  ('home_step_2', 'home_checklist_routine', 'Complete one checklist item', 1, 5),
+  ('home_step_3', 'home_checklist_routine', 'Mark it done and hydrate', 2, 2);
+
+-- Phase B2: Gamification core state + event ledger.
+CREATE TABLE IF NOT EXISTS gamification_state (
+  profile_id TEXT PRIMARY KEY,
+  xp INTEGER NOT NULL DEFAULT 0,
+  level INTEGER NOT NULL DEFAULT 1,
+  momentum INTEGER NOT NULL DEFAULT 0,
+  streak_days INTEGER NOT NULL DEFAULT 0,
+  freeze_tokens INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS gamification_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  profile_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  delta_xp INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT OR IGNORE INTO gamification_state (
+  profile_id, xp, level, momentum, streak_days, freeze_tokens
+)
+VALUES ('anonymous', 0, 1, 0, 0, 1);
+
+CREATE INDEX IF NOT EXISTS idx_gamification_events_profile
+ON gamification_events(profile_id, id);
+
+-- Phase B3: KAIA coach messages.
+CREATE TABLE IF NOT EXISTS kaia_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  profile_id TEXT NOT NULL,
+  message_type TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  response TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_kaia_messages_profile
+ON kaia_messages(profile_id, id);
+
+-- Phase B4: Analytics and personalization event stream.
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  profile_id TEXT NOT NULL,
+  event_name TEXT NOT NULL,
+  metadata TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_profile_time
+ON analytics_events(profile_id, created_at);
+
 CREATE TABLE IF NOT EXISTS todo_lists (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),

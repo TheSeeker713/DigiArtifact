@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { DEFAULT_LIST_ID, DEFAULT_LIST_NAME, isValidEntityId, sanitizeLabel } from "@/lib/checklist";
+import { publishCollabEvent } from "@/lib/realtime";
+import { trackAnalyticsEvent } from "@/lib/telemetry";
 
 type ListRow = {
   id: string;
@@ -87,6 +89,13 @@ export async function POST(request: NextRequest) {
       )
       .bind(id, name, nextSortOrder)
       .run();
+
+    await publishCollabEvent(id, "list_created", id, {
+      id,
+      name,
+      sortOrder: nextSortOrder,
+    });
+    await trackAnalyticsEvent("list_created", { listId: id });
 
     return NextResponse.json(
       {
