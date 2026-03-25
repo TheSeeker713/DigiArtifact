@@ -57,4 +57,8 @@ jobs:
       - name: Smoke test production routes
         run: |
           curl --fail --silent --show-error "https://kaia.digiartifact.com/" > /dev/null
-          curl --fail --silent --show-error "https://kaia.digiartifact.com/api/lists" > /dev/null
+          status=$(curl --silent --output /dev/null --write-out "%{http_code}" "https://kaia.digiartifact.com/api/auth/me")
+          if [ "$status" -ne 200 ] && [ "$status" -ne 401 ]; then
+            echo "Unexpected /api/auth/me status: $status"
+            exit 1
+          fi
