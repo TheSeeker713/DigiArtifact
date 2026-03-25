@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { ChecklistItem, ChecklistSection, DEFAULT_LIST_ID, SECTION_ORDER } from "@/lib/checklist";
+import { ChecklistItem, ChecklistSection, SECTION_ORDER } from "@/lib/checklist";
+import { requireAuthUser } from "@/lib/auth";
 
 type ChecklistRow = {
   id: string;
@@ -11,9 +12,30 @@ type ChecklistRow = {
   updated_at: string;
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const db = getDb();
+    const defaultList = await db
+      .prepare(
+        `SELECT l.id
+         FROM todo_lists l
+         INNER JOIN todo_list_members m ON m.list_id = l.id
+         WHERE m.user_id = ?
+           AND l.archived_at IS NULL
+         ORDER BY l.sort_order ASC, l.created_at ASC
+         LIMIT 1`
+      )
+      .bind(user.id)
+      .first<{ id: string }>();
+    if (!defaultList) {
+      return NextResponse.json({ sections: [] });
+    }
+
     let result: { results: ChecklistRow[] };
     try {
       result = await db
@@ -32,7 +54,7 @@ export async function GET() {
              END,
              sort_order ASC`
         )
-        .bind(DEFAULT_LIST_ID)
+        .bind(defaultList.id)
         .all<ChecklistRow>();
     } catch {
       result = await db

@@ -2,7 +2,6 @@
 
 import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Cookies from 'js-cookie'
 
 /**
  * Inner component that uses useSearchParams
@@ -19,33 +18,8 @@ function AuthCallbackInner() {
       return
     }
 
-    // Check for token in URL fragment (hash)
-    const hash = window.location.hash.substring(1)
-    if (hash) {
-      const params = new URLSearchParams(hash)
-      const token = params.get('token')
-      const userStr = params.get('user')
-
-      if (token && userStr) {
-        try {
-          const user = JSON.parse(decodeURIComponent(userStr))
-          
-          // Store in cookies
-          Cookies.set('workers_token', token, { expires: 7 })
-          Cookies.set('workers_user', JSON.stringify(user), { expires: 7 })
-          
-          // Clear hash and redirect to dashboard
-          window.history.replaceState(null, '', '/auth/callback')
-          router.push('/dashboard')
-          return
-        } catch (e) {
-          console.error('Failed to parse user data:', e)
-        }
-      }
-    }
-
-    // No token found, redirect to login
-    router.push('/?error=no_token')
+    // Cookie-based callback flow: server already sets auth cookies.
+    router.push('/dashboard')
   }, [router, searchParams])
 
   return (

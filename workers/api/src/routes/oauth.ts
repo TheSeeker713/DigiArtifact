@@ -22,6 +22,35 @@ interface GoogleUserInfo {
   picture: string;
 }
 
+function getRootCookieDomain(frontendUrl: string): string | null {
+  try {
+    const host = new URL(frontendUrl).hostname;
+    if (host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+      return null;
+    }
+    const parts = host.split(".");
+    if (parts.length < 2) {
+      return null;
+    }
+    return `.${parts.slice(-2).join(".")}`;
+  } catch {
+    return null;
+  }
+}
+
+function getCookie(request: Request, cookieName: string): string | null {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) {
+    return null;
+  }
+  const cookies = cookieHeader.split(";").map((item) => item.trim());
+  const match = cookies.find((item) => item.startsWith(`${cookieName}=`));
+  if (!match) {
+    return null;
+  }
+  return decodeURIComponent(match.split("=").slice(1).join("="));
+}
+
 /**
  * Generate the Google OAuth authorization URL
  */
@@ -30,8 +59,12 @@ export async function handleOAuthStart(
   env: Env,
   origin: string
 ): Promise<Response> {
+  if (!env.JWT_SECRET) {
+    return jsonResponse({ error: "Server auth config missing" }, 500, origin);
+  }
   const clientId = env.GOOGLE_CLIENT_ID;
   const redirectUri = `${env.API_BASE_URL}/api/auth/google/callback`;
+  const state = crypto.randomUUID();
   
   const params = new URLSearchParams({
     client_id: clientId,
@@ -40,11 +73,25 @@ export async function handleOAuthStart(
     scope: 'openid email profile',
     access_type: 'offline',
     prompt: 'select_account',
+    state,
   });
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  // Redirect the browser directly to Google's OAuth consent screen
-  return Response.redirect(authUrl, 302);
+  const response = Response.redirect(authUrl, 302);
+  const cookieDomain = getRootCookieDomain(env.FRONTEND_URL);
+  const stateCookie = [
+    `oauth_state=${encodeURIComponent(state)}`,
+    "Path=/",
+    "HttpOnly",
+    "Secure",
+    "SameSite=Lax",
+    "Max-Age=900",
+    cookieDomain ? `Domain=${cookieDomain}` : null,
+  ]
+    .filter(Boolean)
+    .join("; ");
+  response.headers.append("Set-Cookie", stateCookie);
+  return response;
 }
 
 /**
@@ -58,6 +105,8 @@ export async function handleOAuthCallback(
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const error = url.searchParams.get('error');
+  const state = url.searchParams.get("state");
+  const cookieState = getCookie(request, "oauth_state");
 
   if (error) {
     // Redirect to login page with error
@@ -66,6 +115,9 @@ export async function handleOAuthCallback(
 
   if (!code) {
     return Response.redirect(`${env.FRONTEND_URL}?error=no_code`, 302);
+  }
+  if (!state || !cookieState || state !== cookieState) {
+    return Response.redirect(`${env.FRONTEND_URL}?error=state_mismatch`, 302);
   }
 
   try {
@@ -100,6 +152,9 @@ export async function handleOAuthCallback(
     }
 
     const googleUser: GoogleUserInfo = await userInfoResponse.json();
+    if (!googleUser.verified_email) {
+      return Response.redirect(`${env.FRONTEND_URL}?error=email_not_verified`, 302);
+    }
 
     // Find or create user in database
     let user = await env.DB.prepare(
@@ -144,12 +199,48 @@ export async function handleOAuthCallback(
       role: user.role,
     }, env.JWT_SECRET);
 
-    // Redirect to frontend dashboard with token in URL
-    // Frontend will handle cookie setting to avoid cross-domain blocking
     const dashboardUrl = new URL(`${env.FRONTEND_URL}/dashboard`);
-    dashboardUrl.searchParams.set('token', appToken);
+    const response = Response.redirect(dashboardUrl.toString(), 302);
+    const cookieDomain = getRootCookieDomain(env.FRONTEND_URL);
+    const userPayload = encodeURIComponent(
+      JSON.stringify({ id: user.id, email: user.email, name: user.name, role: user.role })
+    );
 
-    return Response.redirect(dashboardUrl.toString(), 302);
+    const authCookie = [
+      `workers_token=${encodeURIComponent(appToken)}`,
+      "Path=/",
+      "Secure",
+      "SameSite=Lax",
+      "Max-Age=604800",
+      cookieDomain ? `Domain=${cookieDomain}` : null,
+    ]
+      .filter(Boolean)
+      .join("; ");
+    const userCookie = [
+      `workers_user=${userPayload}`,
+      "Path=/",
+      "Secure",
+      "SameSite=Lax",
+      "Max-Age=604800",
+      cookieDomain ? `Domain=${cookieDomain}` : null,
+    ]
+      .filter(Boolean)
+      .join("; ");
+    const clearStateCookie = [
+      "oauth_state=",
+      "Path=/",
+      "HttpOnly",
+      "Secure",
+      "SameSite=Lax",
+      "Max-Age=0",
+      cookieDomain ? `Domain=${cookieDomain}` : null,
+    ]
+      .filter(Boolean)
+      .join("; ");
+    response.headers.append("Set-Cookie", authCookie);
+    response.headers.append("Set-Cookie", userCookie);
+    response.headers.append("Set-Cookie", clearStateCookie);
+    return response;
   } catch (error) {
     console.error('OAuth callback error:', error);
     return Response.redirect(`${env.FRONTEND_URL}?error=server_error`, 302);
@@ -193,6 +284,9 @@ export async function handleVerifyGoogleToken(
     // Verify the token was issued for our app
     if (payload.aud !== env.GOOGLE_CLIENT_ID) {
       return jsonResponse({ error: 'Token not issued for this app' }, 401, origin);
+    }
+    if (payload.email_verified !== "true") {
+      return jsonResponse({ error: "Google account email must be verified" }, 401, origin);
     }
 
     // Find or create user

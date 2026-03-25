@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { isValidEntityId, sanitizeLabel } from "@/lib/checklist";
 import { trackAnalyticsEvent } from "@/lib/telemetry";
+import { requireAuthUser } from "@/lib/auth";
 
 type CreateRoutineBody = {
   id?: unknown;
@@ -10,16 +11,24 @@ type CreateRoutineBody = {
   steps?: unknown;
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const db = getDb();
     const routines = await db
       .prepare(
-        `SELECT id, name, schedule_window, is_active, created_at, updated_at
-         FROM routines
-         WHERE is_active = 1
-         ORDER BY created_at ASC`
+        `SELECT r.id, r.name, r.schedule_window, r.is_active, r.created_at, r.updated_at
+         FROM routines r
+         INNER JOIN user_routines ur ON ur.routine_id = r.id
+         WHERE r.is_active = 1
+           AND ur.user_id = ?
+         ORDER BY r.created_at ASC`
       )
+      .bind(user.id)
       .all<{
         id: string;
         name: string;
@@ -31,10 +40,13 @@ export async function GET() {
 
     const steps = await db
       .prepare(
-        `SELECT id, routine_id, label, sort_order, duration_minutes
-         FROM routine_steps
-         ORDER BY routine_id ASC, sort_order ASC`
+        `SELECT rs.id, rs.routine_id, rs.label, rs.sort_order, rs.duration_minutes
+         FROM routine_steps rs
+         INNER JOIN user_routines ur ON ur.routine_id = rs.routine_id
+         WHERE ur.user_id = ?
+         ORDER BY rs.routine_id ASC, rs.sort_order ASC`
       )
+      .bind(user.id)
       .all<{
         id: string;
         routine_id: string;
@@ -73,6 +85,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as CreateRoutineBody;
     const name = sanitizeLabel(typeof body.name === "string" ? body.name : "");
     if (name.length < 1 || name.length > 120) {
@@ -99,6 +116,13 @@ export async function POST(request: NextRequest) {
          VALUES (?, ?, ?, 1, datetime('now'), datetime('now'))`
       )
       .bind(routineId, name, scheduleWindow)
+      .run();
+    await db
+      .prepare(
+        `INSERT INTO user_routines (routine_id, user_id, created_at)
+         VALUES (?, ?, datetime('now'))`
+      )
+      .bind(routineId, user.id)
       .run();
 
     const inputSteps = Array.isArray(body.steps) ? body.steps : [];
@@ -137,7 +161,7 @@ export async function POST(request: NextRequest) {
       idx += 1;
     }
 
-    await trackAnalyticsEvent("routine_created", { routineId });
+    await trackAnalyticsEvent("routine_created", { routineId }, user.id);
 
     return NextResponse.json(
       {

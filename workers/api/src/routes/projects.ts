@@ -6,12 +6,13 @@ import { Env, User, jsonResponse } from '../utils';
 export async function handleGetProjects(
   url: URL,
   env: Env,
-  origin: string
+  origin: string,
+  user: User
 ): Promise<Response> {
   const includeInactive = url.searchParams.get('includeInactive') === 'true';
   
   let query = 'SELECT * FROM projects';
-  if (!includeInactive) {
+  if (!includeInactive || user.role !== 'admin') {
     query += ' WHERE active = 1';
   }
   query += ' ORDER BY name';
@@ -118,6 +119,6 @@ export async function handleDeleteProject(
     return jsonResponse({ success: true, message: 'Project deleted successfully' }, 200, origin);
   } catch (error) {
     console.error('Delete project error:', error);
-    return jsonResponse({ error: 'Failed to delete project', details: String(error) }, 500, origin);
+    return jsonResponse({ error: 'Failed to delete project' }, 500, origin);
   }
 }

@@ -75,6 +75,67 @@ SELECT
   updated_at
 FROM checklist_items;
 
+-- Multi-user auth and tenancy mappings.
+CREATE TABLE IF NOT EXISTS app_users (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS app_sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES app_users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_app_sessions_user_id
+ON app_sessions(user_id);
+
+CREATE TABLE IF NOT EXISTS todo_list_members (
+  list_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'owner',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (list_id, user_id),
+  FOREIGN KEY (list_id) REFERENCES todo_lists(id),
+  FOREIGN KEY (user_id) REFERENCES app_users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_todo_list_members_user
+ON todo_list_members(user_id);
+
+CREATE TABLE IF NOT EXISTS user_routines (
+  routine_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (routine_id, user_id),
+  FOREIGN KEY (routine_id) REFERENCES routines(id),
+  FOREIGN KEY (user_id) REFERENCES app_users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_routines_user
+ON user_routines(user_id);
+
+CREATE TABLE IF NOT EXISTS user_routine_runs (
+  run_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (run_id, user_id),
+  FOREIGN KEY (run_id) REFERENCES routine_runs(id),
+  FOREIGN KEY (user_id) REFERENCES app_users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_routine_runs_user
+ON user_routine_runs(user_id);
+
+INSERT OR IGNORE INTO app_users (id, email, password_hash, display_name)
+VALUES ('legacy_public', 'legacy@digiartifact.local', 'legacy_bootstrap_only', 'Legacy User');
+
 -- Phase A: Live collaboration event stream (room-by-list over polling/SSE transport).
 CREATE TABLE IF NOT EXISTS collab_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,6 +189,9 @@ ON routine_runs(routine_id, started_at);
 
 INSERT OR IGNORE INTO routines (id, name, schedule_window, is_active)
 VALUES ('home_checklist_routine', 'Home Checklist Routine', 'anytime', 1);
+
+INSERT OR IGNORE INTO user_routines (routine_id, user_id)
+VALUES ('home_checklist_routine', 'legacy_public');
 
 INSERT OR IGNORE INTO routine_steps (id, routine_id, label, sort_order, duration_minutes)
 VALUES
@@ -218,6 +282,9 @@ ON todo_items(list_id, deleted_at, sort_order);
 
 INSERT OR IGNORE INTO todo_lists (id, name, sort_order)
 VALUES ('default_home_checklist', 'Home Checklist', 0);
+
+INSERT OR IGNORE INTO todo_list_members (list_id, user_id, role)
+VALUES ('default_home_checklist', 'legacy_public', 'owner');
 
 -- Initial migration copy from legacy table into the new list/item model.
 INSERT OR IGNORE INTO todo_items (

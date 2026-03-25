@@ -56,6 +56,12 @@ type PersonalizationData = {
   topSection: string | null;
 };
 
+type SessionUser = {
+  id: string;
+  email: string;
+  displayName: string;
+};
+
 type SpeechRecognitionLike = {
   lang: string;
   continuous: boolean;
@@ -104,6 +110,13 @@ export default function Home() {
   const speechRef = useRef<SpeechRecognitionLike | null>(null);
   const [voiceError, setVoiceError] = useState("");
   const [voiceTarget, setVoiceTarget] = useState<string | null>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authDisplayName, setAuthDisplayName] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 
   const supportsVoiceInput = useMemo(() => {
     if (typeof window === "undefined") {
@@ -199,6 +212,18 @@ export default function Home() {
       try {
         setIsLoading(true);
         setLoadError("");
+        const sessionResponse = await fetch("/api/auth/me", { cache: "no-store" });
+        if (sessionResponse.status === 401) {
+          setSessionUser(null);
+          setLists([]);
+          setItems([]);
+          return;
+        }
+        if (!sessionResponse.ok) {
+          throw new Error("Unable to verify session");
+        }
+        const sessionData = (await sessionResponse.json()) as { user: SessionUser };
+        setSessionUser(sessionData.user);
         await loadLists();
         await refreshDashboard();
       } catch (error) {
@@ -213,7 +238,7 @@ export default function Home() {
 
   useEffect(() => {
     const refreshItems = async () => {
-      if (!activeListId) {
+      if (!sessionUser || !activeListId) {
         return;
       }
       try {
@@ -224,10 +249,10 @@ export default function Home() {
       }
     };
     void refreshItems();
-  }, [activeListId, loadItems]);
+  }, [activeListId, loadItems, sessionUser]);
 
   useEffect(() => {
-    if (!activeListId) {
+    if (!sessionUser || !activeListId) {
       setIsRealtimeConnected(false);
       collabCursorRef.current = 0;
       return;
@@ -284,17 +309,17 @@ export default function Home() {
         clearTimeout(timer);
       }
     };
-  }, [activeListId, loadGamification, loadItems, loadLists, loadTodayProgress]);
+  }, [activeListId, loadGamification, loadItems, loadLists, loadTodayProgress, sessionUser]);
 
   useEffect(() => {
-    if (!activeListId) {
+    if (!sessionUser || !activeListId) {
       return;
     }
     const interval = setInterval(() => {
       void loadItems(activeListId);
     }, 30000);
     return () => clearInterval(interval);
-  }, [activeListId, loadItems]);
+  }, [activeListId, loadItems, sessionUser]);
 
   useEffect(() => {
     return () => {
@@ -536,6 +561,48 @@ export default function Home() {
     });
   };
 
+  const submitAuth = async () => {
+    setAuthError("");
+    setIsAuthSubmitting(true);
+    try {
+      const endpoint = authMode === "signup" ? "/api/auth/signup" : "/api/auth/signin";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: authEmail,
+          password: authPassword,
+          displayName: authDisplayName,
+        }),
+      });
+      const data = (await response.json()) as { error?: string; user?: SessionUser };
+      if (!response.ok || !data.user) {
+        throw new Error(data.error ?? "Authentication failed.");
+      }
+      setSessionUser(data.user);
+      setAuthPassword("");
+      await loadLists();
+      await refreshDashboard();
+    } catch (error) {
+      console.error(error);
+      setAuthError(error instanceof Error ? error.message : "Authentication failed.");
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } catch (error) {
+      console.error(error);
+    }
+    setSessionUser(null);
+    setLists([]);
+    setItems([]);
+    setActiveListId("");
+  };
+
   const startRoutine = async (routineId: string) => {
     try {
       const response = await fetch(`/api/routines/${routineId}/start`, {
@@ -646,6 +713,80 @@ export default function Home() {
     recognition.start();
   };
 
+  if (!sessionUser) {
+    return (
+      <main className="mx-auto min-h-screen w-full max-w-md bg-neutral-50 px-4 py-8 text-neutral-900">
+        <section className="rounded-2xl border border-neutral-200 bg-white px-4 py-5 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">Kaia</p>
+          <h1 className="mt-2 text-2xl font-semibold">Sign in to your workspace</h1>
+          <p className="mt-2 text-sm text-neutral-600">
+            KAIA is now multi-user. Create an account or sign in to continue.
+          </p>
+
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAuthMode("signin")}
+              className={`h-9 rounded-lg px-3 text-sm ${
+                authMode === "signin" ? "bg-neutral-900 text-white" : "border border-neutral-300"
+              }`}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode("signup")}
+              className={`h-9 rounded-lg px-3 text-sm ${
+                authMode === "signup" ? "bg-neutral-900 text-white" : "border border-neutral-300"
+              }`}
+            >
+              Sign up
+            </button>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {authMode === "signup" ? (
+              <input
+                value={authDisplayName}
+                onChange={(event) => setAuthDisplayName(event.target.value)}
+                placeholder="Display name"
+                className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm"
+              />
+            ) : null}
+            <input
+              value={authEmail}
+              onChange={(event) => setAuthEmail(event.target.value)}
+              placeholder="Email"
+              type="email"
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm"
+            />
+            <input
+              value={authPassword}
+              onChange={(event) => setAuthPassword(event.target.value)}
+              placeholder="Password"
+              type="password"
+              className="h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => void submitAuth()}
+              disabled={isAuthSubmitting}
+              className="h-10 w-full rounded-lg bg-neutral-900 px-3 text-sm text-white disabled:opacity-50"
+            >
+              {isAuthSubmitting ? "Please wait..." : authMode === "signup" ? "Create account" : "Sign in"}
+            </button>
+          </div>
+
+          {authError ? (
+            <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {authError}
+            </p>
+          ) : null}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-md bg-neutral-50 px-4 py-5 text-neutral-900">
       <header className="mb-5 rounded-2xl border border-neutral-200 bg-white px-4 py-4 shadow-sm">
@@ -659,6 +800,13 @@ export default function Home() {
         <p className="mt-1 text-xs text-neutral-500">
           {isRealtimeConnected ? "Live sync on" : "Reconnecting live sync..."}
         </p>
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="mt-3 rounded-lg border border-neutral-300 px-3 py-1 text-xs"
+        >
+          Sign out
+        </button>
       </header>
 
       <section className="mb-4 grid grid-cols-2 gap-2">

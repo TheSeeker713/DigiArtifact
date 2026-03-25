@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { DEFAULT_LIST_ID, isValidEntityId, normalizeSortOrder, sanitizeLabel } from "@/lib/checklist";
 import { publishCollabEvent } from "@/lib/realtime";
 import { trackAnalyticsEvent } from "@/lib/telemetry";
+import { requireAuthUser } from "@/lib/auth";
 
 type UpdateListBody = {
   name?: unknown;
@@ -15,6 +16,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     if (!isValidEntityId(id)) {
       return NextResponse.json({ error: "Invalid list id." }, { status: 400 });
@@ -62,6 +68,14 @@ export async function PATCH(
     values.push(id);
 
     const db = getDb();
+    const membership = await db
+      .prepare("SELECT list_id FROM todo_list_members WHERE list_id = ? AND user_id = ?")
+      .bind(id, user.id)
+      .first<{ list_id: string }>();
+    if (!membership) {
+      return NextResponse.json({ error: "List not found." }, { status: 404 });
+    }
+
     await db
       .prepare(`UPDATE todo_lists SET ${updates.join(", ")} WHERE id = ?`)
       .bind(...values)
@@ -92,7 +106,7 @@ export async function PATCH(
       sortOrder: updated.sort_order,
       archivedAt: updated.archived_at,
     });
-    await trackAnalyticsEvent(eventType, { listId: updated.id });
+    await trackAnalyticsEvent(eventType, { listId: updated.id }, user.id);
 
     return NextResponse.json({
       list: {

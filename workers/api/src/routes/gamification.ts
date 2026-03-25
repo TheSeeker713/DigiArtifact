@@ -92,7 +92,6 @@ export async function handleAwardXP(
   const payloadSchema = z.union([
     z.object({ actionType: z.string(), metadata: z.record(z.string(), z.unknown()).optional() }),
     z.object({ action_type: z.string(), metadata: z.record(z.string(), z.unknown()).optional() }),
-    z.object({ amount: z.number().int().nonnegative(), reason: z.string().optional(), action_type: z.string().optional() }),
   ]);
 
   const rawBody = await request.json().catch(() => null);
@@ -109,16 +108,7 @@ export async function handleAwardXP(
   let metadata: Record<string, unknown> | undefined = undefined;
   let reason: string | undefined = undefined;
 
-  if (typeof data.amount === 'number') {
-    // Legacy: client-supplied amount (still accepted for backward compatibility)
-    amount = Math.max(0, Math.floor(data.amount));
-    reason = data.reason ?? `Manual XP`;
-    // Optional action_type may be provided
-    actionType = data.action_type ?? undefined;
-    metadata = data.metadata;
-
-    console.warn(`Accepting client-supplied XP amount for user ${user.id}`);
-  } else if (typeof data.actionType === 'string' || typeof data.action_type === 'string') {
+  if (typeof data.actionType === 'string' || typeof data.action_type === 'string') {
     actionType = data.actionType ?? data.action_type;
     metadata = data.metadata;
 
@@ -141,10 +131,10 @@ export async function handleAwardXP(
 
     reason = (metadata?.reason as string) || `Action: ${actionType}`;
   } else {
-    return jsonResponse({ error: 'actionType or amount is required' }, 400, origin);
+    return jsonResponse({ error: 'actionType is required' }, 400, origin);
   }
 
-  // At this point we have a valid `amount` (server-calculated or accepted legacy client amount)
+  // At this point we have a valid server-calculated amount.
   // FIXED: Atomic UPSERT with level calculation in a single transaction
   const result = await env.DB.prepare(`
     INSERT INTO user_gamification (user_id, total_xp, level, current_streak, updated_at)

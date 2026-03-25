@@ -35,6 +35,9 @@ export interface JWTPayload {
 
 // Simple JWT implementation for Cloudflare Workers
 export async function createJWT(payload: Omit<JWTPayload, 'exp'>, secret: string): Promise<string> {
+  if (!secret) {
+    throw new Error('JWT_SECRET is not configured');
+  }
   const header = { alg: 'HS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
   const fullPayload = { ...payload, exp: now + 7 * 24 * 60 * 60 }; // 7 days
@@ -64,6 +67,7 @@ export async function createJWT(payload: Omit<JWTPayload, 'exp'>, secret: string
 
 export async function verifyJWT(token: string, secret: string): Promise<JWTPayload | null> {
   try {
+    if (!secret) return null;
     const [headerB64, payloadB64, signatureB64] = token.split('.');
     if (!headerB64 || !payloadB64 || !signatureB64) return null;
 
@@ -127,6 +131,7 @@ export function jsonResponse(data: unknown, status = 200, origin: string): Respo
 }
 
 export async function getUser(request: Request, env: Env): Promise<User | null> {
+  if (!env.JWT_SECRET) return null;
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
   

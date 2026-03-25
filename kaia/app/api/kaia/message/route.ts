@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { sanitizeLabel } from "@/lib/checklist";
-import { ANON_PROFILE_ID, trackAnalyticsEvent } from "@/lib/telemetry";
+import { trackAnalyticsEvent } from "@/lib/telemetry";
+import { requireAuthUser } from "@/lib/auth";
 
 type KaiaMessageBody = {
   prompt?: unknown;
@@ -24,6 +25,11 @@ function buildKaiaMessage(prompt: string, phase: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as KaiaMessageBody;
     const prompt = sanitizeLabel(typeof body.prompt === "string" ? body.prompt : "");
     if (prompt.length < 1 || prompt.length > 200) {
@@ -45,10 +51,10 @@ export async function POST(request: NextRequest) {
         `INSERT INTO kaia_messages (profile_id, message_type, prompt, response, created_at)
          VALUES (?, ?, ?, ?, datetime('now'))`
       )
-      .bind(ANON_PROFILE_ID, phase, prompt, response)
+      .bind(user.id, phase, prompt, response)
       .run();
 
-    await trackAnalyticsEvent("kaia_message_generated", { phase });
+    await trackAnalyticsEvent("kaia_message_generated", { phase }, user.id);
 
     return NextResponse.json({
       message: {

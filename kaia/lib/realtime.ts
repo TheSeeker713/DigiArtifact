@@ -24,6 +24,16 @@ export async function publishCollabEvent(
     )
     .bind(listId, eventType, entityId, JSON.stringify(payload))
     .run();
+
+  // Lightweight retention control: keep rolling 30-day window.
+  if (Math.random() < 0.05) {
+    await db
+      .prepare(
+        `DELETE FROM collab_events
+         WHERE datetime(created_at) < datetime('now', '-30 days')`
+      )
+      .run();
+  }
 }
 
 export async function loadCollabEventsSince(listId: string, since: number) {

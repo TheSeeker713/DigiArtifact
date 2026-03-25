@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { requireAuthUser } from "@/lib/auth";
 
 type ArchiveSetRow = {
   id: string;
@@ -18,8 +19,13 @@ type ArchiveItemRow = {
   archived_at: string;
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const db = getDb();
 
     const archiveSet = await db

@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { isValidEntityId, normalizeSortOrder, sanitizeLabel } from "@/lib/checklist";
 import { publishCollabEvent } from "@/lib/realtime";
 import { trackAnalyticsEvent } from "@/lib/telemetry";
+import { requireAuthUser } from "@/lib/auth";
 
 type TodoItemRow = {
   id: string;
@@ -38,6 +39,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireAuthUser(_request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id: listId } = await params;
     if (!isValidEntityId(listId)) {
       return NextResponse.json({ error: "Invalid list id." }, { status: 400 });
@@ -48,8 +54,12 @@ export async function GET(
       .prepare("SELECT id, name FROM todo_lists WHERE id = ? AND archived_at IS NULL")
       .bind(listId)
       .first<{ id: string; name: string }>();
+    const membership = await db
+      .prepare("SELECT list_id FROM todo_list_members WHERE list_id = ? AND user_id = ?")
+      .bind(listId, user.id)
+      .first<{ list_id: string }>();
 
-    if (!list) {
+    if (!list || !membership) {
       return NextResponse.json({ error: "List not found." }, { status: 404 });
     }
 
@@ -98,6 +108,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id: listId } = await params;
     if (!isValidEntityId(listId)) {
       return NextResponse.json({ error: "Invalid list id." }, { status: 400 });
@@ -105,8 +120,15 @@ export async function POST(
 
     const db = getDb();
     const listExists = await db
-      .prepare("SELECT id FROM todo_lists WHERE id = ? AND archived_at IS NULL")
-      .bind(listId)
+      .prepare(
+        `SELECT l.id
+         FROM todo_lists l
+         INNER JOIN todo_list_members m ON m.list_id = l.id
+         WHERE l.id = ?
+           AND l.archived_at IS NULL
+           AND m.user_id = ?`
+      )
+      .bind(listId, user.id)
       .first<{ id: string }>();
 
     if (!listExists) {
@@ -163,7 +185,7 @@ export async function POST(
       sortOrder,
       isChecked: false,
     });
-    await trackAnalyticsEvent("item_created", { listId, itemId: idCandidate });
+    await trackAnalyticsEvent("item_created", { listId, itemId: idCandidate }, user.id);
 
     return NextResponse.json(
       {

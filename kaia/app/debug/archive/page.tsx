@@ -36,6 +36,9 @@ export default function ArchiveDebugPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-md px-4 py-6">
       <h1 className="text-xl font-semibold">Archive Debug</h1>
+      <p className="mt-2 text-sm text-neutral-600">
+        This debug view is restricted in production and requires an authenticated session.
+      </p>
       {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
       {!error && !payload ? <p className="mt-3 text-sm text-neutral-500">Loading...</p> : null}
       {payload ? (

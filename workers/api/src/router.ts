@@ -26,6 +26,33 @@ import { handleGetEntries, handleDeleteEntry, handleUpdateEntry } from './routes
 import { handleGetConfig } from './routes/config';
 import { handleGetGamification, handleAwardXP, handleUpdateStreak, handleUnlockAchievement } from './routes/gamification';
 import { handleGetProjects, handleCreateProject, handleUpdateProject, handleDeleteProject } from './routes/projects';
+import { handleWeeklyStats, handleMonthlyStats } from './routes/stats';
+import {
+  handleGetBlocks,
+  handleSaveBlocks,
+  handleUpdateBlock,
+  handleGetIncompleteBlocks,
+  handleCarryover,
+} from './routes/schedule';
+import {
+  handleGetJournalEntries,
+  handleCreateJournalEntry,
+  handleUpdateJournalEntry,
+  handleDeleteJournalEntry,
+} from './routes/journal';
+import {
+  handleGetUsers,
+  handleCreateUser,
+  handleUpdateUser,
+  handleGetGlobalStats,
+  handleGetUserStats,
+  handleGetAllEntries,
+  handleExportUserData,
+  handleExportAllData,
+  handlePurgeUserData,
+  handlePurgeAllData,
+} from './routes/admin';
+import { handleGetProfile } from './routes/user';
 
 // Create Hono app with typed context
 type HonoContext = {
@@ -65,7 +92,6 @@ app.onError((err, c) => {
   return jsonResponse(
     {
       error: 'Internal server error',
-      message: err.message || 'An unexpected error occurred',
     },
     500,
     c.env.CORS_ORIGIN
@@ -185,7 +211,8 @@ app.post('/api/gamification/achievement/unlock', async (c) => {
 // Projects routes
 app.get('/api/projects', async (c) => {
   const url = new URL(c.req.url);
-  return handleGetProjects(url, c.env, c.env.CORS_ORIGIN);
+  const user = c.get('user');
+  return handleGetProjects(url, c.env, c.env.CORS_ORIGIN, user);
 });
 
 app.post('/api/projects', async (c) => {
@@ -203,6 +230,114 @@ app.delete('/api/projects/:id', async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('id');
   return handleDeleteProject(projectId, c.env, user, c.env.CORS_ORIGIN);
+});
+
+// Profile route
+app.get('/api/user/profile', async (c) => {
+  const user = c.get('user');
+  return handleGetProfile(user, c.env.CORS_ORIGIN);
+});
+
+// Stats routes
+app.get('/api/stats/weekly', async (c) => {
+  const user = c.get('user');
+  return handleWeeklyStats(c.env, user, c.env.CORS_ORIGIN);
+});
+app.get('/api/stats/monthly', async (c) => {
+  const user = c.get('user');
+  const url = new URL(c.req.url);
+  return handleMonthlyStats(url, c.env, user, c.env.CORS_ORIGIN);
+});
+
+// Schedule routes
+app.get('/api/schedule/blocks', async (c) => {
+  const user = c.get('user');
+  const url = new URL(c.req.url);
+  return handleGetBlocks(url, c.env, user, c.env.CORS_ORIGIN);
+});
+app.post('/api/schedule/blocks', async (c) => {
+  const user = c.get('user');
+  return handleSaveBlocks(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+app.put('/api/schedule/blocks/:id', async (c) => {
+  const user = c.get('user');
+  const blockId = c.req.param('id');
+  return handleUpdateBlock(blockId, c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+app.get('/api/schedule/incomplete', async (c) => {
+  const user = c.get('user');
+  return handleGetIncompleteBlocks(c.env, user, c.env.CORS_ORIGIN);
+});
+app.post('/api/schedule/carryover', async (c) => {
+  const user = c.get('user');
+  return handleCarryover(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+
+// Journal routes
+app.get('/api/journal', async (c) => {
+  const user = c.get('user');
+  const url = new URL(c.req.url);
+  return handleGetJournalEntries(url, c.env, user, c.env.CORS_ORIGIN);
+});
+app.post('/api/journal', async (c) => {
+  const user = c.get('user');
+  return handleCreateJournalEntry(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+app.put('/api/journal/:id', async (c) => {
+  const user = c.get('user');
+  const entryId = c.req.param('id');
+  return handleUpdateJournalEntry(entryId, c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+app.delete('/api/journal/:id', async (c) => {
+  const user = c.get('user');
+  const entryId = c.req.param('id');
+  return handleDeleteJournalEntry(entryId, c.env, user, c.env.CORS_ORIGIN);
+});
+
+// Admin routes
+app.get('/api/admin/users', async (c) => {
+  const user = c.get('user');
+  return handleGetUsers(c.env, user, c.env.CORS_ORIGIN);
+});
+app.post('/api/admin/users', async (c) => {
+  const user = c.get('user');
+  return handleCreateUser(c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+app.put('/api/admin/users/:id', async (c) => {
+  const user = c.get('user');
+  const userId = c.req.param('id');
+  return handleUpdateUser(userId, c.req.raw, c.env, user, c.env.CORS_ORIGIN);
+});
+app.get('/api/admin/stats/global', async (c) => {
+  const user = c.get('user');
+  return handleGetGlobalStats(c.env, user, c.env.CORS_ORIGIN);
+});
+app.get('/api/admin/stats/user/:id', async (c) => {
+  const user = c.get('user');
+  const userId = c.req.param('id');
+  return handleGetUserStats(userId, c.env, user, c.env.CORS_ORIGIN);
+});
+app.get('/api/admin/entries', async (c) => {
+  const user = c.get('user');
+  return handleGetAllEntries(c.env, user, c.env.CORS_ORIGIN);
+});
+app.get('/api/admin/export/user/:id', async (c) => {
+  const user = c.get('user');
+  const userId = c.req.param('id');
+  return handleExportUserData(userId, c.env, user, c.env.CORS_ORIGIN);
+});
+app.get('/api/admin/export/all', async (c) => {
+  const user = c.get('user');
+  return handleExportAllData(c.env, user, c.env.CORS_ORIGIN);
+});
+app.delete('/api/admin/purge/user/:id', async (c) => {
+  const user = c.get('user');
+  const userId = c.req.param('id');
+  return handlePurgeUserData(userId, c.env, user, c.env.CORS_ORIGIN);
+});
+app.delete('/api/admin/purge/all', async (c) => {
+  const user = c.get('user');
+  return handlePurgeAllData(c.env, user, c.env.CORS_ORIGIN);
 });
 
 // ========================================

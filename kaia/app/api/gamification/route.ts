@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { ANON_PROFILE_ID } from "@/lib/telemetry";
+import { NextRequest } from "next/server";
+import { requireAuthUser } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const db = getDb();
     const state = await db
       .prepare(
@@ -11,7 +17,7 @@ export async function GET() {
          FROM gamification_state
          WHERE profile_id = ?`
       )
-      .bind(ANON_PROFILE_ID)
+      .bind(user.id)
       .first<{
         profile_id: string;
         xp: number;
@@ -25,7 +31,7 @@ export async function GET() {
     if (!state) {
       return NextResponse.json({
         state: {
-          profileId: ANON_PROFILE_ID,
+          profileId: user.id,
           xp: 0,
           level: 1,
           momentum: 0,

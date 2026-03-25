@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { isValidEntityId, normalizeSortOrder, sanitizeLabel } from "@/lib/checklist";
 import { publishCollabEvent } from "@/lib/realtime";
 import { recordGamificationEvent, trackAnalyticsEvent } from "@/lib/telemetry";
+import { requireAuthUser } from "@/lib/auth";
 
 type UpdateItemBody = {
   label?: unknown;
@@ -27,6 +28,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     if (!isValidEntityId(id)) {
       return NextResponse.json({ error: "Invalid item id." }, { status: 400 });
@@ -79,18 +85,26 @@ export async function PATCH(
         `UPDATE todo_items
          SET ${updates.join(", ")}
          WHERE id = ?
+           AND EXISTS (
+             SELECT 1
+             FROM todo_list_members m
+             WHERE m.list_id = todo_items.list_id
+               AND m.user_id = ?
+           )
            AND deleted_at IS NULL`
       )
-      .bind(...values)
+      .bind(...values, user.id)
       .run();
 
     const item = await db
       .prepare(
-        `SELECT id, list_id, section, label, sort_order, is_checked, updated_at, deleted_at
-         FROM todo_items
-         WHERE id = ?`
+        `SELECT i.id, i.list_id, i.section, i.label, i.sort_order, i.is_checked, i.updated_at, i.deleted_at
+         FROM todo_items i
+         INNER JOIN todo_list_members m ON m.list_id = i.list_id
+         WHERE i.id = ?
+           AND m.user_id = ?`
       )
-      .bind(id)
+      .bind(id, user.id)
       .first<{
         id: string;
         list_id: string;
@@ -125,13 +139,13 @@ export async function PATCH(
       listId: item.list_id,
       itemId: item.id,
       isChecked: item.is_checked === 1,
-    });
+    }, user.id);
 
     if (checkedUpdate && body.isChecked === true) {
       await recordGamificationEvent("item_checked", 5, {
         listId: item.list_id,
         itemId: item.id,
-      });
+      }, user.id);
     }
 
     return NextResponse.json({
@@ -156,6 +170,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await requireAuthUser(_request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     if (!isValidEntityId(id)) {
       return NextResponse.json({ error: "Invalid item id." }, { status: 400 });
@@ -163,8 +182,15 @@ export async function DELETE(
 
     const db = getDb();
     const existing = await db
-      .prepare("SELECT id, list_id FROM todo_items WHERE id = ? AND deleted_at IS NULL")
-      .bind(id)
+      .prepare(
+        `SELECT i.id, i.list_id
+         FROM todo_items i
+         INNER JOIN todo_list_members m ON m.list_id = i.list_id
+         WHERE i.id = ?
+           AND i.deleted_at IS NULL
+           AND m.user_id = ?`
+      )
+      .bind(id, user.id)
       .first<{ id: string; list_id: string }>();
 
     await db
@@ -172,9 +198,15 @@ export async function DELETE(
         `UPDATE todo_items
          SET deleted_at = datetime('now'), updated_at = datetime('now')
          WHERE id = ?
+           AND EXISTS (
+             SELECT 1
+             FROM todo_list_members m
+             WHERE m.list_id = todo_items.list_id
+               AND m.user_id = ?
+           )
            AND deleted_at IS NULL`
       )
-      .bind(id)
+      .bind(id, user.id)
       .run();
 
     if (existing) {
@@ -185,7 +217,7 @@ export async function DELETE(
       await trackAnalyticsEvent("item_deleted", {
         listId: existing.list_id,
         itemId: existing.id,
-      });
+      }, user.id);
     }
 
     return NextResponse.json({ ok: true, deletedId: id });

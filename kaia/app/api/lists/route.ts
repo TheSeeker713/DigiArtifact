@@ -3,6 +3,8 @@ import { getDb } from "@/lib/db";
 import { DEFAULT_LIST_ID, DEFAULT_LIST_NAME, isValidEntityId, sanitizeLabel } from "@/lib/checklist";
 import { publishCollabEvent } from "@/lib/realtime";
 import { trackAnalyticsEvent } from "@/lib/telemetry";
+import { requireAuthUser } from "@/lib/auth";
+import { ensureUserBootstrap } from "@/lib/bootstrap";
 
 type ListRow = {
   id: string;
@@ -23,8 +25,14 @@ function normalizeListName(value: unknown) {
   return sanitizeLabel(value);
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    await ensureUserBootstrap(user.id);
+
     const db = getDb();
     const result = await db
       .prepare(
@@ -34,13 +42,17 @@ export async function GET() {
            l.sort_order,
            COUNT(i.id) AS item_count
          FROM todo_lists l
+         INNER JOIN todo_list_members m
+           ON m.list_id = l.id
          LEFT JOIN todo_items i
            ON i.list_id = l.id
           AND i.deleted_at IS NULL
-         WHERE l.archived_at IS NULL
+         WHERE m.user_id = ?
+           AND l.archived_at IS NULL
          GROUP BY l.id, l.name, l.sort_order
          ORDER BY l.sort_order ASC, l.created_at ASC`
       )
+      .bind(user.id)
       .all<ListRow>();
 
     return NextResponse.json({
@@ -59,6 +71,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as CreateListBody;
     const name = normalizeListName(body.name);
     if (name.length < 1 || name.length > 80) {
@@ -89,13 +106,20 @@ export async function POST(request: NextRequest) {
       )
       .bind(id, name, nextSortOrder)
       .run();
+    await db
+      .prepare(
+        `INSERT INTO todo_list_members (list_id, user_id, role, created_at)
+         VALUES (?, ?, 'owner', datetime('now'))`
+      )
+      .bind(id, user.id)
+      .run();
 
     await publishCollabEvent(id, "list_created", id, {
       id,
       name,
       sortOrder: nextSortOrder,
     });
-    await trackAnalyticsEvent("list_created", { listId: id });
+    await trackAnalyticsEvent("list_created", { listId: id }, user.id);
 
     return NextResponse.json(
       {
