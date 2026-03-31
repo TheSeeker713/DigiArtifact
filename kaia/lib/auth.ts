@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
+import { ensureCoreSchema } from "@/lib/schema";
 
 export const SESSION_COOKIE = "kaia_session";
 const SESSION_DAYS = 30;
@@ -74,6 +75,7 @@ export async function verifyPassword(password: string, storedHash: string) {
 }
 
 export async function createSession(userId: string) {
+  await ensureCoreSchema();
   const token = `${crypto.randomUUID()}_${crypto.randomUUID()}`;
   const tokenHash = await sha256Hex(token);
   const db = getDb();
@@ -93,6 +95,7 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
     return null;
   }
 
+  await ensureCoreSchema();
   const tokenHash = await sha256Hex(sessionToken);
   const db = getDb();
   const result = await db
@@ -159,6 +162,7 @@ export async function invalidateSession(request: NextRequest) {
   if (!sessionToken) {
     return;
   }
+  await ensureCoreSchema();
   const tokenHash = await sha256Hex(sessionToken);
   const db = getDb();
   await db

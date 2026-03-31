@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { attachSessionCookie, createSession, verifyPassword } from "@/lib/auth";
 import { ensureUserBootstrap } from "@/lib/bootstrap";
+import { ensureCoreSchema } from "@/lib/schema";
 
 type SigninBody = {
   email?: unknown;
@@ -17,6 +18,7 @@ function normalizeEmail(value: unknown) {
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureCoreSchema();
     const body = (await request.json()) as SigninBody;
     const email = normalizeEmail(body.email);
     const password = typeof body.password === "string" ? body.password : "";

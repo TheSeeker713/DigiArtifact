@@ -1,6 +1,38 @@
 import { getDb } from "@/lib/db";
+import { ensureCoreSchema } from "@/lib/schema";
+
+const FALLBACK_CHECKLIST_ITEMS: Array<{
+  section: string;
+  label: string;
+  sortOrder: number;
+}> = [
+  { section: "Bathroom", label: "wall paper", sortOrder: 1 },
+  { section: "Bathroom", label: "shelf", sortOrder: 2 },
+  { section: "Bathroom", label: "bathtub", sortOrder: 3 },
+  { section: "Bathroom", label: "shower curtain", sortOrder: 4 },
+  { section: "Bathroom", label: "sweep and mop", sortOrder: 5 },
+  { section: "Bathroom", label: "hang picture", sortOrder: 6 },
+  { section: "Kitchen", label: "clean fan thingy", sortOrder: 1 },
+  { section: "Kitchen", label: "water removed from top of fridge", sortOrder: 2 },
+  { section: "Kitchen", label: "sweep and mop", sortOrder: 3 },
+  { section: "Kitchen", label: "bake a cake", sortOrder: 4 },
+  { section: "Living Room", label: "charging extension cord", sortOrder: 1 },
+  { section: "Living Room", label: "desk area cleaned", sortOrder: 2 },
+  { section: "Living Room", label: "weights moved to desk area", sortOrder: 3 },
+  { section: "Living Room", label: "dust", sortOrder: 4 },
+  { section: "Living Room", label: "put away jackets", sortOrder: 5 },
+  { section: "Living Room", label: "fix rack", sortOrder: 6 },
+  { section: "Living Room", label: "add hat pegs", sortOrder: 7 },
+  { section: "Main Bedroom", label: "move things to bathroom", sortOrder: 1 },
+  { section: "Main Bedroom", label: "sweep", sortOrder: 2 },
+  { section: "Main Bedroom", label: "vacuum", sortOrder: 3 },
+  { section: "Main Bedroom", label: "mop", sortOrder: 4 },
+  { section: "Main Bedroom", label: "dust", sortOrder: 5 },
+  { section: "Main Bedroom", label: "wash bedding", sortOrder: 6 },
+];
 
 export async function ensureUserBootstrap(userId: string) {
+  await ensureCoreSchema();
   const db = getDb();
   const existingMembership = await db
     .prepare(
@@ -48,6 +80,31 @@ export async function ensureUserBootstrap(userId: string) {
       )
       .bind(listId)
       .run();
+
+    const seededCount = await db
+      .prepare("SELECT COUNT(*) AS count FROM todo_items WHERE list_id = ? AND deleted_at IS NULL")
+      .bind(listId)
+      .first<{ count: number }>();
+
+    if (Number(seededCount?.count ?? 0) === 0) {
+      for (const item of FALLBACK_CHECKLIST_ITEMS) {
+        await db
+          .prepare(
+            `INSERT INTO todo_items (
+               id, list_id, section, label, sort_order, is_checked, created_at, updated_at
+             )
+             VALUES (?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))`
+          )
+          .bind(
+            lowerHexUuid(),
+            listId,
+            item.section,
+            item.label,
+            item.sortOrder
+          )
+          .run();
+      }
+    }
   }
 
   const routineMembership = await db
@@ -106,4 +163,8 @@ export async function ensureUserBootstrap(userId: string) {
     )
     .bind(userId)
     .run();
+}
+
+function lowerHexUuid() {
+  return crypto.randomUUID().replace(/-/g, "").toLowerCase();
 }
