@@ -2,10 +2,12 @@ name: Deploy Kaia Checklist Worker
 # Note: trigger this workflow when edited directly.
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "kaia/**"
+      - ".github/actions/cloudflare-preflight/**"
       - ".github/workflows/deploy-kaia.yml"
 
 jobs:
