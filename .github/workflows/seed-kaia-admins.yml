@@ -1,0 +1,52 @@
+name: Seed Kaia Admin Accounts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KAIA_ADMIN_DIGI_PASSWORD: ${{ secrets.KAIA_ADMIN_DIGI_PASSWORD }}
+      KAIA_ADMIN_PARTNER_PASSWORD: ${{ secrets.KAIA_ADMIN_PARTNER_PASSWORD }}
+    defaults:
+      run:
+        working-directory: kaia
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: kaia/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cloudflare preflight
+        uses: ./.github/actions/cloudflare-preflight
+        with:
+          api_token: ${{ env.CLOUDFLARE_API_TOKEN }}
+          account_id: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Validate admin password secrets
+        run: |
+          set -euo pipefail
+          if [ -z "${KAIA_ADMIN_DIGI_PASSWORD:-}" ]; then
+            echo "Missing KAIA_ADMIN_DIGI_PASSWORD secret."
+            exit 1
+          fi
+          if [ -z "${KAIA_ADMIN_PARTNER_PASSWORD:-}" ]; then
+            echo "Missing KAIA_ADMIN_PARTNER_PASSWORD secret."
+            exit 1
+          fi
+
+      - name: Run remote admin seed
+        run: npm run seed:admins:remote
