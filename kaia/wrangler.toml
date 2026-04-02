@@ -2,10 +2,6 @@ name = "kaia-checklist"
 main = ".open-next/worker.js"
 compatibility_date = "2026-03-24"
 compatibility_flags = ["nodejs_compat"]
-routes = [
-  { pattern = "kaia.digiartifact.com", custom_domain = true }
-]
-
 [assets]
 binding = "ASSETS"
 directory = ".open-next/assets"
