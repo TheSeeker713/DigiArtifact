@@ -11,7 +11,11 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "db:local": "wrangler d1 execute kaia-checklist --local --file=./schema.sql",
-    "db:remote": "wrangler d1 execute kaia-checklist --remote --file=./schema.sql"
+    "db:remote": "wrangler d1 execute kaia-checklist --remote --file=./schema.sql",
+    "db:migrate:local": "wrangler d1 execute kaia-checklist --local --file=./migrations/002_admin_schedule.sql",
+    "db:migrate:remote": "wrangler d1 execute kaia-checklist --remote --file=./migrations/002_admin_schedule.sql",
+    "seed:admins:local": "tsx ./scripts/seed-admins.ts --local",
+    "seed:admins:remote": "tsx ./scripts/seed-admins.ts --remote"
   },
   "dependencies": {
     "next": "16.2.1",
@@ -28,6 +32,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5",
     "wrangler": "^4.77.0"
   }

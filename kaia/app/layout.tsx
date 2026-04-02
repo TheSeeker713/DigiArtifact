@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Kaia Checklist",
   description: "Mobile-first checklist for DigiArtifact home productivity.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

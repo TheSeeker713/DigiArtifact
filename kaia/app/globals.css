@@ -3,6 +3,20 @@
 :root {
   --background: #fafafa;
   --foreground: #111111;
+  --kaia-bg: #1a1812;
+  --kaia-bg-card: #23211a;
+  --kaia-bg-card-alt: #2a2720;
+  --kaia-accent: #c9a84c;
+  --kaia-text: #e8e2d4;
+  --kaia-text-dim: #9b9484;
+  --kaia-text-muted: #6b6458;
+  --kaia-border: #3a3628;
+  --kaia-work: #6ba368;
+  --kaia-exercise: #4ca8b5;
+  --kaia-off: #d47b6a;
+  --kaia-selfcare: #c47db5;
+  --kaia-chore: #c4a64d;
+  --kaia-together: #c9a84c;
 }
 
 @theme inline {

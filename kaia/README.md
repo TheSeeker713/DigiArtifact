@@ -130,6 +130,24 @@ Remote D1 schema apply (use with care):
 npm run db:remote
 ```
 
+Admin schedule migration + seed:
+
+```bash
+export KAIA_ADMIN_DIGI_PASSWORD="replace-with-temp-password"
+export KAIA_ADMIN_PARTNER_PASSWORD="replace-with-temp-password"
+npm run db:migrate:local
+npm run seed:admins:local
+```
+
+Remote admin seed flow (CI or guarded operator session):
+
+```bash
+export KAIA_ADMIN_DIGI_PASSWORD="replace-with-temp-password"
+export KAIA_ADMIN_PARTNER_PASSWORD="replace-with-temp-password"
+npm run db:migrate:remote
+npm run seed:admins:remote
+```
+
 ## API Surface (Current)
 
 - Auth:
@@ -253,3 +271,30 @@ This log reflects what has been implemented in the codebase and schema to date.
 
 - `kaia-schedule-app.jsx` remains as a historical/pattern reference from the earlier schedule-centric iteration.
 - Current production code path is the Next.js app in `app/` backed by D1 and route handlers in `app/api/`.
+
+## Admin Schedule Module
+
+The private schedule dashboard is isolated from public KAIA routes.
+
+- Admin UI routes: `/admin/*`
+- Admin auth and data APIs: `/api/admin/*`
+- Public auth/checklist routes remain under existing `/api/auth/*`, `/api/lists/*`, `/api/items/*`, etc.
+
+### Auth model
+
+- Admin cookie: `kaia-admin-session` (`HttpOnly`, `Secure`, `SameSite=Strict`)
+- Admin users are seed-only (`digi`, `partner`) from `scripts/seed-admins.ts`
+- First login requires password rotation (`must_change_password = 1`)
+- Login rate limit: 5 attempts/minute per IP hash
+
+### Shared schedule data model
+
+- `schedule_daily`: daily check-ins + block completion flags
+- `schedule_streak`: shared streak/xp/sprint state
+- `schedule_chores`: shared Monday/Thursday/Friday chore boards
+- `schedule_plan`: shared weekly top-3 + notes
+
+### Real-time sync
+
+- Polling endpoint: `GET /api/admin/sync`
+- Client hooks poll every ~5 seconds and selectively refetch changed categories

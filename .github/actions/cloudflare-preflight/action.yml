@@ -1,0 +1,55 @@
+name: Cloudflare Preflight
+description: Validate Cloudflare secret presence and token/account pairing before deploy.
+
+inputs:
+  api_token:
+    description: Cloudflare API token
+    required: true
+  account_id:
+    description: Cloudflare account id
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate Cloudflare credentials
+      shell: bash
+      env:
+        CF_API_TOKEN: ${{ inputs.api_token }}
+        CF_ACCOUNT_ID: ${{ inputs.account_id }}
+      run: |
+        set -euo pipefail
+
+        if [ -z "${CF_API_TOKEN:-}" ]; then
+          echo "Missing CLOUDFLARE_API_TOKEN secret."
+          exit 1
+        fi
+
+        if [ -z "${CF_ACCOUNT_ID:-}" ]; then
+          echo "Missing CLOUDFLARE_ACCOUNT_ID secret."
+          exit 1
+        fi
+
+        if ! echo "$CF_ACCOUNT_ID" | grep -Eq '^[A-Fa-f0-9]{32}$'; then
+          echo "CLOUDFLARE_ACCOUNT_ID must be a 32-character hex string."
+          exit 1
+        fi
+
+        status_code="$(curl --silent --show-error --output "$RUNNER_TEMP/cf-preflight.json" --write-out "%{http_code}" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID")"
+
+        if [ "$status_code" -ne 200 ]; then
+          echo "Cloudflare preflight failed with HTTP $status_code."
+          cat "$RUNNER_TEMP/cf-preflight.json"
+          exit 1
+        fi
+
+        if ! jq -e '.success == true' "$RUNNER_TEMP/cf-preflight.json" >/dev/null; then
+          echo "Cloudflare preflight failed. Token/account mismatch or insufficient permissions."
+          cat "$RUNNER_TEMP/cf-preflight.json"
+          exit 1
+        fi
+
+        echo "Cloudflare preflight passed."

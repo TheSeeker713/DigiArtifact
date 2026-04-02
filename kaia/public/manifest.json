@@ -1,0 +1,10 @@
+{
+  "name": "KAIA Admin",
+  "short_name": "KAIA",
+  "description": "Keep At It, Always - private admin schedule dashboard",
+  "start_url": "/admin/today",
+  "display": "standalone",
+  "background_color": "#1a1812",
+  "theme_color": "#c9a84c",
+  "icons": []
+}
