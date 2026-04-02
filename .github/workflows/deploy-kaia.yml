@@ -1,4 +1,5 @@
 name: Deploy Kaia Checklist Worker
+# Note: trigger this workflow when edited directly.
 
 on:
   push:
