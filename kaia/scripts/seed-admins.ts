@@ -34,7 +34,7 @@ async function hashPassword(password: string) {
     ["deriveBits"]
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: 120_000, hash: "SHA-256" },
+    { name: "PBKDF2", salt, iterations: 100_000, hash: "SHA-256" },
     keyMaterial,
     256
   );
@@ -82,7 +82,7 @@ async function main() {
     const hashed = await hashPassword(password);
     const id = `admin_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
     runWrangler(
-      `INSERT OR IGNORE INTO admin_users (
+      `INSERT INTO admin_users (
          id, username, password_hash, password_salt, display_name, role, must_change_password, created_at
        ) VALUES (
          '${id}',
@@ -93,7 +93,14 @@ async function main() {
          'admin',
          1,
          datetime('now')
-       )`,
+       )
+       ON CONFLICT(username) DO UPDATE SET
+         password_hash = excluded.password_hash,
+         password_salt = excluded.password_salt,
+         display_name = excluded.display_name,
+         role = excluded.role,
+         must_change_password = 1,
+         password_updated_at = NULL`,
       useRemote
     );
   }

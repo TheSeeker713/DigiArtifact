@@ -3,7 +3,8 @@ import { getDb } from "@/lib/db";
 
 export const ADMIN_SESSION_COOKIE = "kaia-admin-session";
 const SESSION_DAYS = 30;
-const PBKDF2_ITERATIONS = 120_000;
+// Cloudflare Workers WebCrypto currently caps PBKDF2 iterations at 100000.
+const PBKDF2_ITERATIONS = 100_000;
 
 export type AdminUser = {
   id: string;
