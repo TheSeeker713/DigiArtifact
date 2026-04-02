@@ -20,6 +20,10 @@ runs:
       run: |
         set -euo pipefail
 
+        # Normalize secrets copied from UIs that may include CR/LF or extra spaces.
+        CF_API_TOKEN="$(printf '%s' "${CF_API_TOKEN:-}" | tr -d '\r\n')"
+        CF_ACCOUNT_ID="$(printf '%s' "${CF_ACCOUNT_ID:-}" | tr -d '\r\n[:space:]')"
+
         if [ -z "${CF_API_TOKEN:-}" ]; then
           echo "Missing CLOUDFLARE_API_TOKEN secret."
           exit 1
@@ -30,15 +34,16 @@ runs:
           exit 1
         fi
 
-        if ! echo "$CF_ACCOUNT_ID" | grep -Eq '^[A-Fa-f0-9]{32}$'; then
+        if [[ ! "$CF_ACCOUNT_ID" =~ ^[A-Fa-f0-9]{32}$ ]]; then
           echo "CLOUDFLARE_ACCOUNT_ID must be a 32-character hex string."
           exit 1
         fi
 
+        cf_account_url="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID"
         status_code="$(curl --silent --show-error --output "$RUNNER_TEMP/cf-preflight.json" --write-out "%{http_code}" \
           -H "Authorization: Bearer $CF_API_TOKEN" \
           -H "Content-Type: application/json" \
-          "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID")"
+          "$cf_account_url")"
 
         if [ "$status_code" -ne 200 ]; then
           echo "Cloudflare preflight failed with HTTP $status_code."
